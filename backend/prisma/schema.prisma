@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  VOLUNTEER
+  ORGANISATION
+  ADMIN
+}
+
+enum OpportunityMode {
+  PHYSICAL
+  VIRTUAL
+}
+
+enum OpportunityStatus {
+  PENDING_APPROVAL
+  PUBLISHED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum CollaboratorStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+}
+
+enum CheckInMethod {
+  QR
+  MANUAL
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(VOLUNTEER)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  profile              VolunteerProfile?
+  createdOpportunities Opportunity[]      @relation("OpportunityCreator")
+  collaborations       Collaborator[]
+  applications         Application[]
+  checkins             Checkin[]
+  taskSubmissions      TaskSubmission[]
+  portfolioEntries     PortfolioEntry[]
+  notifications        Notification[]
+
+  @@map("users")
+}
+
+model VolunteerProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  skills        String[] @default([])
+  interests     String[] @default([])
+  availability  String?
+  location      String?
+  portfolioSlug String   @unique @map("portfolio_slug")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("volunteer_profiles")
+}
+
+model Opportunity {
+  id                  String            @id @default(uuid())
+  creatorId           String            @map("creator_id")
+  title               String
+  description         String            @db.Text
+  mode                OpportunityMode
+  location            String?
+  maxCapacity         Int               @map("max_capacity")
+  applicationDeadline DateTime          @map("application_deadline")
+  status              OpportunityStatus @default(PENDING_APPROVAL)
+  qrToken             String?           @map("qr_token")
+  requiredSkills      String[]          @default([]) @map("required_skills")
+  categories          String[]          @default([])
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  creator          User             @relation("OpportunityCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  collaborators    Collaborator[]
+  applications     Application[]
+  checkins         Checkin[]
+  taskSubmissions  TaskSubmission[]
+  portfolioEntries PortfolioEntry[]
+
+  @@map("opportunities")
+}
+
+model Collaborator {
+  id              String             @id @default(uuid())
+  opportunityId   String             @map("opportunity_id")
+  userId          String             @map("user_id")
+  permissionLevel String             @default("CO_ORGANISER") @map("permission_level")
+  status          CollaboratorStatus @default(INVITED)
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, userId])
+  @@map("collaborators")
+}
+
+model Application {
+  id                  String            @id @default(uuid())
+  opportunityId       String            @map("opportunity_id")
+  volunteerId         String            @map("volunteer_id")
+  motivationStatement String            @db.Text @map("motivation_statement")
+  resumeUrl           String?           @map("resume_url")
+  status              ApplicationStatus @default(PENDING)
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  volunteer   User        @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, volunteerId])
+  @@map("applications")
+}
+
+model Checkin {
+  id            String        @id @default(uuid())
+  opportunityId String        @map("opportunity_id")
+  volunteerId   String        @map("volunteer_id")
+  checkinTime   DateTime      @default(now()) @map("checkin_time")
+  checkoutTime  DateTime?     @map("checkout_time")
+  method        CheckInMethod @default(QR)
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  volunteer   User        @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  @@map("checkins")
+}
+
+model TaskSubmission {
+  id            String           @id @default(uuid())
+  opportunityId String           @map("opportunity_id")
+  volunteerId   String           @map("volunteer_id")
+  hoursClaimed  Float            @map("hours_claimed")
+  proofUrl      String           @map("proof_url")
+  status        SubmissionStatus @default(PENDING)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  volunteer   User        @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  @@map("task_submissions")
+}
+
+model PortfolioEntry {
+  id            String   @id @default(uuid())
+  volunteerId   String   @map("volunteer_id")
+  opportunityId String   @map("opportunity_id")
+  hoursCredited Float    @map("hours_credited")
+  skillsCredited String[] @default([]) @map("skills_credited")
+  dateCredited  DateTime @default(now()) @map("date_credited")
+
+  volunteer   User        @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_entries")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  message   String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
