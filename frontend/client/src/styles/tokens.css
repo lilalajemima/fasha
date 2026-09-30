@@ -1,0 +1,36 @@
+/* Design tokens taken from the Fasha Figma file.
+   Every colour, space and radius used in the app comes from here. */
+:root {
+  /* brand */
+  --navy-900: #1b3a66;
+  --navy-700: #1e3a6e;
+  --navy-600: #254a85;
+
+  /* tints and surfaces */
+  --tint-100: #e8eef8;
+  --tint-200: #d7e2f3;
+  --bg: #f5f5f0;
+  --surface: #ffffff;
+  --border: #e4e4dd;
+  --chip: #eeeee8;
+
+  /* text */
+  --text: #1f2a24;
+  --muted: #6b726d;
+
+  /* status */
+  --ok-bg: #e4ecf9;   --ok-fg: #1e3a6e;
+  --warn-bg: #f8efdc; --warn-fg: #8a6420;
+  --bad-bg: #f9e5e2;  --bad-fg: #a8423a;
+
+  /* shape and rhythm */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4: 16px; --space-5: 24px; --space-6: 32px;
+
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sidebar-w: 232px;
+  --aside-w: 300px;
+}
