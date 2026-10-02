@@ -1,0 +1,29 @@
+.auth { display: grid; grid-template-columns: 38% 1fr; min-height: 100vh; }
+
+.auth__panel { background: var(--tint-100); padding: 64px 48px; display: flex; flex-direction: column; }
+.auth__brand { font-size: 24px; font-weight: 600; margin-bottom: auto; }
+.auth__kicker { font-size: 13px; color: var(--navy-700); margin-bottom: 16px; }
+.auth__headline { font-size: 44px; line-height: 1.12; font-weight: 600; color: var(--navy-900);
+                  letter-spacing: -0.02em; margin: 0 0 20px; }
+.auth__sub { color: var(--muted); max-width: 34ch; margin-bottom: 40px; }
+.auth__points { list-style: none; padding: 0; margin: 0 auto 0 0; display: grid; gap: 14px; }
+.auth__points li { color: var(--navy-900); }
+
+.auth__main { padding: 32px 64px 64px; display: flex; flex-direction: column; }
+.auth__top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 72px; }
+.auth__form { max-width: 630px; }
+
+.role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+.role-card { text-align: left; font: inherit; cursor: pointer; background: #fff; padding: 18px;
+             border: 1px solid var(--border); border-radius: var(--radius); }
+.role-card[aria-pressed='true'] { background: var(--tint-100); border-color: var(--navy-600); }
+.role-card strong { display: block; margin-bottom: 2px; }
+
+@media (max-width: 900px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth__panel { padding: 32px 20px; }
+  .auth__headline { font-size: 30px; }
+  .auth__main { padding: 20px; }
+  .auth__top { margin-bottom: 28px; }
+  .role-grid { grid-template-columns: 1fr; }
+}
