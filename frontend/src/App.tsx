@@ -1,9 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
 import RequireAuth from './auth/RequireAuth'
+import OrgShell from './layouts/OrgShell'
 import VolunteerShell from './layouts/VolunteerShell'
 import SignIn from './pages/auth/SignIn'
 import SignUp from './pages/auth/SignUp'
+import Attendance from './pages/org/Attendance'
+import Opportunities from './pages/org/Opportunities'
+import Overview from './pages/org/Overview'
+import ReviewWorkspace from './pages/org/ReviewWorkspace'
 import CheckIn from './pages/volunteer/CheckIn'
 import CreateOpportunity from './pages/volunteer/CreateOpportunity'
 import Discover from './pages/volunteer/Discover'
@@ -33,6 +38,16 @@ export default function App() {
             <Route path="/initiatives/new" element={<CreateOpportunity />} />
           </Route>
           <Route path="/check-in" element={<CheckIn />} />
+        </Route>
+
+        <Route element={<RequireAuth role="organisation" />}>
+          <Route element={<OrgShell />}>
+            <Route path="/org" element={<Overview />} />
+            <Route path="/org/opportunities" element={<Opportunities />} />
+            <Route path="/org/opportunities/new" element={<CreateOpportunity />} />
+            <Route path="/org/review" element={<ReviewWorkspace />} />
+            <Route path="/org/attendance" element={<Attendance />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/discover" replace />} />
