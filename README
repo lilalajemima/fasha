@@ -1,0 +1,211 @@
+# Fasha
+
+Fasha is a web platform for finding volunteering opportunities in Rwanda, proposing your own
+community initiatives, and building a record of service that someone else can verify.
+
+I built it for my capstone project, which looks at why volunteering in Rwanda is harder to
+access, join and report than it needs to be. The research found three problems, and the
+platform is organised around them.
+
+The first is discovery. Opportunities are shared across social media pages, word of mouth and
+individual NGO websites, so there is no single place to look. If you are not already inside
+someone's network, you tend not to hear about anything. Fasha puts everything in one feed and
+ranks it by how well it fits the skills and interests you have listed.
+
+The second is who gets to start things. Umuganda and most organised volunteering are planned
+from the top down, which leaves people with few structured ways to act on needs they have
+noticed themselves. On Fasha any volunteer can propose an initiative. It is reviewed before it
+goes public, but the idea can come from anyone.
+
+The third is proof. Attendance is usually recorded on paper registers that are slow to
+consolidate and easy to lose, so volunteers end up with no reliable record of what they have
+done. Fasha records check in and check out against a code that changes every 30 seconds, lets
+organisers review virtual work, and credits approved hours to a portfolio page the volunteer
+can share with an employer or a scholarship panel.
+
+**Repository:** https://github.com/lilalajemima/fasha
+**Author:** Lilala Runiga Jemima, BSc Software Engineering, African Leadership University
+**Supervisor:** Pelin Mutanguha
+
+At this stage the frontend is complete and runs on a local mock data layer, and the database
+schema is written. The API endpoints are the next sprint.
+
+---
+
+## Tools used
+
+| Layer | Choice | Reason |
+| --- | --- | --- |
+| Frontend | React 19, TypeScript, Vite | Volunteers test this on their own phones, so it had to be a browser app with no install step |
+| Routing | React Router 7 | Nested layout routes let both workspaces share one shell |
+| Styling | Plain CSS with custom properties | No framework weight, and one file maps the Figma design to the code |
+| Backend | Node.js, Express, TypeScript | A single modular monolith, as set out in the proposal |
+| ORM | Prisma | Typed queries, and migrations I can version and replay |
+| Database | PostgreSQL via Supabase | Native array columns, which is how matching compares skill and interest tags |
+| Auth | bcrypt, JSON Web Tokens | Hashed passwords and stateless protected routes |
+| Verification | otplib, qrcode | The event code is a time based one time password, so a photographed code expires |
+| Fonts | Fugaz One, Work Sans | Display and body faces from the design system |
+
+---
+
+## Project structure
+
+```
+fasha/
+├── frontend/
+│   ├── public/                 favicon and icon sprite
+│   ├── index.html
+│   ├── vite.config.ts
+│   └── src/
+│       ├── styles/
+│       │   ├── tokens.css      every colour, space and radius, taken from Figma
+│       │   └── global.css      layout, buttons, forms, cards, tables, breakpoints
+│       ├── components/
+│       │   ├── ui.tsx          Button, Card, Tag, StatusBadge, StatTile, Field, Tabs, FileDrop
+│       │   └── ImigongoBand.tsx
+│       ├── auth/
+│       │   ├── AuthContext.tsx session state, on localStorage until JWT lands
+│       │   └── RequireAuth.tsx the role guard that keeps the two account types apart
+│       ├── layouts/
+│       │   ├── Shell.tsx       sidebar on desktop, tab bar on phone
+│       │   ├── VolunteerShell.tsx
+│       │   └── OrgShell.tsx
+│       ├── mocks/              types.ts, data.ts, api.ts
+│       ├── pages/
+│       │   ├── auth/           SignUp, SignIn, AuthPanel
+│       │   ├── volunteer/      Discover, OpportunityDetail, MyActivity, Profile,
+│       │   │                   Portfolio, MyInitiatives, CreateOpportunity, CheckIn
+│       │   └── org/            Overview, Opportunities, ReviewWorkspace, Attendance,
+│       │                       OpportunityTable
+│       ├── App.tsx             all routes, grouped by role guard
+│       └── main.tsx
+└── backend/
+    ├── prisma/schema.prisma    the data model: 8 models and 7 enums
+    └── prisma.config.ts        Prisma configuration
+```
+
+Every screen reads its data through `frontend/src/mocks/api.ts`. That was deliberate. Each
+function in that file becomes a `fetch` call to the API later, and no screen component has to
+change when that happens.
+
+---
+
+## Setting up the environment and the project
+
+### What you need first
+
+- Node.js 20 and npm. Check with `node -v`.
+- Git.
+- A PostgreSQL database. A free Supabase project is quickest, but a local Postgres 16 install
+  works just as well.
+
+### Clone it
+
+```bash
+git clone https://github.com/lilalajemima/fasha.git
+cd fasha
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite prints a local address, usually `http://localhost:5173`.
+
+The backend is not connected yet, so any email and password will sign you in. Pick Volunteer or
+Organisation on the sign in card and you will land in that workspace. To switch, go back to
+`/signin` and choose the other one, or run `localStorage.clear()` in the browser console and
+reload.
+
+The other commands:
+
+```bash
+npm run build     # type checks and builds into dist/
+npm run lint      # ESLint
+npm run preview   # serves the built bundle
+```
+
+Run `npm run build` before you commit. The dev server is forgiving about things like a missing
+export, and the build is not, which is useful.
+
+### Backend
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env`:
+
+```
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/postgres"
+JWT_SECRET="a long random string"
+TOTP_WINDOW_SECONDS=30
+PORT=4000
+CLIENT_ORIGIN="http://localhost:5173"
+```
+
+There are two database URLs because Prisma needs a direct connection to run migrations, while
+the running server uses the pooled one. `prisma.config.ts` reads `DIRECT_URL` for that reason.
+
+Then set up the database:
+
+```bash
+npx prisma generate
+npx prisma migrate dev --name init
+npx prisma studio      # optional, opens a browser view of the tables
+```
+
+`.env` is in `.gitignore` and should stay out of the repository.
+
+---
+
+## Deployment plan
+
+### Where it will run
+
+| Part | Platform | Note |
+| --- | --- | --- |
+| Web client | Vercel | Static build from `frontend/`, served from a CDN |
+| API | Render | Node service built from `backend/` |
+| Database | Supabase | Managed PostgreSQL, pooled for the app and direct for migrations |
+| File storage | Supabase Storage | Resumes, event photos, deliverables |
+
+I went with managed services rather than hosting anything myself. The pilot runs for a month
+with 25 to 40 users, which the free tiers cover comfortably, and neither I nor the people
+testing it should depend on a machine that has to stay switched on.
+
+### Environments
+
+| Environment | For | Database |
+| --- | --- | --- |
+| Local | Development | Local Postgres, or a separate Supabase project |
+| Production | The Kimironko pilot | Supabase production project |
+
+### Releasing
+
+1. Merge the feature branch into `main` after review.
+2. Run `npx prisma migrate deploy` against the production database. Migrations live in
+   `backend/prisma/migrations/` and are applied in order, never by hand.
+3. Render rebuilds and restarts the API. Vercel rebuilds and publishes the client.
+4. Check it: `GET /health` returns 200, then sign in, load the feed and do one check in.
+5. If something is wrong, roll back to the previous deployment on each platform. Migrations are
+   written to be additive, so rolling back does not lose data.
+
+### Configuration
+
+No secret is committed. Each platform holds its own environment variables: `DATABASE_URL`,
+`DIRECT_URL`, `JWT_SECRET`, `TOTP_WINDOW_SECONDS` and `CLIENT_ORIGIN` on Render, and
+`VITE_API_URL` on Vercel.
+
+### Thinking about the pilot
+
+People will use this on their own phones, on mobile data, outdoors. That shaped a few
+decisions: it is a browser app so there is nothing to install, the production bundle is kept
+small, the colours are high contrast rather than pale, and the QR check in has a manual
+fallback for the moments when the network drops.
