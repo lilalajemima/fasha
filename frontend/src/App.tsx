@@ -32,11 +32,11 @@ export default function App() {
             <Route path="/discover" element={<Discover />} />
             <Route path="/opportunities/:id" element={<OpportunityDetail />} />
             <Route path="/activity" element={<MyActivity />} />
-            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/initiatives" element={<MyInitiatives />} />
             <Route path="/initiatives/new" element={<CreateOpportunity />} />
           </Route>
+          <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/check-in" element={<CheckIn />} />
         </Route>
 

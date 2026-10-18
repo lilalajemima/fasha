@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 
-type Tone = 'ok' | 'warn' | 'bad' | 'neutral'
+export type Tone = 'ok' | 'warn' | 'bad' | 'info' | 'neutral' | 'match'
 
 export function Button({ variant = 'default', block, className = '', ...rest }:
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'primary'; block?: boolean }) {
@@ -16,6 +16,15 @@ export function Tag({ children }: { children: ReactNode }) {
   return <span className="tag">{children}</span>
 }
 
+export function RemovableTag({ children, onRemove }: { children: ReactNode; onRemove: () => void }) {
+  return (
+    <span className="tag">
+      {children}{' '}
+      <button className="chip-x" onClick={onRemove} aria-label={`Remove ${children}`}>×</button>
+    </span>
+  )
+}
+
 export function StatusBadge({ tone = 'neutral', children }: { tone?: Tone; children: ReactNode }) {
   return <span className={`badge badge--${tone}`}>{children}</span>
 }
@@ -23,9 +32,9 @@ export function StatusBadge({ tone = 'neutral', children }: { tone?: Tone; child
 export function StatTile({ label, value, note }: { label: string; value: ReactNode; note?: string }) {
   return (
     <div>
-      <div className="muted">{label}</div>
+      <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
-      {note && <div className="muted" style={{ color: 'var(--navy-700)' }}>{note}</div>}
+      {note && <div className="stat-note">{note}</div>}
     </div>
   )
 }
@@ -55,9 +64,10 @@ export function TextField({ label, id, hint, ...rest }:
 
 export function FileDrop({ label, hint }: { label: string; hint: string }) {
   return (
-    <label className="dropzone" style={{ display: 'block', cursor: 'pointer' }}>
+    <label className="dropzone">
       <input type="file" style={{ display: 'none' }} />
-      <div>{label}</div>
+      <div style={{ fontSize: 18, lineHeight: 1 }}>↑</div>
+      <div style={{ marginTop: 6 }}>{label}</div>
       <div className="muted" style={{ marginTop: 4 }}>{hint}</div>
     </label>
   )

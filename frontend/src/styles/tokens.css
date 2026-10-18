@@ -1,35 +1,32 @@
 /* Fasha design system: Rwandan Volcanic Red & Imigongo.
-   Values come from the design system document. Components never hard-code a
-   colour, so this file is the only place a palette change has to happen. */
+   Single source of truth. No component hard-codes a colour. */
 :root {
   /* Brand */
-  --primary:           #B91C1C;  /* primary buttons, active tabs, key links */
-  --primary-hover:     #991B1B;  /* hover and pressed */
-  --primary-container: #FEF2F2;  /* tinted highlight cards, active filters */
-  --primary-deep:      #7F1D1D;  /* dark banners, high-contrast borders */
+  --primary:           #B91C1C;
+  --primary-hover:     #991B1B;
+  --primary-container: #FEF2F2;
+  --primary-deep:      #7F1D1D;
 
   /* Monochromes and Imigongo geometry */
-  --imigongo-black:       #18181B;
-  --imigongo-white:       #FFFFFF;
-  --charcoal-muted:       #3F3F46;
-  --neutral-border:       #E4E4E7;
-  --neutral-border-subtle:#F4F4F5;
+  --imigongo-black:        #18181B;
+  --imigongo-white:        #FFFFFF;
+  --charcoal-muted:        #3F3F46;
+  --neutral-border:        #E4E4E7;
+  --neutral-border-subtle: #F4F4F5;
 
   /* Surfaces */
-  --surface-base:  #FDFBFB;  /* app background, warm porcelain */
+  --surface-base:  #FDFBFB;
   --surface-card:  #FFFFFF;
-  --surface-muted: #F8F8F8;  /* nested containers, inputs, tag pills */
-  --surface-dark:  #18181B;  /* hero banners, camera panel */
+  --surface-muted: #F8F8F8;
+  --surface-dark:  #18181B;
 
-  /* Status.
-     The design system gives the saturated hue for each state. Badge text uses a
-     one-step darker value of the same hue so small 12px labels clear WCAG AA
-     (4.5:1) on the pale tint; the saturated hue is kept for solid fills. */
-  --badge-match:      #DC2626;
-  --status-accepted:  #059669;  --status-accepted-text: #047857;  --status-accepted-bg: #E8F6F1;
-  --status-pending:   #D97706;  --status-pending-text:  #B45309;  --status-pending-bg:  #FEF5E7;
-  --status-info:      #2563EB;  --status-info-text:     #1D4ED8;  --status-info-bg:     #EFF4FE;
-  --status-rejected:  #B91C1C;  --status-rejected-text: #991B1B;  --status-rejected-bg: #FEF2F2;
+  /* Status. Outline badges use the saturated hue for border and text,
+     on a white or barely tinted fill, which keeps small labels legible. */
+  --ok:      #059669;  --ok-bg:   #FFFFFF;
+  --warn:    #B45309;  --warn-bg: #FFFFFF;
+  --info:    #2563EB;  --info-bg: #FFFFFF;
+  --bad:     #B91C1C;  --bad-bg:  #FEF2F2;
+  --match:   #DC2626;
 
   /* Type */
   --font-display: 'Fugaz One', Impact, system-ui, sans-serif;
@@ -37,10 +34,10 @@
 
   /* Shape */
   --radius-chip: 9999px;
-  --radius-btn:  12px;
-  --radius-media:10px;
-  --radius:      16px;   /* cards */
-  --radius-sm:   10px;
+  --radius-btn:  8px;
+  --radius-nav:  10px;
+  --radius:      12px;
+  --radius-sm:   8px;
 
   /* Rhythm */
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
@@ -49,26 +46,19 @@
   --sidebar-w: 232px;
   --aside-w: 300px;
 
-  /* Shadows */
   --shadow-card: 0 1px 3px rgba(0, 0, 0, .05);
-  --shadow-btn:  0 2px 8px rgba(185, 28, 28, .2);
 
-  /* --- Compatibility aliases -------------------------------------------
-     A few components reference these names in inline styles. Keeping them
-     mapped here means no component file has to change when the palette does. */
+  /* Aliases kept so inline styles in components stay valid */
   --navy-900: var(--primary);
-  --navy-700: var(--primary-hover);
+  --navy-700: var(--primary);
   --navy-600: var(--primary);
   --tint-100: var(--primary-container);
-  --tint-200: #FBD9D9;
   --bg:       var(--surface-base);
   --surface:  var(--surface-card);
   --border:   var(--neutral-border);
   --chip:     var(--surface-muted);
   --text:     var(--imigongo-black);
   --muted:    var(--charcoal-muted);
-  --ok-bg:   var(--status-accepted-bg); --ok-fg:   var(--status-accepted-text);
-  --warn-bg: var(--status-pending-bg);  --warn-fg: var(--status-pending-text);
-  --bad-bg:  var(--status-rejected-bg); --bad-fg:  var(--status-rejected-text);
-  --font: var(--font-body);
+  --bad-fg:   var(--bad);
+  --font:     var(--font-body);
 }

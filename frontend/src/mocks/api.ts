@@ -4,11 +4,11 @@ import {
 import type { Opportunity } from './types'
 
 /**
- * One place for every read the screens make. Each function is swapped for a
- * fetch() call to the Express API in the integration sprint; the screens stay the same.
+ * One place for every read the screens make. Each function becomes a fetch() call
+ * to the Express API in the integration sprint; the screens stay the same.
  */
 
-/** Weighted Jaccard compatibility: skills count 0.65, interests 0.35 */
+/** Weighted Jaccard compatibility: skills 0.65, interests 0.35 (proposal, section 3.2.2). */
 export function matchScore(userSkills: string[], userInterests: string[], tags: string[]) {
   const jaccard = (a: string[], b: string[]) => {
     const left = new Set(a.map(v => v.toLowerCase()))
@@ -19,16 +19,14 @@ export function matchScore(userSkills: string[], userInterests: string[], tags: 
     left.forEach(value => { if (right.has(value)) shared += 1 })
     return shared / union.size
   }
-  const score = 0.65 * jaccard(userSkills, tags) + 0.35 * jaccard(userInterests, tags)
-  return Math.round(score * 100)
+  return Math.round((0.65 * jaccard(userSkills, tags) + 0.35 * jaccard(userInterests, tags)) * 100)
 }
 
-export const isOpen = (o: Opportunity) =>
-  o.status === 'PUBLISHED' && o.filled < o.capacity
+export const isOpen = (o: Opportunity) => o.status === 'PUBLISHED' && o.filled < o.capacity
 
 export async function getFeed() {
-  const open = opportunities.filter(o => o.status === 'PUBLISHED')
-  return open
+  return opportunities
+    .filter(o => o.status === 'PUBLISHED')
     .map(o => ({ ...o, match: matchScore(myProfile.skills, myProfile.interests, o.tags) }))
     .sort((a, b) => Number(isOpen(b)) - Number(isOpen(a)) || b.match - a.match)
 }
@@ -39,11 +37,8 @@ export async function getOpportunity(id: string) {
   return { ...found, match: matchScore(myProfile.skills, myProfile.interests, found.tags) }
 }
 
-export async function getMyInitiatives() {
-  return opportunities.filter(o => o.citizenLed)
-}
-
-export async function getOrgOpportunities() { return opportunities }
+export async function getMyInitiatives() { return opportunities.filter(o => o.citizenLed) }
+export async function getOrgOpportunities() { return opportunities.filter(o => o.id !== '4') }
 export async function getProfile() { return myProfile }
 export async function getApplications() { return myApplications }
 export async function getVirtualTask() { return myTask }

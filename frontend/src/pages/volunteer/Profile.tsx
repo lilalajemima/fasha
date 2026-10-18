@@ -1,29 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, Field, TextField } from '../../components/ui'
+import PageHeader from '../../components/PageHeader'
+import { Button, Card, Field, RemovableTag, TextField } from '../../components/ui'
 import { getProfile } from '../../mocks/api'
 import type { Profile as ProfileType } from '../../mocks/types'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-function TagEditor({ label, values, onRemove, onAdd, placeholder }: {
+function TagEditor({ label, values, placeholder, onAdd, onRemove }: {
   label: string; values: string[]; placeholder: string
-  onRemove: (value: string) => void; onAdd: (value: string) => void
+  onAdd: (value: string) => void; onRemove: (value: string) => void
 }) {
   const [draft, setDraft] = useState('')
   return (
     <div className="field">
       <div className="label">{label}</div>
-      <div className="cluster" style={{ marginBottom: 10 }}>
+      <div className="cluster" style={{ marginBottom: 12 }}>
         {values.map(value => (
-          <span key={value} className="tag">
-            {value}{' '}
-            <button onClick={() => onRemove(value)} aria-label={`Remove ${value}`}
-                    style={{ border: 0, background: 'none', cursor: 'pointer', color: 'inherit' }}>x</button>
-          </span>
+          <RemovableTag key={value} onRemove={() => onRemove(value)}>{value}</RemovableTag>
         ))}
       </div>
-      <input className="input" placeholder={placeholder} value={draft}
+      <input className="input" placeholder={placeholder} value={draft} aria-label={placeholder}
              onChange={e => setDraft(e.target.value)}
              onKeyDown={e => {
                if (e.key === 'Enter' && draft.trim()) {
@@ -46,19 +43,20 @@ export default function Profile() {
 
   return (
     <>
-      <div className="row">
-        <div>
-          <p className="eyebrow">Your account</p>
-          <h1>A profile that opens doors</h1>
-          <p className="lede">Tell your community what you enjoy and where you can help.</p>
-        </div>
-        <Button variant="primary">Save changes</Button>
-      </div>
+      <PageHeader title="Your Profile"
+                  action={<Button variant="primary">Save changes</Button>} />
 
       <div className="page-grid">
         <div className="stack">
           <Card>
             <h2>About you</h2>
+            <div className="cluster" style={{ marginBottom: 18 }}>
+              <span className="avatar" style={{ width: 48, height: 48, fontSize: 15 }}>AM</span>
+              <div>
+                <Button>Change photo</Button>
+                <div className="muted" style={{ marginTop: 6 }}>JPG or PNG · up to 5 MB</div>
+              </div>
+            </div>
             <div className="two-col">
               <Field id="name" label="Full name" value={profile.name}
                      onChange={e => update({ name: e.target.value })} />
@@ -73,26 +71,21 @@ export default function Profile() {
             <h2>Skills &amp; interests</h2>
             <p className="muted">These tags help us recommend relevant opportunities.</p>
             <TagEditor label="Skills" values={profile.skills} placeholder="Search skills..."
-                       onAdd={value => update({ skills: [...profile.skills, value] })}
-                       onRemove={value => update({ skills: profile.skills.filter(s => s !== value) })} />
+                       onAdd={v => update({ skills: [...profile.skills, v] })}
+                       onRemove={v => update({ skills: profile.skills.filter(s => s !== v) })} />
             <TagEditor label="Areas of interest" values={profile.interests} placeholder="Search interests..."
-                       onAdd={value => update({ interests: [...profile.interests, value] })}
-                       onRemove={value => update({ interests: profile.interests.filter(i => i !== value) })} />
+                       onAdd={v => update({ interests: [...profile.interests, v] })}
+                       onRemove={v => update({ interests: profile.interests.filter(i => i !== v) })} />
           </Card>
 
           <Card>
             <h2>General availability</h2>
             <p className="muted">Choose a usual schedule. Each opportunity has its own dates.</p>
-            <div className="cluster" style={{ marginBottom: 16 }}>
+            <div className="cluster" style={{ marginBottom: 18 }}>
               {DAYS.map(day => (
-                <button key={day} type="button" className="tag" onClick={() => toggleDay(day)}
-                        aria-pressed={profile.days.includes(day)}
-                        style={{
-                          cursor: 'pointer', border: 0,
-                          background: profile.days.includes(day) ? 'var(--tint-100)' : 'var(--chip)',
-                          color: profile.days.includes(day) ? 'var(--navy-700)' : 'var(--muted)',
-                        }}>
-                  {day}
+                <button key={day} type="button" className="daychip"
+                        aria-pressed={profile.days.includes(day)} onClick={() => toggleDay(day)}>
+                  {day}{profile.days.includes(day) ? ' ✓' : ''}
                 </button>
               ))}
             </div>
@@ -106,18 +99,8 @@ export default function Profile() {
         </div>
 
         <aside className="stack">
-          <Card>
-            <h2>Looking good</h2>
-            <div className="stat-value">{profile.completeness}%</div>
-            <p className="muted">Your profile is almost complete.</p>
-            <div style={{ height: 6, background: 'var(--chip)', borderRadius: 3 }}>
-              <div style={{ width: `${profile.completeness}%`, height: 6,
-                            background: 'var(--navy-900)', borderRadius: 3 }} />
-            </div>
-            <p className="muted" style={{ marginTop: 10 }}>Add a photo to make your profile feel more personal.</p>
-          </Card>
           <Card variant="tint">
-            <h2>You control what is shared</h2>
+            <h2 style={{ color: 'var(--primary)' }}>You control what&rsquo;s shared</h2>
             <p className="muted" style={{ margin: 0 }}>
               Applications share your profile, motivation and attached resume with the organiser.
               Your public portfolio only shows your name, bio and verified contributions.

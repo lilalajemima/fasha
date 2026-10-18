@@ -16,17 +16,23 @@ export default function OpportunityTable({ items }: { items: Opportunity[] }) {
           <tr key={item.id}>
             <td>
               <strong>{item.title}</strong>
-              <div className="muted">
-                {item.citizenLed ? 'Citizen initiative' : item.mode} - {item.date}
+              <div className="muted" style={{ marginTop: 2 }}>
+                {item.citizenLed ? 'Citizen initiative' : item.mode} · {item.date.replace('Sat, ', '')}
               </div>
-              {item.status === 'PUBLISHED'
-                ? <Link to="/org/review">Review submissions</Link>
-                : <span className="muted">Not public</span>}
+              <div style={{ marginTop: 4 }}>
+                {item.status === 'PUBLISHED'
+                  ? <Link to="/org/review">{item.mode === 'Virtual' ? '3 deliverables' : '5 applications'}</Link>
+                  : <span className="muted">Not public</span>}
+              </div>
             </td>
             <td>{item.filled} / {item.capacity}</td>
             <td>
               <StatusBadge tone={tone[item.status]}>{label[item.status]}</StatusBadge>
-              <div><Link to="/org/review">Manage</Link></div>
+              <div style={{ marginTop: 6 }}>
+                {item.status === 'REJECTED'
+                  ? <Link to="/org/review">View feedback ↗</Link>
+                  : <Link to="/org/review">Manage ↗</Link>}
+              </div>
             </td>
           </tr>
         ))}

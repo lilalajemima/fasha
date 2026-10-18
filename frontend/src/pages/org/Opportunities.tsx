@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import PageHeader from '../../components/PageHeader'
 import { Button, Card, Tabs } from '../../components/ui'
 import { getOrgOpportunities } from '../../mocks/api'
 import type { Opportunity, OpportunityStatus } from '../../mocks/types'
@@ -22,15 +23,16 @@ export default function Opportunities() {
 
   return (
     <>
-      <div className="row">
-        <div>
-          <p className="eyebrow">Organisation workspace</p>
-          <h1>Opportunities</h1>
-          <p className="lede">Everything your team has created, with its capacity and status.</p>
-        </div>
-        <Link to="/org/opportunities/new"><Button variant="primary">+ Create opportunity</Button></Link>
-      </div>
-
+      <PageHeader
+        eyebrow="Organisation workspace"
+        title="Opportunities"
+        meta="Everything your team has created, with its capacity and status."
+        action={
+          <Link to="/org/opportunities/new">
+            <Button variant="primary">+ Create opportunity</Button>
+          </Link>
+        }
+      />
       <Tabs active={filter} onChange={setFilter} items={FILTERS.map(f => ({ id: f.id, label: f.label }))} />
       <Card><OpportunityTable items={visible} /></Card>
     </>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Icon from '../../components/Icon'
+import PageHeader from '../../components/PageHeader'
 import { Button, Card, StatTile, StatusBadge, Tabs } from '../../components/ui'
 import { getOrgOpportunities } from '../../mocks/api'
 import type { Opportunity } from '../../mocks/types'
@@ -12,14 +14,14 @@ export default function Overview() {
 
   return (
     <>
-      <div className="row">
-        <div>
-          <p className="eyebrow">Green Neighbourhood</p>
-          <h1>Good things are taking shape.</h1>
-          <p className="lede">Manage your initiatives and keep your volunteer teams moving.</p>
-        </div>
-        <Link to="/org/opportunities/new"><Button variant="primary">+ Create opportunity</Button></Link>
-      </div>
+      <PageHeader
+        title="What to Manage Next?"
+        action={
+          <Link to="/org/opportunities/new">
+            <Button variant="primary">+ Create opportunity</Button>
+          </Link>
+        }
+      />
 
       <Card>
         <div className="stat-row">
@@ -30,11 +32,11 @@ export default function Overview() {
         </div>
       </Card>
 
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 26 }}>
         <Tabs active={tab} onChange={setTab} items={[
-          { id: 'opportunities', label: `Opportunities - ${items.length}` },
-          { id: 'applications', label: 'Applications - 12' },
-          { id: 'deliverables', label: 'Deliverables - 3' },
+          { id: 'opportunities', label: `Opportunities · ${items.length}` },
+          { id: 'applications', label: 'Applications · 12' },
+          { id: 'deliverables', label: 'Deliverables · 3' },
         ]} />
       </div>
 
@@ -45,10 +47,10 @@ export default function Overview() {
             <OpportunityTable items={items} />
           </Card>
           <Card variant="note">
-            <h3>Citizen initiatives are reviewed before publication</h3>
+            <h3>Citizen initiatives need reviewer approval</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Awaiting approval and not approved initiatives stay out of Discover.
-              Only reviewer-approved, published opportunities enter the public feed.
+              Awaiting approval and not approved initiatives remain unpublished. Published
+              opportunities are visible in Discover.
             </p>
           </Card>
         </div>
@@ -57,24 +59,28 @@ export default function Overview() {
           <Card>
             <h2>Collaborator updates</h2>
             <h3>Maya accepted your invitation</h3>
-            <p className="muted">Restore Kimironko wetland path - 20 min ago</p>
+            <p className="muted">Restore Kimironko wetland path · 20 min ago</p>
             <hr />
             <h3>Invitation to co-organise</h3>
-            <p className="muted">Kimironko seed swap - invited by Leo Gatare</p>
+            <p className="muted">Kimironko seed swap · invited by Leo Gatare</p>
             <div className="cluster">
               <Button variant="primary">Accept</Button>
               <Button>Decline</Button>
             </div>
-            <p className="muted" style={{ marginTop: 12 }}>
+            <p className="muted" style={{ marginTop: 14, marginBottom: 0 }}>
               Accepted co-organisers can edit details and review submissions.
             </p>
           </Card>
           <Card>
             <h2>Today&rsquo;s focus</h2>
             <StatusBadge tone="neutral">Physical event</StatusBadge>
-            <h3 style={{ marginTop: 10 }}>Kimironko planting morning</h3>
-            <p className="muted">10 Oct - 09:00-12:00<br />18 accepted volunteers</p>
-            <Link to="/org/attendance"><Button block>Open attendance</Button></Link>
+            <h3 style={{ marginTop: 12 }}>Kimironko planting morning</h3>
+            <p className="muted">10 Oct · 09:00-12:00<br />18 accepted volunteers</p>
+            <Link to="/org/attendance">
+              <Button block><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="attendance" /> Open attendance
+              </span></Button>
+            </Link>
           </Card>
         </aside>
       </div>

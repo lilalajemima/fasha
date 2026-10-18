@@ -7,13 +7,19 @@ type AuthValue = {
   user: User | null
   signUp: (user: User) => void
   signIn: (email: string, role: Role) => void
+  switchRole: (role: Role) => void
   signOut: () => void
 }
 
 const STORAGE_KEY = 'fasha.user'
 const AuthContext = createContext<AuthValue | null>(null)
 
-/** Front-end only for now and will be replace by the API and JWT later*/
+const DEMO_NAME: Record<Role, string> = {
+  volunteer: 'Amara Mensah',
+  organisation: 'Green Neighbourhood',
+}
+
+/** Front end only. Replaced by the API and JWT in the integration sprint. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
@@ -22,21 +28,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (saved) setUser(JSON.parse(saved) as User)
   }, [])
 
+  function persist(next: User | null) {
+    setUser(next)
+    if (next) localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    else localStorage.removeItem(STORAGE_KEY)
+  }
+
   const value = useMemo<AuthValue>(() => ({
     user,
-    signUp(next) {
-      setUser(next)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    },
-    signIn(email, role) {
-      const next: User = { name: email.split('@')[0], email, role }
-      setUser(next)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    },
-    signOut() {
-      setUser(null)
-      localStorage.removeItem(STORAGE_KEY)
-    },
+    signUp: next => persist(next),
+    signIn: (email, role) => persist({ name: DEMO_NAME[role], email, role }),
+    /** Both workspaces are reachable from one sidebar while the backend is mocked. */
+    switchRole: role => persist({
+      name: DEMO_NAME[role],
+      email: user?.email ?? 'demo@fasha.org',
+      role,
+    }),
+    signOut: () => persist(null),
   }), [user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
