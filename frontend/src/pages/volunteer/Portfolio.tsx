@@ -26,7 +26,6 @@ export default function Portfolio() {
       <header className="topbar">
         <Logo size={24} />
         <div className="topbar__right">
-          <span className="muted">Public volunteer portfolio</span>
           <Button>Explore Fasha</Button>
         </div>
       </header>

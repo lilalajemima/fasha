@@ -17,7 +17,7 @@ export default function Overview() {
       <PageHeader
         title="What to Manage Next?"
         action={
-          <Link to="/org/opportunities/new">
+          <Link to="/manage/opportunities/new">
             <Button variant="primary">+ Create opportunity</Button>
           </Link>
         }
@@ -76,7 +76,7 @@ export default function Overview() {
             <StatusBadge tone="neutral">Physical event</StatusBadge>
             <h3 style={{ marginTop: 12 }}>Kimironko planting morning</h3>
             <p className="muted">10 Oct · 09:00-12:00<br />18 accepted volunteers</p>
-            <Link to="/org/attendance">
+            <Link to="/manage/attendance">
               <Button block><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <Icon name="attendance" /> Open attendance
               </span></Button>

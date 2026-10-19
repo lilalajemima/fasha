@@ -21,7 +21,7 @@ export default function OpportunityTable({ items }: { items: Opportunity[] }) {
               </div>
               <div style={{ marginTop: 4 }}>
                 {item.status === 'PUBLISHED'
-                  ? <Link to="/org/review">{item.mode === 'Virtual' ? '3 deliverables' : '5 applications'}</Link>
+                  ? <Link to="/manage/review">{item.mode === 'Virtual' ? '3 deliverables' : '5 applications'}</Link>
                   : <span className="muted">Not public</span>}
               </div>
             </td>
@@ -30,8 +30,8 @@ export default function OpportunityTable({ items }: { items: Opportunity[] }) {
               <StatusBadge tone={tone[item.status]}>{label[item.status]}</StatusBadge>
               <div style={{ marginTop: 6 }}>
                 {item.status === 'REJECTED'
-                  ? <Link to="/org/review">View feedback ↗</Link>
-                  : <Link to="/org/review">Manage ↗</Link>}
+                  ? <Link to="/manage/review">View feedback ↗</Link>
+                  : <Link to="/manage/review">Manage ↗</Link>}
               </div>
             </td>
           </tr>

@@ -1,14 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
-import RequireAuth from './auth/RequireAuth'
-import OrgShell from './layouts/OrgShell'
-import VolunteerShell from './layouts/VolunteerShell'
+import RequireAuth, { RequireVolunteer } from './auth/RequireAuth'
+import Shell from './layouts/Shell'
 import SignIn from './pages/auth/SignIn'
 import SignUp from './pages/auth/SignUp'
-import Attendance from './pages/org/Attendance'
-import Opportunities from './pages/org/Opportunities'
-import Overview from './pages/org/Overview'
-import ReviewWorkspace from './pages/org/ReviewWorkspace'
+import Attendance from './pages/manage/Attendance'
+import Opportunities from './pages/manage/Opportunities'
+import Overview from './pages/manage/Overview'
+import ReviewWorkspace from './pages/manage/ReviewWorkspace'
 import CheckIn from './pages/volunteer/CheckIn'
 import CreateOpportunity from './pages/volunteer/CreateOpportunity'
 import Discover from './pages/volunteer/Discover'
@@ -27,8 +26,9 @@ export default function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/p/:slug" element={<Portfolio />} />
 
-        <Route element={<RequireAuth role="volunteer" />}>
-          <Route element={<VolunteerShell />}>
+        {/* Taking part: volunteer accounts only */}
+        <Route element={<RequireVolunteer />}>
+          <Route element={<Shell />}>
             <Route path="/discover" element={<Discover />} />
             <Route path="/opportunities/:id" element={<OpportunityDetail />} />
             <Route path="/activity" element={<MyActivity />} />
@@ -40,13 +40,14 @@ export default function App() {
           <Route path="/check-in" element={<CheckIn />} />
         </Route>
 
-        <Route element={<RequireAuth role="organisation" />}>
-          <Route element={<OrgShell />}>
-            <Route path="/org" element={<Overview />} />
-            <Route path="/org/opportunities" element={<Opportunities />} />
-            <Route path="/org/opportunities/new" element={<CreateOpportunity />} />
-            <Route path="/org/review" element={<ReviewWorkspace />} />
-            <Route path="/org/attendance" element={<Attendance />} />
+        {/* Managing opportunities: both account types */}
+        <Route element={<RequireAuth />}>
+          <Route element={<Shell />}>
+            <Route path="/manage" element={<Overview />} />
+            <Route path="/manage/opportunities" element={<Opportunities />} />
+            <Route path="/manage/opportunities/new" element={<CreateOpportunity />} />
+            <Route path="/manage/review" element={<ReviewWorkspace />} />
+            <Route path="/manage/attendance" element={<Attendance />} />
           </Route>
         </Route>
 

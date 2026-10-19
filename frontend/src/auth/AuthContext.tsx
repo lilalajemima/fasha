@@ -7,7 +7,6 @@ type AuthValue = {
   user: User | null
   signUp: (user: User) => void
   signIn: (email: string, role: Role) => void
-  switchRole: (role: Role) => void
   signOut: () => void
 }
 
@@ -38,12 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     signUp: next => persist(next),
     signIn: (email, role) => persist({ name: DEMO_NAME[role], email, role }),
-    /** Both workspaces are reachable from one sidebar while the backend is mocked. */
-    switchRole: role => persist({
-      name: DEMO_NAME[role],
-      email: user?.email ?? 'demo@fasha.org',
-      role,
-    }),
     signOut: () => persist(null),
   }), [user])
 

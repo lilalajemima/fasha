@@ -24,11 +24,11 @@ export default function Opportunities() {
   return (
     <>
       <PageHeader
-        eyebrow="Organisation workspace"
+        eyebrow="Opportunity management"
         title="Opportunities"
         meta="Everything your team has created, with its capacity and status."
         action={
-          <Link to="/org/opportunities/new">
+          <Link to="/manage/opportunities/new">
             <Button variant="primary">+ Create opportunity</Button>
           </Link>
         }

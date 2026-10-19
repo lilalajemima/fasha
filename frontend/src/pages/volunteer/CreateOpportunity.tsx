@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import PageHeader from '../../components/PageHeader'
 import { Button, Card, Field, RemovableTag, StatusBadge, Tag, TextField } from '../../components/ui'
@@ -8,8 +8,12 @@ import type { Mode } from '../../mocks/types'
 
 export default function CreateOpportunity() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
-  const isVolunteer = user?.role !== 'organisation'
+  // Reached from the management section, or from "Propose an initiative".
+  const fromManagement = location.pathname.startsWith('/manage')
+  // A volunteer's own initiative is a citizen initiative, so it is reviewed first.
+  const needsApproval = user?.role !== 'organisation'
   const [mode, setMode] = useState<Mode>('Physical')
   const [title, setTitle] = useState('Kimironko seed swap')
   const [description, setDescription] = useState(
@@ -20,13 +24,13 @@ export default function CreateOpportunity() {
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    navigate(isVolunteer ? '/initiatives' : '/org/opportunities')
+    navigate(fromManagement ? '/manage/opportunities' : '/initiatives')
   }
 
   return (
     <form onSubmit={submit}>
       <PageHeader
-        eyebrow={isVolunteer ? 'Volunteer creator workspace' : 'Organisation workspace'}
+        eyebrow={fromManagement ? 'Opportunity management' : 'Volunteer creator workspace'}
         title="Create an opportunity"
         meta="Bring your community idea to life. You can return to edit the details."
       />
@@ -143,12 +147,15 @@ export default function CreateOpportunity() {
           </Card>
 
           <div className="cluster">
-            <Button type="submit" variant="primary">Submit for approval</Button>
+            <Button type="submit" variant="primary">
+              {needsApproval ? 'Submit for approval' : 'Publish opportunity'}
+            </Button>
             <Button type="button">Save draft</Button>
           </div>
         </div>
 
         <aside className="stack">
+          {needsApproval && (
           <Card>
             <h2>Before it goes public</h2>
             <Tag>Citizen initiative</Tag>
@@ -176,6 +183,7 @@ export default function CreateOpportunity() {
               </div>
             </div>
           </Card>
+          )}
           <Card variant="tint">
             <h2 style={{ color: 'var(--primary)' }}>An idea is a good place to start</h2>
             <p className="muted" style={{ margin: 0 }}>

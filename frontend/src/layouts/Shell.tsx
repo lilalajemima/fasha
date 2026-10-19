@@ -1,12 +1,13 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import Icon, { type IconName } from '../components/Icon'
 import Logo from '../components/Logo'
-import { useAuth, type Role } from '../auth/AuthContext'
+import { useAuth } from '../auth/AuthContext'
 import './Shell.css'
 
 export type NavItem = { to: string; label: string; short: string; icon: IconName; end?: boolean }
 
-export const VOLUNTEER_NAV: NavItem[] = [
+// Taking part. Volunteer accounts only
+export const PARTICIPATE_NAV: NavItem[] = [
   { to: '/discover', label: 'Discover', short: 'Discover', icon: 'discover' },
   { to: '/activity', label: 'My activity', short: 'Activity', icon: 'activity' },
   { to: '/portfolio', label: 'My portfolio', short: 'Portfolio', icon: 'portfolio' },
@@ -14,48 +15,38 @@ export const VOLUNTEER_NAV: NavItem[] = [
   { to: '/initiatives', label: 'My initiatives', short: 'Initiatives', icon: 'initiatives', end: true },
 ]
 
-export const ORG_NAV: NavItem[] = [
-  { to: '/org', label: 'Overview', short: 'Overview', icon: 'overview', end: true },
-  { to: '/org/opportunities', label: 'Opportunities', short: 'Opportunities', icon: 'opportunities', end: true },
-  { to: '/org/review', label: 'Review workspace', short: 'Review', icon: 'review' },
-  { to: '/org/attendance', label: 'Attendance', short: 'Attendance', icon: 'attendance' },
+// Running opportunities is for both account types
+export const MANAGE_NAV: NavItem[] = [
+  { to: '/manage', label: 'Overview', short: 'Overview', icon: 'overview', end: true },
+  { to: '/manage/opportunities', label: 'Opportunities', short: 'Opportunities', icon: 'opportunities', end: true },
+  { to: '/manage/review', label: 'Review workspace', short: 'Review', icon: 'review' },
+  { to: '/manage/attendance', label: 'Attendance', short: 'Attendance', icon: 'attendance' },
 ]
 
 function initials(name: string) {
   return name.split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase()
 }
 
-/**
- * One shell serves both workspaces. Both navigation groups are listed, and
- * following a link into the other workspace switches the signed-in role, which
- * keeps the route guard honest while the backend is still mocked.
- */
-export default function Shell({ workspace, role }: { workspace: string; role: Role }) {
-  const { user, switchRole } = useAuth()
-  const navigate = useNavigate()
-  const name = user?.name ?? 'Guest'
-  const otherRole: Role = role === 'volunteer' ? 'organisation' : 'volunteer'
-  const own = role === 'volunteer' ? VOLUNTEER_NAV : ORG_NAV
-  const other = role === 'volunteer' ? ORG_NAV : VOLUNTEER_NAV
-
-  function crossTo(to: string) {
-    switchRole(otherRole)
-    navigate(to)
-  }
-
-  const plates = (items: NavItem[], compact = false) => items.map(item => (
+function plates(items: NavItem[], compact = false) {
+  return items.map(item => (
     <NavLink key={item.to} to={item.to} end={item.end} className="navplate">
       <Icon name={item.icon} />
       <span>{compact ? item.short : item.label}</span>
     </NavLink>
   ))
+}
 
-  const crossPlates = (items: NavItem[]) => items.map(item => (
-    <button key={item.to} type="button" className="navplate" onClick={() => crossTo(item.to)}>
-      <Icon name={item.icon} />
-      <span>{item.label}</span>
-    </button>
-  ))
+/*
+ One shell for the whole app. A volunteer sees both navigation groups, because
+ a volunteer can organise as well as take part. An organisation sees only the
+ management group, which is the asymmetry the sidebar divider expresses.
+ */ 
+export default function Shell() {
+  const { user } = useAuth()
+  const isVolunteer = user?.role !== 'organisation'
+  const name = user?.name ?? 'Guest'
+  const workspace = isVolunteer ? 'Volunteer' : name
+  const railItems = isVolunteer ? PARTICIPATE_NAV : MANAGE_NAV
 
   return (
     <div className="shell">
@@ -63,9 +54,15 @@ export default function Shell({ workspace, role }: { workspace: string; role: Ro
         <div className="side__brand"><Logo /></div>
         <div className="side__group">Your workspace</div>
         <div className="side__workspace">{workspace}</div>
-        <nav className="side__nav" aria-label={`${workspace} navigation`}>{plates(own)}</nav>
-        <hr className="side__rule" />
-        <nav className="side__nav" aria-label="Other workspace">{crossPlates(other)}</nav>
+
+        {isVolunteer && (
+          <>
+            <nav className="side__nav" aria-label="Taking part">{plates(PARTICIPATE_NAV)}</nav>
+            <hr className="side__rule" />
+          </>
+        )}
+        <nav className="side__nav" aria-label="Managing opportunities">{plates(MANAGE_NAV)}</nav>
+
         <div className="side__foot">Small actions. Shared impact.</div>
       </aside>
 
@@ -80,7 +77,7 @@ export default function Shell({ workspace, role }: { workspace: string; role: Ro
           </div>
         </header>
 
-        <nav className="railnav" aria-label="Sections">{plates(own, true)}</nav>
+        <nav className="railnav" aria-label="Sections">{plates(railItems, true)}</nav>
 
         <main className="content"><Outlet /></main>
       </div>

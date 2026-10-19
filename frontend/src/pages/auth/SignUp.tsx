@@ -20,7 +20,7 @@ export default function SignUp() {
     if (password.length < 8) return setError('Use at least 8 characters.')
     if (!agreed) return setError('Please accept the terms to continue.')
     signUp({ name, email, role })
-    navigate(role === 'volunteer' ? '/discover' : '/org')
+    navigate(role === 'volunteer' ? '/discover' : '/manage')
   }
 
   return (

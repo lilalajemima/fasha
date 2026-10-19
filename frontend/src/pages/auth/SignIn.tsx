@@ -15,7 +15,7 @@ export default function SignIn() {
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     signIn(email, role)
-    navigate(role === 'volunteer' ? '/discover' : '/org')
+    navigate(role === 'volunteer' ? '/discover' : '/manage')
   }
 
   return (
