@@ -1,27 +1,14 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import Icon, { type IconName } from '../components/Icon'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import Icon from '../components/Icon'
 import Logo from '../components/Logo'
+import MobileNav from '../components/MobileNav'
 import { useAuth } from '../auth/AuthContext'
+import { unreadCount } from '../mocks/api'
+import { MANAGE_NAV, PARTICIPATE_NAV, type NavItem } from './navItems'
 import './Shell.css'
 
-export type NavItem = { to: string; label: string; short: string; icon: IconName; end?: boolean }
-
-// Taking part. Volunteer accounts only
-export const PARTICIPATE_NAV: NavItem[] = [
-  { to: '/discover', label: 'Discover', short: 'Discover', icon: 'discover' },
-  { to: '/activity', label: 'My activity', short: 'Activity', icon: 'activity' },
-  { to: '/portfolio', label: 'My portfolio', short: 'Portfolio', icon: 'portfolio' },
-  { to: '/profile', label: 'My profile', short: 'Profile', icon: 'profile' },
-  { to: '/initiatives', label: 'My initiatives', short: 'Initiatives', icon: 'initiatives', end: true },
-]
-
-// Running opportunities is for both account types
-export const MANAGE_NAV: NavItem[] = [
-  { to: '/manage', label: 'Overview', short: 'Overview', icon: 'overview', end: true },
-  { to: '/manage/opportunities', label: 'Opportunities', short: 'Opportunities', icon: 'opportunities', end: true },
-  { to: '/manage/review', label: 'Review workspace', short: 'Review', icon: 'review' },
-  { to: '/manage/attendance', label: 'Attendance', short: 'Attendance', icon: 'attendance' },
-]
+export { MANAGE_NAV, PARTICIPATE_NAV }
+export type { NavItem }
 
 function initials(name: string) {
   return name.split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase()
@@ -36,17 +23,19 @@ function plates(items: NavItem[], compact = false) {
   ))
 }
 
-/*
- One shell for the whole app. A volunteer sees both navigation groups, because
- a volunteer can organise as well as take part. An organisation sees only the
- management group, which is the asymmetry the sidebar divider expresses.
- */ 
+/**
+ * One shell for the whole app. A volunteer sees both navigation groups, because
+ * a volunteer can organise as well as take part. An organisation sees only the
+ * management group, which is the asymmetry the sidebar divider expresses.
+ */
 export default function Shell() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const isVolunteer = user?.role !== 'organisation'
   const name = user?.name ?? 'Guest'
   const workspace = isVolunteer ? 'Volunteer' : name
   const railItems = isVolunteer ? PARTICIPATE_NAV : MANAGE_NAV
+  const unread = unreadCount()
 
   return (
     <div className="shell">
@@ -63,14 +52,27 @@ export default function Shell() {
         )}
         <nav className="side__nav" aria-label="Managing opportunities">{plates(MANAGE_NAV)}</nav>
 
-        <div className="side__foot">Small actions. Shared impact.</div>
+        <div className="side__foot">
+          {user && (
+            <button className="navplate navplate--danger"
+                    onClick={() => { signOut(); navigate('/signin') }}>
+              <Icon name="signout" /> <span>Sign out</span>
+            </button>
+          )}
+        </div>
       </aside>
 
       <div>
         <header className="topbar">
-          <Logo size={24} />
+          <span className="topbar__left">
+            <MobileNav />
+            <Logo size={24} />
+          </span>
           <div className="topbar__right">
-            <span className="bell"><Icon name="bell" /><span className="bell__count">3</span></span>
+            <Link to="/notifications" className="bell" aria-label={`Notifications, ${unread} unread`}>
+              <Icon name="bell" />
+              {unread > 0 && <span className="bell__count">{unread}</span>}
+            </Link>
             <span className="topbar__divider" />
             <span className="avatar">{initials(name)}</span>
             <span className="topbar__name">{name}</span>
