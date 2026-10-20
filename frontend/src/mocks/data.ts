@@ -1,5 +1,6 @@
 import type {
-  Application, Attendee, Deliverable, Opportunity, PortfolioEntry, Profile, ReviewApplication, VirtualTask,
+  AppNotification, Application, Attendee, Deliverable, Opportunity, PortfolioEntry, Profile,
+  ReviewApplication, VirtualTask,
 } from './types'
 
 /** Sample content for the Kimironko pilot. Replaced by API data in the integration sprint. */
@@ -127,3 +128,24 @@ export const deliverables: Deliverable[] = [{
     'incorporated the organiser feedback. The final file includes accessible headings and a glossary.',
   proofLink: 'docs.example.org/welcome-rw', proofFile: 'welcome-pack-rw.pdf',
 }]
+
+export const notifications: AppNotification[] = [
+  { id: 'n1', kind: 'approval', title: 'Your reading guide was approved',
+    body: 'Open Book Collective credited 4 hours and the graphic design skill to your portfolio.',
+    when: '1 hour ago', read: false, link: '/portfolio' },
+  { id: 'n2', kind: 'application', title: "You're on the team",
+    body: 'Green Neighbourhood accepted your application for Kimironko planting morning.',
+    when: 'Yesterday', read: false, link: '/activity' },
+  { id: 'n3', kind: 'invite', title: 'Invitation to co-organise',
+    body: 'Leo Gatare invited you to co-organise Kimironko seed swap.',
+    when: 'Yesterday', read: false, link: '/manage' },
+  { id: 'n4', kind: 'reminder', title: 'Event in two days',
+    body: 'Kimironko planting morning starts Sat 10 Oct at 09:00. Bring sturdy shoes and water.',
+    when: '2 days ago', read: true, link: '/activity' },
+  { id: 'n5', kind: 'review', title: 'Initiative awaiting approval',
+    body: 'Kimironko seed swap was submitted for review and is not yet visible in Discover.',
+    when: '3 days ago', read: true, link: '/initiatives' },
+  { id: 'n6', kind: 'application', title: 'Application not successful',
+    body: 'Kimironko Makers filled the repair cafe role. Other opportunities are still open.',
+    when: '5 days ago', read: true, link: '/discover' },
+]

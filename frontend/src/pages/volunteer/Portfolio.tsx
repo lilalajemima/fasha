@@ -24,10 +24,7 @@ export default function Portfolio() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-base)' }}>
       <header className="topbar">
-        <Logo size={24} />
-        <div className="topbar__right">
-          <Button>Explore Fasha</Button>
-        </div>
+        <Logo size={22} />
       </header>
 
       <main style={{ maxWidth: 1140, margin: '0 auto', padding: '40px 24px 72px' }}>

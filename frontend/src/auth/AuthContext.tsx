@@ -13,12 +13,12 @@ type AuthValue = {
 const STORAGE_KEY = 'fasha.user'
 const AuthContext = createContext<AuthValue | null>(null)
 
-const DEMO_NAME: Record<Role, string> = {
-  volunteer: 'Amara Mensah',
-  organisation: 'Green Neighbourhood',
+export const DEMO_ACCOUNTS: Record<Role, { name: string; email: string; password: string }> = {
+  volunteer:    { name: 'Amara Mensah',       email: 'volunteer@fasha.demo',    password: 'fasha1234' },
+  organisation: { name: 'Green Neighbourhood', email: 'organisation@fasha.demo', password: 'fasha1234' },
 }
 
-/** Front end only. Replaced by the API and JWT in the integration sprint. */
+// Front end only. Replaced by the API and JWT in the integration sprint
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthValue>(() => ({
     user,
     signUp: next => persist(next),
-    signIn: (email, role) => persist({ name: DEMO_NAME[role], email, role }),
+    signIn: (email, role) => persist({ name: DEMO_ACCOUNTS[role].name, email, role }),
     signOut: () => persist(null),
   }), [user])
 

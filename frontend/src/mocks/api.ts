@@ -1,5 +1,6 @@
 import {
-  attendees, deliverables, myApplications, myPortfolio, myProfile, myTask, opportunities, reviewApplications,
+  attendees, deliverables, myApplications, myPortfolio, myProfile, myTask, notifications,
+  opportunities, reviewApplications,
 } from './data'
 import type { Opportunity } from './types'
 
@@ -38,7 +39,16 @@ export async function getOpportunity(id: string) {
 }
 
 export async function getMyInitiatives() { return opportunities.filter(o => o.citizenLed) }
-export async function getOrgOpportunities() { return opportunities.filter(o => o.id !== '4') }
+/**
+ * What the management section shows depends on who is signed in. An organisation
+ * manages the opportunities it posted, which publish straight to the feed. A
+ * volunteer manages the initiatives they proposed, which are reviewed first.
+ */
+export async function getManagedOpportunities(role: 'volunteer' | 'organisation') {
+  return role === 'organisation'
+    ? opportunities.filter(o => !o.citizenLed && o.id !== '4')
+    : opportunities.filter(o => o.citizenLed)
+}
 export async function getProfile() { return myProfile }
 export async function getApplications() { return myApplications }
 export async function getVirtualTask() { return myTask }
@@ -46,3 +56,6 @@ export async function getPortfolio() { return myPortfolio }
 export async function getAttendees() { return attendees }
 export async function getReviewApplications() { return reviewApplications }
 export async function getDeliverables() { return deliverables }
+
+export async function getNotifications() { return notifications }
+export function unreadCount() { return notifications.filter(n => !n.read).length }

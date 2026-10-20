@@ -33,3 +33,14 @@ export type Deliverable = {
   id: string; opportunity: string; submitted: string; name: string; hours: number; skill: string
   report: string; proofLink: string; proofFile: string
 }
+
+export type NotificationKind = 'application' | 'approval' | 'invite' | 'reminder' | 'review'
+export type AppNotification = {
+  id: string
+  kind: NotificationKind
+  title: string
+  body: string
+  when: string
+  read: boolean
+  link?: string
+}

@@ -155,3 +155,11 @@ textarea.input { min-height: 96px; resize: vertical; }
 .camera { border: 1.5px solid var(--primary); border-radius: var(--radius); height: 150px;
           display: grid; place-items: center; background: var(--surface-card); }
 @media (max-width: 700px) { .mode-grid { grid-template-columns: 1fr; } }
+
+/* Small inline link-styled button, used where a link would be wrong semantically */
+.linkbtn { font: inherit; font-weight: 500; color: var(--primary); background: none; border: 0;
+           padding: 0; cursor: pointer; }
+.linkbtn:hover { text-decoration: underline; }
+/* Unread marker */
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary);
+       display: inline-block; }

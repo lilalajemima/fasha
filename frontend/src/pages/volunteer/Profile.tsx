@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
 import { Button, Card, Field, RemovableTag, TextField } from '../../components/ui'
+import { useAuth } from '../../auth/AuthContext'
 import { getProfile } from '../../mocks/api'
 import type { Profile as ProfileType } from '../../mocks/types'
 
@@ -32,6 +33,8 @@ function TagEditor({ label, values, placeholder, onAdd, onRemove }: {
 }
 
 export default function Profile() {
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileType | null>(null)
   useEffect(() => { getProfile().then(p => setProfile({ ...p })) }, [])
   if (!profile) return null
@@ -107,6 +110,12 @@ export default function Profile() {
             </p>
           </Card>
           <Link to="/portfolio"><Button block>Preview public portfolio</Button></Link>
+
+          <Card>
+            <h2>Account</h2>
+            <p className="muted">Signed in as {user?.email ?? 'this device'}.</p>
+            <Button block onClick={() => { signOut(); navigate('/signin') }}>Sign out</Button>
+          </Card>
         </aside>
       </div>
     </>
