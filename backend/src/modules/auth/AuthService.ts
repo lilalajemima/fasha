@@ -2,7 +2,7 @@ import type { User, UserRole } from '@prisma/client'
 import { ConflictError, NotFoundError, UnauthorisedError } from '../../core/errors/HttpErrors'
 import type { PasswordHasher } from '../../core/security/PasswordHasher'
 import type { TokenService } from '../../core/security/TokenService'
-import type { UserRepository } from './UserRepository'
+import type { UserStore } from './UserStore'
 
 export type RegisterInput = {
   name: string
@@ -25,7 +25,7 @@ export type AuthResult = {
 
 export class AuthService {
   constructor(
-    private readonly users: UserRepository,
+    private readonly users: UserStore,
     private readonly passwords: PasswordHasher,
     private readonly tokens: TokenService,
   ) {}
