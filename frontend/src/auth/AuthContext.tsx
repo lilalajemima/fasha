@@ -1,44 +1,75 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { api, tokenStore } from '../lib/api'
 
 export type Role = 'volunteer' | 'organisation'
-export type User = { name: string; email: string; role: Role }
+export type User = { id: string; name: string; email: string; role: Role }
+
+type ServerRole = 'VOLUNTEER' | 'ORGANISATION'
+type ServerUser = { id: string; name: string; email: string; role: ServerRole }
+type AuthResponse = { token: string; user: ServerUser }
+
+type SignUpInput = { name: string; email: string; password: string; role: Role }
 
 type AuthValue = {
   user: User | null
-  signUp: (user: User) => void
-  signIn: (email: string, role: Role) => void
+  ready: boolean
+  signUp: (input: SignUpInput) => Promise<User>
+  signIn: (email: string, password: string) => Promise<User>
   signOut: () => void
 }
 
-const STORAGE_KEY = 'fasha.user'
-const AuthContext = createContext<AuthValue | null>(null)
-
-export const DEMO_ACCOUNTS: Record<Role, { name: string; email: string; password: string }> = {
-  volunteer:    { name: 'Amara Mensah',       email: 'volunteer@fasha.demo',    password: 'fasha1234' },
-  organisation: { name: 'Green Neighbourhood', email: 'organisation@fasha.demo', password: 'fasha1234' },
+function toUser(user: ServerUser): User {
+  return { ...user, role: user.role === 'ORGANISATION' ? 'organisation' : 'volunteer' }
 }
 
-// Front end only. Replaced by the API and JWT in the integration sprint
+function toServerRole(role: Role): ServerRole {
+  return role === 'organisation' ? 'ORGANISATION' : 'VOLUNTEER'
+}
+
+const AuthContext = createContext<AuthValue | null>(null)
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) setUser(JSON.parse(saved) as User)
+    if (!tokenStore.read()) {
+      setReady(true)
+      return
+    }
+
+    api.get<{ user: ServerUser }>('/auth/me')
+      .then(({ user: me }) => setUser(toUser(me)))
+      .catch(() => tokenStore.clear())
+      .finally(() => setReady(true))
   }, [])
 
-  function persist(next: User | null) {
-    setUser(next)
-    if (next) localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    else localStorage.removeItem(STORAGE_KEY)
-  }
+  const value = useMemo<AuthValue>(() => {
+    function accept(result: AuthResponse): User {
+      tokenStore.save(result.token)
+      const next = toUser(result.user)
+      setUser(next)
+      return next
+    }
 
-  const value = useMemo<AuthValue>(() => ({
-    user,
-    signUp: next => persist(next),
-    signIn: (email, role) => persist({ name: DEMO_ACCOUNTS[role].name, email, role }),
-    signOut: () => persist(null),
-  }), [user])
+    return {
+      user,
+      ready,
+      async signUp(input) {
+        return accept(await api.post<AuthResponse>('/auth/register', {
+          ...input,
+          role: toServerRole(input.role),
+        }))
+      },
+      async signIn(email, password) {
+        return accept(await api.post<AuthResponse>('/auth/login', { email, password }))
+      },
+      signOut() {
+        tokenStore.clear()
+        setUser(null)
+      },
+    }
+  }, [user, ready])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

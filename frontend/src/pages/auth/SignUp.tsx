@@ -5,22 +5,36 @@ import { Button, Field } from '../../components/ui'
 import { useAuth, type Role } from '../../auth/AuthContext'
 import AuthPanel from './AuthPanel'
 
+const MIN_PASSWORD_LENGTH = 8
+
 export default function SignUp() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const [role, setRole] = useState<Role>('volunteer')
-  const [name, setName] = useState('Amara Mensah')
-  const [email, setEmail] = useState('amara@example.com')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [agreed, setAgreed] = useState(true)
+  const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (password.length < 8) return setError('Use at least 8 characters.')
+    setError('')
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
+    }
     if (!agreed) return setError('Please accept the terms to continue.')
-    signUp({ name, email, role })
-    navigate(role === 'volunteer' ? '/discover' : '/manage')
+
+    setBusy(true)
+    try {
+      const user = await signUp({ name, email, password, role })
+      navigate(user.role === 'volunteer' ? '/discover' : '/manage')
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : 'Could not create the account')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -52,22 +66,25 @@ export default function SignUp() {
           </button>
         </div>
 
-        <Field id="name" label="Full name" value={name} required
+        <Field id="name" label="Full name" value={name} required autoComplete="name"
                onChange={e => setName(e.target.value)} />
         <Field id="email" label="Email address" type="email" value={email} required
-               onChange={e => setEmail(e.target.value)} />
+               autoComplete="email" onChange={e => setEmail(e.target.value)} />
         <Field id="password" label="Password" type="password" value={password} required
-               hint="Use at least 8 characters." onChange={e => setPassword(e.target.value)} />
+               autoComplete="new-password" hint={`Use at least ${MIN_PASSWORD_LENGTH} characters.`}
+               onChange={e => setPassword(e.target.value)} />
 
         <label className="field" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
           <span>I agree to the Terms of service and Privacy policy.</span>
         </label>
 
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error" role="alert">{error}</p>}
 
-        <Button type="submit" variant="primary" block>
-          {role === 'volunteer' ? 'Create volunteer account' : 'Create organisation account'}
+        <Button type="submit" variant="primary" block disabled={busy}>
+          {busy
+            ? 'Creating your account…'
+            : role === 'volunteer' ? 'Create volunteer account' : 'Create organisation account'}
         </Button>
 
         <hr />
