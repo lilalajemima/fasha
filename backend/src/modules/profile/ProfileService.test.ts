@@ -38,6 +38,14 @@ class FakeProfileStore implements ProfileStore {
   async update(_userId: string, changes: ProfileChanges) {
     if (this.profile) Object.assign(this.profile, changes)
   }
+
+  async findByUserId() {
+    return null
+  }
+
+  async findBySlug() {
+    return null
+  }
 }
 
 function buildVolunteer(): UserWithProfile {

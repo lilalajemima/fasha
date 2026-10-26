@@ -67,6 +67,8 @@ class FakeOpportunityStore implements OpportunityStore {
     record.status = status as OpportunityRecord['status']
     return record
   }
+
+  async setQrToken() {}
 }
 
 class FakeUserStore implements UserStore {
@@ -91,6 +93,10 @@ class FakeUserStore implements UserStore {
   }
 
   async createOrganisation(_account: NewAccount) {
+    throw new Error('not needed in this test')
+  }
+
+  async updateName(_id: string, _name: string) {
     throw new Error('not needed in this test')
   }
 }

@@ -108,17 +108,6 @@ export default function Overview() {
               Accepted co-organisers can edit details and review submissions.
             </p>
           </Card>
-          <Card>
-            <h2>Today&rsquo;s focus</h2>
-            <StatusBadge tone="neutral">Physical event</StatusBadge>
-            <h3 style={{ marginTop: 12 }}>Kimironko planting morning</h3>
-            <p className="muted">10 Oct · 09:00-12:00<br />18 accepted volunteers</p>
-            <Link to="/manage/attendance">
-              <Button block><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <Icon name="attendance" /> Open attendance
-              </span></Button>
-            </Link>
-          </Card>
         </aside>
       </div>
     </>

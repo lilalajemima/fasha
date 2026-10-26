@@ -31,4 +31,5 @@ export interface OpportunityStore {
   findCreatedBy(creatorId: string): Promise<OpportunityRecord[]>
   findAwaitingApproval(): Promise<OpportunityRecord[]>
   updateStatus(id: string, status: OpportunityStatus): Promise<OpportunityRecord>
+  setQrToken(id: string, qrToken: string): Promise<void>
 }

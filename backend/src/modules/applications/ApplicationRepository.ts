@@ -52,6 +52,13 @@ export class ApplicationRepository extends BaseRepository implements Application
     })
   }
 
+  findAccepted(opportunityId: string, volunteerId: string): Promise<ApplicationRecord | null> {
+    return this.db.application.findFirst({
+      where: { opportunityId, volunteerId, status: ApplicationStatus.ACCEPTED },
+      include: withBothSides,
+    })
+  }
+
   acceptIfSpace(
     applicationId: string,
     opportunityId: string,

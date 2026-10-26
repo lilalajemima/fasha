@@ -77,4 +77,8 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
       include: withCreator,
     })
   }
+
+  async setQrToken(id: string, qrToken: string): Promise<void> {
+    await this.db.opportunity.update({ where: { id }, data: { qrToken } })
+  }
 }

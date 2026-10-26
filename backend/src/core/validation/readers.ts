@@ -137,3 +137,30 @@ export function readShortText(body: Body, field: string, maxLength: number): str
 
   return text
 }
+
+export function readHours(body: Body, field: string, maxHours: number): number {
+  const value = Number(body[field])
+
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new BadRequestError(`${field} must be a number of hours above zero`)
+  }
+
+  if (value > maxHours) {
+    throw new BadRequestError(`${field} cannot be more than ${maxHours}`)
+  }
+
+  return Math.round(value * 100) / 100
+}
+
+export function readUrl(body: Body, field: string): string {
+  const value = readString(body, field)
+
+  if (!value.startsWith('http://') && !value.startsWith('https://')) {
+    throw new BadRequestError(`${field} must be a link starting with http`)
+  }
+  if (!isValidUrl(value)) {
+    throw new BadRequestError(`${field} must be a valid URL`)
+  }
+
+  return value
+}

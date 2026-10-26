@@ -45,7 +45,6 @@ export default function SignUp() {
       </div>
 
       <form className="auth__form" onSubmit={handleSubmit}>
-        <span className="eyebrow">Welcome to Fasha</span>
         <h1>Let&rsquo;s get you started</h1>
         <p className="lede" style={{ marginBottom: 26 }}>Choose how you&rsquo;d like to take part.</p>
 
@@ -74,10 +73,6 @@ export default function SignUp() {
                autoComplete="new-password" hint={`Use at least ${MIN_PASSWORD_LENGTH} characters.`}
                onChange={e => setPassword(e.target.value)} />
 
-        <label className="field" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
-          <span>I agree to the Terms of service and Privacy policy.</span>
-        </label>
 
         {error && <p className="error" role="alert">{error}</p>}
 
@@ -88,10 +83,6 @@ export default function SignUp() {
         </Button>
 
         <hr />
-        <p className="muted" style={{ marginBottom: 0 }}>
-          Volunteers can join or create opportunities. Organisations create and manage
-          opportunities, without participant actions.
-        </p>
       </form>
     </AuthPanel>
   )

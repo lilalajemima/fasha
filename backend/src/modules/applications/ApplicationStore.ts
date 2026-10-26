@@ -25,6 +25,7 @@ export interface ApplicationStore {
   findById(id: string): Promise<ApplicationRecord | null>
   findByVolunteer(volunteerId: string): Promise<ApplicationRecord[]>
   findForOpportunity(opportunityId: string): Promise<ApplicationRecord[]>
+  findAccepted(opportunityId: string, volunteerId: string): Promise<ApplicationRecord | null>
   acceptIfSpace(
     applicationId: string,
     opportunityId: string,

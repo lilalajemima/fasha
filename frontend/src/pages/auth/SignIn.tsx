@@ -47,9 +47,6 @@ export default function SignIn() {
         <span className="eyebrow">Welcome back</span>
         <h1>Sign in to Fasha</h1>
         <p className="lede" style={{ marginBottom: 26 }}>
-          {demoAccounts
-            ? 'Pick the workspace you want to open.'
-            : 'Your account decides which workspace opens.'}
         </p>
 
         {demoAccounts && (
@@ -82,20 +79,6 @@ export default function SignIn() {
           {busy ? 'Signing in…' : 'Sign in'}
         </Button>
 
-        {demoAccounts && (
-          <div style={{ marginTop: 22 }}>
-            <Card variant="note">
-              <h3>Demo accounts</h3>
-              <p className="muted" style={{ marginBottom: 10 }}>
-                Choosing an account type above fills these in.
-              </p>
-              <div className="muted">
-                Volunteer · {demoAccounts.volunteer.email}<br />
-                Organisation · {demoAccounts.organisation.email}
-              </div>
-            </Card>
-          </div>
-        )}
       </form>
     </AuthPanel>
   )
