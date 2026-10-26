@@ -35,4 +35,8 @@ export class UserRepository extends BaseRepository implements UserStore {
       data: { ...account, role: UserRole.ORGANISATION },
     })
   }
+
+  async updateName(id: string, name: string): Promise<void> {
+    await this.db.user.update({ where: { id }, data: { name } })
+  }
 }

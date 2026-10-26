@@ -2,6 +2,7 @@ import type { User, UserRole } from '@prisma/client'
 import { ConflictError, NotFoundError, UnauthorisedError } from '../../core/errors/HttpErrors'
 import type { PasswordHasher } from '../../core/security/PasswordHasher'
 import type { TokenService } from '../../core/security/TokenService'
+import { toProfileView, type ProfileView } from '../profile/ProfileView'
 import type { UserStore } from './UserStore'
 
 export type RegisterInput = {
@@ -63,25 +64,14 @@ export class AuthService {
     return this.authResultFor(user)
   }
 
-  async profileOf(userId: string) {
+  async profileOf(userId: string): Promise<ProfileView> {
     const user = await this.users.findWithProfile(userId)
 
     if (!user) {
       throw new NotFoundError('Account no longer exists')
     }
 
-    return {
-      user: this.toPublicUser(user),
-      profile: user.profile
-        ? {
-            skills: user.profile.skills,
-            interests: user.profile.interests,
-            availability: user.profile.availability,
-            location: user.profile.location,
-            portfolioSlug: user.profile.portfolioSlug,
-          }
-        : null,
-    }
+    return toProfileView(user)
   }
 
   private authResultFor(user: User): AuthResult {

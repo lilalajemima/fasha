@@ -14,4 +14,5 @@ export interface UserStore {
   findWithProfile(id: string): Promise<UserWithProfile | null>
   createVolunteer(account: NewAccount, portfolioSlug: string): Promise<User>
   createOrganisation(account: NewAccount): Promise<User>
+  updateName(id: string, name: string): Promise<void>
 }

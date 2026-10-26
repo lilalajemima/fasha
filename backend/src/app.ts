@@ -5,6 +5,7 @@ import { errorHandler, notFoundHandler } from './core/http/errorHandler'
 import { authRoutes } from './modules/auth/auth.routes'
 import { healthRoutes } from './modules/health/health.routes'
 import { opportunityRoutes } from './modules/opportunities/opportunity.routes'
+import { profileRoutes } from './modules/profile/profile.routes'
 
 export function createApp() {
   const app = express()
@@ -15,6 +16,7 @@ export function createApp() {
   app.use(healthRoutes)
   app.use(authRoutes)
   app.use(opportunityRoutes)
+  app.use(profileRoutes)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

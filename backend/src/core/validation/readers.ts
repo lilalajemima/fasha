@@ -118,3 +118,21 @@ export function readDecision(body: Body): 'APPROVE' | 'REJECT' {
 
   return decision
 }
+
+export function hasField(body: Body, field: string): boolean {
+  return body[field] !== undefined
+}
+
+export function readShortText(body: Body, field: string, maxLength: number): string | null {
+  const value = body[field]
+
+  if (value === null || value === '') return null
+
+  const text = readString(body, field)
+
+  if (text.length > maxLength) {
+    throw new BadRequestError(`${field} must be ${maxLength} characters or fewer`)
+  }
+
+  return text
+}
