@@ -18,11 +18,9 @@ const approvers = authorise('ORGANISATION', 'ADMIN')
 
 export const opportunityRoutes = Router()
 
-opportunityRoutes.use('/opportunities', authenticate)
-
-opportunityRoutes.get('/opportunities', controller.feed)
-opportunityRoutes.post('/opportunities', controller.create)
-opportunityRoutes.get('/opportunities/mine', controller.mine)
-opportunityRoutes.get('/opportunities/pending', approvers, controller.awaitingApproval)
-opportunityRoutes.get('/opportunities/:id', controller.detail)
-opportunityRoutes.patch('/opportunities/:id/status', approvers, controller.decide)
+opportunityRoutes.get('/opportunities', authenticate, controller.feed)
+opportunityRoutes.post('/opportunities', authenticate, controller.create)
+opportunityRoutes.get('/opportunities/mine', authenticate, controller.mine)
+opportunityRoutes.get('/opportunities/pending', authenticate, approvers, controller.awaitingApproval)
+opportunityRoutes.get('/opportunities/:id', authenticate, controller.detail)
+opportunityRoutes.patch('/opportunities/:id/status', authenticate, approvers, controller.decide)

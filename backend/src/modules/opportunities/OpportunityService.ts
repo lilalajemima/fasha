@@ -1,193 +1,105 @@
-import { describe, expect, it } from 'vitest'
-import { ConflictError } from '../../core/errors/HttpErrors'
-import { MatchingService } from '../matching/MatchingService'
-import { OpportunityService } from './OpportunityService'
-import type {
-  FeedFilter,
-  NewOpportunity,
-  OpportunityRecord,
-  OpportunityStore,
-} from './OpportunityStore'
-import type { NewAccount, UserStore, UserWithProfile } from '../auth/UserStore'
+import { OpportunityStatus, UserRole } from '@prisma/client'
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../core/errors/HttpErrors'
+import type { TokenPayload } from '../../core/security/TokenService'
+import type { UserStore } from '../auth/UserStore'
+import type { MatchingService } from '../matching/MatchingService'
+import type { FeedFilter, NewOpportunity, OpportunityRecord, OpportunityStore } from './OpportunityStore'
+import { toView, type OpportunityView } from './OpportunityView'
 
-const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+const APPROVER_ROLES: string[] = [UserRole.ORGANISATION, UserRole.ADMIN]
 
-function makeRecord(overrides: Partial<OpportunityRecord> = {}): OpportunityRecord {
-  return {
-    id: 'opportunity-1',
-    creatorId: 'organisation-1',
-    title: 'Restore the wetland path',
-    description: 'Plant trees and clear the path with the neighbourhood team.',
-    mode: 'PHYSICAL',
-    location: 'Kimironko',
-    maxCapacity: 20,
-    applicationDeadline: tomorrow,
-    status: 'PUBLISHED',
-    qrToken: null,
-    requiredSkills: [],
-    categories: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    creator: { id: 'organisation-1', name: 'Green Neighbourhood', role: 'ORGANISATION' },
-    ...overrides,
+export class OpportunityService {
+  constructor(
+    private readonly opportunities: OpportunityStore,
+    private readonly users: UserStore,
+    private readonly matching: MatchingService,
+  ) {}
+
+  async create(creator: TokenPayload, input: NewOpportunity): Promise<OpportunityView> {
+    if (input.mode === 'PHYSICAL' && !input.location) {
+      throw new BadRequestError('A physical opportunity needs a location')
+    }
+
+    const record = await this.opportunities.create(
+      creator.userId,
+      this.statusForNew(creator.role),
+      input,
+    )
+
+    return toView(record)
   }
-}
 
-class FakeOpportunityStore implements OpportunityStore {
-  constructor(private readonly records: OpportunityRecord[] = []) {}
+  async feed(viewer: TokenPayload, filter: FeedFilter): Promise<OpportunityView[]> {
+    const published = await this.opportunities.findPublished(filter)
 
-  async create(creatorId: string, status: string, input: NewOpportunity) {
-    const record = makeRecord({
-      ...input,
-      creatorId,
-      status: status as OpportunityRecord['status'],
-    })
-    this.records.push(record)
+    if (viewer.role !== UserRole.VOLUNTEER) {
+      return published.map(record => toView(record))
+    }
+
+    const profile = await this.users.findWithProfile(viewer.userId)
+    const tags = {
+      skills: profile?.profile?.skills ?? [],
+      interests: profile?.profile?.interests ?? [],
+    }
+
+    return this.matching
+      .rank(tags, published)
+      .map(entry => toView(entry.opportunity, entry.score))
+  }
+
+  async detail(viewer: TokenPayload, id: string): Promise<OpportunityView> {
+    const record = await this.findOrFail(id)
+
+    if (record.status !== OpportunityStatus.PUBLISHED && !this.mayInspect(viewer, record)) {
+      throw new ForbiddenError('That opportunity is not published yet')
+    }
+
+    return toView(record)
+  }
+
+  async createdBy(creator: TokenPayload): Promise<OpportunityView[]> {
+    const records = await this.opportunities.findCreatedBy(creator.userId)
+
+    return records.map(record => toView(record))
+  }
+
+  async awaitingApproval(): Promise<OpportunityView[]> {
+    const records = await this.opportunities.findAwaitingApproval()
+
+    return records.map(record => toView(record))
+  }
+
+  async decide(id: string, decision: 'APPROVE' | 'REJECT'): Promise<OpportunityView> {
+    const record = await this.findOrFail(id)
+
+    if (record.status !== OpportunityStatus.PENDING_APPROVAL) {
+      throw new ConflictError('That opportunity has already been reviewed')
+    }
+
+    const status = decision === 'APPROVE'
+      ? OpportunityStatus.PUBLISHED
+      : OpportunityStatus.REJECTED
+
+    return toView(await this.opportunities.updateStatus(id, status))
+  }
+
+  private statusForNew(creatorRole: string): OpportunityStatus {
+    return APPROVER_ROLES.includes(creatorRole)
+      ? OpportunityStatus.PUBLISHED
+      : OpportunityStatus.PENDING_APPROVAL
+  }
+
+  private mayInspect(viewer: TokenPayload, record: OpportunityRecord): boolean {
+    return viewer.userId === record.creatorId || APPROVER_ROLES.includes(viewer.role)
+  }
+
+  private async findOrFail(id: string): Promise<OpportunityRecord> {
+    const record = await this.opportunities.findById(id)
+
+    if (!record) {
+      throw new NotFoundError('That opportunity does not exist')
+    }
+
     return record
   }
-
-  async findPublished(_filter: FeedFilter) {
-    return this.records.filter(record => record.status === 'PUBLISHED')
-  }
-
-  async findById(id: string) {
-    return this.records.find(record => record.id === id) ?? null
-  }
-
-  async findCreatedBy(creatorId: string) {
-    return this.records.filter(record => record.creatorId === creatorId)
-  }
-
-  async findAwaitingApproval() {
-    return this.records.filter(record => record.status === 'PENDING_APPROVAL')
-  }
-
-  async updateStatus(id: string, status: string) {
-    const record = this.records.find(entry => entry.id === id)!
-    record.status = status as OpportunityRecord['status']
-    return record
-  }
 }
-
-class FakeUserStore implements UserStore {
-  constructor(private readonly skills: string[] = [], private readonly interests: string[] = []) {}
-
-  async findByEmail() {
-    return null
-  }
-
-  async findById() {
-    return null
-  }
-
-  async findWithProfile() {
-    return {
-      profile: { skills: this.skills, interests: this.interests },
-    } as unknown as UserWithProfile
-  }
-
-  async createVolunteer(_account: NewAccount, _portfolioSlug: string) {
-    throw new Error('not needed in this test')
-  }
-
-  async createOrganisation(_account: NewAccount) {
-    throw new Error('not needed in this test')
-  }
-
-  async updateName(_id: string, _name: string) {
-    throw new Error('not needed in this test')
-  }
-}
-
-const draft: NewOpportunity = {
-  title: 'Saturday food parcels',
-  description: 'Sort donations and prepare parcels for families nearby.',
-  mode: 'PHYSICAL',
-  location: 'Kimironko market',
-  maxCapacity: 12,
-  applicationDeadline: tomorrow,
-  requiredSkills: ['Teamwork'],
-  categories: ['Food access'],
-}
-
-function buildService(records: OpportunityRecord[] = [], users = new FakeUserStore()) {
-  return new OpportunityService(new FakeOpportunityStore(records), users, new MatchingService())
-}
-
-describe('creating an opportunity', () => {
-  it('publishes an organisation post straight away', async () => {
-    const view = await buildService().create({ userId: 'organisation-1', role: 'ORGANISATION' }, draft)
-
-    expect(view.status).toBe('PUBLISHED')
-  })
-
-  it('holds a volunteer post for approval', async () => {
-    const view = await buildService().create({ userId: 'volunteer-1', role: 'VOLUNTEER' }, draft)
-
-    expect(view.status).toBe('PENDING_APPROVAL')
-  })
-
-  it('refuses a physical opportunity with no location', async () => {
-    const service = buildService()
-
-    await expect(
-      service.create({ userId: 'organisation-1', role: 'ORGANISATION' }, { ...draft, location: null }),
-    ).rejects.toThrow('A physical opportunity needs a location')
-  })
-})
-
-describe('the feed', () => {
-  const records = [
-    makeRecord({ id: 'mismatch', requiredSkills: ['Plumbing'], categories: ['Sport'] }),
-    makeRecord({ id: 'match', requiredSkills: ['Teamwork'], categories: ['Environment'] }),
-  ]
-
-  it('puts the best match first for a volunteer', async () => {
-    const users = new FakeUserStore(['Teamwork'], ['Environment'])
-    const feed = await buildService(records, users).feed({ userId: 'volunteer-1', role: 'VOLUNTEER' }, {
-      search: null,
-      mode: null,
-    })
-
-    expect(feed.map(view => view.id)).toEqual(['match', 'mismatch'])
-    expect(feed[0].matchScore).toBe(100)
-  })
-
-  it('leaves out the score for an organisation', async () => {
-    const feed = await buildService(records).feed({ userId: 'organisation-1', role: 'ORGANISATION' }, {
-      search: null,
-      mode: null,
-    })
-
-    expect(feed[0].matchScore).toBeUndefined()
-  })
-})
-
-describe('reviewing a volunteer proposal', () => {
-  it('publishes it when approved', async () => {
-    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL' })]
-    const view = await buildService(records).decide('proposal', 'APPROVE')
-
-    expect(view.status).toBe('PUBLISHED')
-  })
-
-  it('rejects it when turned down', async () => {
-    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL' })]
-    const view = await buildService(records).decide('proposal', 'REJECT')
-
-    expect(view.status).toBe('REJECTED')
-  })
-
-  it('refuses to review the same proposal twice', async () => {
-    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL' })]
-    const service = buildService(records)
-
-    await service.decide('proposal', 'APPROVE')
-
-    await expect(service.decide('proposal', 'APPROVE')).rejects.toThrow(ConflictError)
-  })
-
-  it('reports a missing opportunity', async () => {
-    await expect(buildService().decide('nope', 'APPROVE')).rejects.toThrow('does not exist')
-  })
-})

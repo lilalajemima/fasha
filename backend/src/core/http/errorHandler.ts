@@ -4,17 +4,18 @@ import { NotFoundError } from '../errors/HttpErrors'
 import { env } from '../config/env'
 
 const PRISMA_UNIQUE_CONSTRAINT = 'P2002'
+const PRISMA_WRITE_CONFLICT = 'P2034'
 
 export function notFoundHandler(_req: Request, _res: Response, next: NextFunction) {
   next(new NotFoundError('No such endpoint'))
 }
 
-function isUniqueConstraintBreach(error: unknown): boolean {
+function hasPrismaCode(error: unknown, code: string): boolean {
   return (
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
-    (error as { code: unknown }).code === PRISMA_UNIQUE_CONSTRAINT
+    (error as { code: unknown }).code === code
   )
 }
 
@@ -24,8 +25,13 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     return
   }
 
-  if (isUniqueConstraintBreach(error)) {
+  if (hasPrismaCode(error, PRISMA_UNIQUE_CONSTRAINT)) {
     res.status(409).json({ error: 'That record already exists' })
+    return
+  }
+
+  if (hasPrismaCode(error, PRISMA_WRITE_CONFLICT)) {
+    res.status(409).json({ error: 'Someone else changed that at the same moment, try again' })
     return
   }
 

@@ -36,14 +36,23 @@ export function readPassword(body: Body): string {
   return readString(body, 'password', MIN_PASSWORD_LENGTH)
 }
 
-export function readRole(body: Body): 'VOLUNTEER' | 'ORGANISATION' {
-  const role = readString(body, 'role')
+export function readChoice<T extends string>(
+  body: Body,
+  field: string,
+  options: readonly T[],
+): T {
+  const value = readString(body, field).toUpperCase()
+  const chosen = options.find(option => option === value)
 
-  if (role !== 'VOLUNTEER' && role !== 'ORGANISATION') {
-    throw new BadRequestError('role must be VOLUNTEER or ORGANISATION')
+  if (!chosen) {
+    throw new BadRequestError(`${field} must be one of: ${options.join(', ')}`)
   }
 
-  return role
+  return chosen
+}
+
+export function readRole(body: Body) {
+  return readChoice(body, 'role', ['VOLUNTEER', 'ORGANISATION'] as const)
 }
 
 export function readOptionalString(body: Body, field: string): string | null {
@@ -99,24 +108,16 @@ export function readFutureDate(body: Body, field: string): Date {
   return value
 }
 
-export function readMode(body: Body): 'PHYSICAL' | 'VIRTUAL' {
-  const mode = readString(body, 'mode')
-
-  if (mode !== 'PHYSICAL' && mode !== 'VIRTUAL') {
-    throw new BadRequestError('mode must be PHYSICAL or VIRTUAL')
-  }
-
-  return mode
+export function readMode(body: Body) {
+  return readChoice(body, 'mode', ['PHYSICAL', 'VIRTUAL'] as const)
 }
 
-export function readDecision(body: Body): 'APPROVE' | 'REJECT' {
-  const decision = readString(body, 'decision').toUpperCase()
+export function readDecision(body: Body) {
+  return readChoice(body, 'decision', ['APPROVE', 'REJECT'] as const)
+}
 
-  if (decision !== 'APPROVE' && decision !== 'REJECT') {
-    throw new BadRequestError('decision must be APPROVE or REJECT')
-  }
-
-  return decision
+export function readApplicationDecision(body: Body) {
+  return readChoice(body, 'decision', ['ACCEPT', 'REJECT'] as const)
 }
 
 export function hasField(body: Body, field: string): boolean {
