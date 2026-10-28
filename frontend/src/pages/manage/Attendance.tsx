@@ -1,135 +1,281 @@
 import { useEffect, useState } from 'react'
+import { Loaded, Problem } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, FileDrop, StatTile, StatusBadge } from '../../components/ui'
-import { getAttendees } from '../../mocks/api'
-import type { AttendanceStatus, Attendee } from '../../mocks/types'
+import { Button, Card, EmptyState, StatTile, StatusBadge } from '../../components/ui'
+import { api } from '../../lib/api'
+import { timeOfDay } from '../../lib/format'
+import type { ApplicationView, CheckinCodeView, CheckinView, OpportunityView } from '../../lib/types'
+import { messageFor, useGet } from '../../lib/useGet'
 
-const WINDOW_SECONDS = 30
-const tone: Record<AttendanceStatus, 'ok' | 'bad' | 'neutral'> =
-  { 'Checked in': 'ok', 'Checked out': 'bad', 'Not arrived': 'neutral' }
+function CodePanel({ opportunityId }: { opportunityId: string }) {
+  const [open, setOpen] = useState(false)
+  const [round, setRound] = useState(0)
+  const [code, setCode] = useState<CheckinCodeView | null>(null)
+  const [secondsLeft, setSecondsLeft] = useState(0)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+
+    let live = true
+    let timer: number | undefined
+
+    api
+      .post<CheckinCodeView>(`/opportunities/${opportunityId}/checkin-code`)
+      .then(next => {
+        if (!live) return
+
+        const expiresAt = Date.now() + next.secondsRemaining * 1000
+
+        setCode(next)
+        setSecondsLeft(next.secondsRemaining)
+        setError('')
+
+        timer = window.setInterval(() => {
+          const left = Math.ceil((expiresAt - Date.now()) / 1000)
+
+          if (left <= 0) {
+            setRound(count => count + 1)
+          } else {
+            setSecondsLeft(left)
+          }
+        }, 500)
+      })
+      .catch(problem => {
+        if (live) setError(messageFor(problem))
+      })
+
+    return () => {
+      live = false
+      if (timer) clearInterval(timer)
+    }
+  }, [open, round, opportunityId])
+
+  return (
+    <Card>
+      <h2>Show this to check people in</h2>
+
+      {error && <p className="error" role="alert">{error}</p>}
+
+      {code ? (
+        <>
+          <div
+            style={{ display: 'grid', placeItems: 'center', margin: '20px 0' }}
+            dangerouslySetInnerHTML={{ __html: code.qrSvg }}
+          />
+
+          <div className="row">
+            <strong className="stat-value" style={{ fontSize: 34, letterSpacing: 4 }}>
+              {code.code}
+            </strong>
+            <strong className="stat-value" style={{ fontSize: 24, color: 'var(--primary)' }}>
+              00:{String(Math.max(secondsLeft, 0)).padStart(2, '0')}
+            </strong>
+          </div>
+
+          <div style={{ height: 3, background: 'var(--neutral-border)', borderRadius: 2, margin: '10px 0 18px' }}>
+            <div
+              style={{
+                width: `${(Math.max(secondsLeft, 0) / 30) * 100}%`,
+                height: 3,
+                background: 'var(--primary)',
+                borderRadius: 2,
+              }}
+            />
+          </div>
+
+          <h3>It changes every 30 seconds</h3>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            Volunteers scan the code, or type the six digits into their own phone. Only the current
+            window and the one before it are accepted, so a screenshot taken earlier will not work.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="muted">
+            Open check in when the event starts. A code appears here and refreshes itself.
+          </p>
+          <Button variant="primary" block disabled={open} onClick={() => setOpen(true)}>
+            {open ? 'Opening…' : 'Open check in'}
+          </Button>
+        </>
+      )}
+    </Card>
+  )
+}
+
+function Register({ opportunityId }: { opportunityId: string }) {
+  const checkins = useGet<CheckinView[]>(`/opportunities/${opportunityId}/checkins`)
+  const applicants = useGet<ApplicationView[]>(`/opportunities/${opportunityId}/applications`)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState('')
+
+  const present = checkins.data ?? []
+  const accepted = (applicants.data ?? []).filter(item => item.status === 'ACCEPTED')
+  const arrived = new Set(present.map(entry => entry.volunteer.id))
+  const missing = accepted.filter(item => !arrived.has(item.volunteer.id))
+
+  async function markPresent(volunteerId: string) {
+    setError('')
+    setBusy(volunteerId)
+
+    try {
+      await api.post(`/opportunities/${opportunityId}/checkins/manual`, { volunteerId })
+      checkins.reload()
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  async function checkOut(id: string) {
+    setError('')
+    setBusy(id)
+
+    try {
+      await api.patch(`/checkins/${id}/checkout`)
+      checkins.reload()
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <div className="stack">
+      <Card>
+        <div className="stat-row">
+          <StatTile label="Checked in" value={present.filter(entry => !entry.checkedOutAt).length} />
+          <StatTile label="Checked out" value={present.filter(entry => entry.checkedOutAt).length} />
+          <StatTile label="Not arrived" value={missing.length} />
+        </div>
+      </Card>
+
+      {error && <p className="error" role="alert">{error}</p>}
+
+      <Card>
+        <h2>Volunteer attendance</h2>
+        <Loaded state={checkins} what="the register">
+          {items =>
+            items.length === 0 ? (
+              <EmptyState>Nobody has checked in yet.</EmptyState>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Volunteer</th>
+                    <th>In</th>
+                    <th>Out</th>
+                    <th>Hours</th>
+                    <th>How</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map(entry => (
+                    <tr key={entry.id}>
+                      <td>{entry.volunteer.name}</td>
+                      <td>{timeOfDay(entry.checkedInAt)}</td>
+                      <td>{entry.checkedOutAt ? timeOfDay(entry.checkedOutAt) : '—'}</td>
+                      <td>{entry.hours ?? '—'}</td>
+                      <td>
+                        <StatusBadge tone={entry.method === 'QR' ? 'ok' : 'neutral'}>
+                          {entry.method === 'QR' ? 'Scanned' : 'By hand'}
+                        </StatusBadge>
+                      </td>
+                      <td>
+                        {!entry.checkedOutAt && (
+                          <Button disabled={busy === entry.id} onClick={() => checkOut(entry.id)}>
+                            Check out
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          }
+        </Loaded>
+      </Card>
+
+      <Card>
+        <h2>Not arrived</h2>
+        <p className="muted">
+          If someone&rsquo;s phone will not work, you can mark them present yourself. It is recorded
+          as by hand rather than scanned.
+        </p>
+        <div className="divided">
+          {missing.map(item => (
+            <div key={item.id} className="row">
+              <span>{item.volunteer.name}</span>
+              <Button
+                disabled={busy === item.volunteer.id}
+                onClick={() => markPresent(item.volunteer.id)}
+              >
+                Mark present
+              </Button>
+            </div>
+          ))}
+          {missing.length === 0 && accepted.length > 0 && (
+            <EmptyState>Everyone accepted has arrived.</EmptyState>
+          )}
+          {accepted.length === 0 && (
+            <EmptyState>Nobody has been accepted onto this one yet.</EmptyState>
+          )}
+        </div>
+      </Card>
+    </div>
+  )
+}
 
 export default function Attendance() {
-  const [attendees, setAttendees] = useState<Attendee[]>([])
-  const [secondsLeft, setSecondsLeft] = useState(18)
+  const mine = useGet<OpportunityView[]>('/opportunities/mine')
+  const [chosen, setChosen] = useState('')
 
-  useEffect(() => { getAttendees().then(setAttendees) }, [])
-
-  // Mirrors the 30-second TOTP window the verification API will use.
-  useEffect(() => {
-    const timer = setInterval(() => setSecondsLeft(s => (s <= 1 ? WINDOW_SECONDS : s - 1)), 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const counts = {
-    in: attendees.filter(a => a.status === 'Checked in').length,
-    out: attendees.filter(a => a.status === 'Checked out').length,
-    absent: attendees.filter(a => a.status === 'Not arrived').length,
-  }
+  const published = (mine.data ?? []).filter(item => item.status === 'PUBLISHED')
+  const current = chosen || published[0]?.id || ''
 
   return (
     <>
       <PageHeader
-        eyebrow="Physical event · 10 October"
-        title="Kimironko planting morning"
-        meta="Kimironko wetland · 09:00-12:00 · 18 accepted volunteers"
-        action={<Button>Export attendance</Button>}
+        eyebrow="On the day"
+        title="Attendance"
+        meta="Open check in, watch people arrive, and record their hours."
       />
 
-      <div className="page-grid">
-        <Card>
-          <h2>Scan to check in or out</h2>
-          <StatusBadge tone="bad">Event QR · illustrative</StatusBadge>
+      {mine.error && <Problem message={mine.error} onRetry={mine.reload} />}
 
-          <div style={{ display: 'grid', placeItems: 'center', margin: '20px 0' }}>
-            <div style={{ width: 220, height: 220, background: 'var(--surface-muted)',
-                          border: '1px solid var(--neutral-border)', borderRadius: 'var(--radius-sm)',
-                          display: 'grid', placeItems: 'center', textAlign: 'center', padding: 16 }}>
-              <span className="muted">
-                The QR renders here once the verification API issues a code
-              </span>
-            </div>
-          </div>
-
-          <div className="row">
-            <span className="muted">Next refresh in</span>
-            <strong className="stat-value" style={{ fontSize: 24, color: 'var(--primary)' }}>
-              00:{String(secondsLeft).padStart(2, '0')}
-            </strong>
-          </div>
-          <div style={{ height: 3, background: 'var(--neutral-border)', borderRadius: 2, margin: '10px 0 18px' }}>
-            <div style={{ width: `${(secondsLeft / WINDOW_SECONDS) * 100}%`, height: 3,
-                          background: 'var(--primary)', borderRadius: 2 }} />
-          </div>
-
-          <h3>Refreshes every 30 seconds</h3>
-          <p className="muted">
-            Volunteers scan in their phone browser on arrival, then scan again when leaving.
-          </p>
-          <Button block>Present QR</Button>
-          <p className="muted" style={{ marginTop: 14 }}>
-            Only the current or immediately preceding 30-second window is accepted, so a
-            photographed code cannot be reused.
-          </p>
-
-          <Card variant="tint">
-            <h3 style={{ color: 'var(--primary)' }}>Invalid or expired code</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              The volunteer is guided to scan the newest event code. Old screenshots are not accepted.
-            </p>
-          </Card>
-        </Card>
-
-        <div className="stack">
+      {published.length === 0 ? (
+        <EmptyState>
+          You need a published opportunity before you can take attendance for it.
+        </EmptyState>
+      ) : (
+        <>
           <Card>
-            <div className="stat-row">
-              <StatTile label="Checked in" value={counts.in} />
-              <StatTile label="Checked out" value={counts.out} />
-              <StatTile label="Not arrived" value={counts.absent} />
-            </div>
-          </Card>
-
-          <Card>
-            <h2>Volunteer attendance</h2>
-            <table className="table">
-              <thead>
-                <tr><th>Volunteer</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                {attendees.map(attendee => (
-                  <tr key={attendee.id}>
-                    <td>{attendee.name}</td>
-                    <td>{attendee.checkIn ?? '—'}</td>
-                    <td>{attendee.checkOut ?? '—'}</td>
-                    <td><StatusBadge tone={tone[attendee.status]}>{attendee.status}</StatusBadge></td>
-                  </tr>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label className="label" htmlFor="event">Opportunity</label>
+              <select
+                id="event"
+                className="input"
+                value={current}
+                onChange={event => setChosen(event.target.value)}
+              >
+                {published.map(item => (
+                  <option key={item.id} value={item.id}>{item.title}</option>
                 ))}
-              </tbody>
-            </table>
-            <p className="muted" style={{ marginTop: 14, marginBottom: 0 }}>
-              Showing {attendees.length} of 18 volunteers · all times local (CAT)
-            </p>
+              </select>
+            </div>
           </Card>
 
-          <Card>
-            <h2>Event photo evidence</h2>
-            <p className="muted">Add photos of the completed work for the event record.</p>
-            <div className="two-col" style={{ marginBottom: 14 }}>
-              {['planting-team.jpg', 'saplings.jpg'].map(name => (
-                <div key={name}>
-                  <div style={{ height: 120, background: 'var(--surface-muted)',
-                                border: '1px solid var(--neutral-border)',
-                                borderRadius: 'var(--radius-sm)' }} />
-                  <div className="muted" style={{ marginTop: 6 }}>{name}</div>
-                </div>
-              ))}
-            </div>
-            <FileDrop label="Upload event photos" hint="JPG or PNG · up to 10 MB each" />
-            <div style={{ marginTop: 18 }}>
-              <Button variant="primary">Save event evidence</Button>
-            </div>
-          </Card>
-        </div>
-      </div>
+          <div className="page-grid" style={{ marginTop: 22 }}>
+            <CodePanel key={current} opportunityId={current} />
+            <Register key={`register-${current}`} opportunityId={current} />
+          </div>
+        </>
+      )}
     </>
   )
 }

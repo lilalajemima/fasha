@@ -1,17 +1,23 @@
 import type { TokenStore } from './TokenStore'
 
 export class ApiError extends Error {
-  constructor(readonly status: number, message: string) {
+  readonly status: number
+
+  constructor(status: number, message: string) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
   }
 }
 
 export class ApiClient {
-  constructor(
-    private readonly baseUrl: string,
-    private readonly tokens: TokenStore,
-  ) {}
+  private readonly baseUrl: string
+  private readonly tokens: TokenStore
+
+  constructor(baseUrl: string, tokens: TokenStore) {
+    this.baseUrl = baseUrl
+    this.tokens = tokens
+  }
 
   get<T>(path: string): Promise<T> {
     return this.send<T>('GET', path)
@@ -19,6 +25,10 @@ export class ApiClient {
 
   post<T>(path: string, body?: unknown): Promise<T> {
     return this.send<T>('POST', path, body)
+  }
+
+  patch<T>(path: string, body?: unknown): Promise<T> {
+    return this.send<T>('PATCH', path, body)
   }
 
   private async send<T>(method: string, path: string, body?: unknown): Promise<T> {

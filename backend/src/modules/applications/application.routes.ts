@@ -1,11 +1,17 @@
 import { Router } from 'express'
 import { authenticate } from '../../middleware/authenticate'
+import { NotificationRepository } from '../notifications/NotificationRepository'
+import { DatabaseNotifier } from '../notifications/Notifier'
 import { OpportunityRepository } from '../opportunities/OpportunityRepository'
 import { ApplicationController } from './ApplicationController'
 import { ApplicationRepository } from './ApplicationRepository'
 import { ApplicationService } from './ApplicationService'
 
-const service = new ApplicationService(new ApplicationRepository(), new OpportunityRepository())
+const service = new ApplicationService(
+  new ApplicationRepository(),
+  new OpportunityRepository(),
+  new DatabaseNotifier(new NotificationRepository()),
+)
 const controller = new ApplicationController(service)
 
 export const applicationRoutes = Router()

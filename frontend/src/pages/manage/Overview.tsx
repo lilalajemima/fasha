@@ -1,25 +1,22 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
+import { Loaded } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, StatTile, StatusBadge, Tabs } from '../../components/ui'
+import { Button, Card, EmptyState, StatTile } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
-import { getManagedOpportunities } from '../../mocks/api'
-import type { Opportunity } from '../../mocks/types'
+import type { OpportunityView } from '../../lib/types'
+import { useGet } from '../../lib/useGet'
 import OpportunityTable from './OpportunityTable'
 
 export default function Overview() {
   const { user } = useAuth()
   const isVolunteer = user?.role !== 'organisation'
-  const [items, setItems] = useState<Opportunity[]>([])
-  const [tab, setTab] = useState('opportunities')
+  const mine = useGet<OpportunityView[]>('/opportunities/mine')
+  const queue = useGet<OpportunityView[]>(isVolunteer ? null : '/opportunities/pending')
 
-  useEffect(() => {
-    getManagedOpportunities(isVolunteer ? 'volunteer' : 'organisation').then(setItems)
-  }, [isVolunteer])
-
-  const published = items.filter(o => o.status === 'PUBLISHED').length
-  const waiting = items.filter(o => o.status === 'PENDING_APPROVAL').length
+  const items = mine.data ?? []
+  const published = items.filter(item => item.status === 'PUBLISHED').length
+  const waiting = items.filter(item => item.status === 'PENDING_APPROVAL').length
 
   return (
     <>
@@ -45,68 +42,71 @@ export default function Overview() {
               <StatTile label="Initiatives proposed" value={items.length} />
               <StatTile label="Awaiting approval" value={waiting} />
               <StatTile label="Published" value={published} />
-              <StatTile label="Volunteers hosted" value={24} />
             </>
           ) : (
             <>
-              <StatTile label="Published opportunities" value={published} />
-              <StatTile label="Applications to review" value={12} />
-              <StatTile label="Deliverables to review" value={3} />
-              <StatTile label="Hours verified this month" value="86 h" />
+              <StatTile label="Opportunities posted" value={items.length} />
+              <StatTile label="Published" value={published} />
+              <StatTile label="Citizen initiatives to review" value={(queue.data ?? []).length} />
             </>
           )}
         </div>
       </Card>
 
-      <div style={{ marginTop: 26 }}>
-        <Tabs active={tab} onChange={setTab} items={[
-          { id: 'opportunities', label: `${isVolunteer ? 'Initiatives' : 'Opportunities'} · ${items.length}` },
-          { id: 'applications', label: `Applications · ${isVolunteer ? 4 : 12}` },
-          { id: 'deliverables', label: `Deliverables · ${isVolunteer ? 0 : 3}` },
-        ]} />
-      </div>
-
-      <div className="page-grid">
+      <div className="page-grid" style={{ marginTop: 26 }}>
         <div className="stack">
           <Card>
             <h2>{isVolunteer ? 'Your initiatives' : 'Your opportunities'}</h2>
-            <OpportunityTable items={items} />
+            <Loaded state={mine} what="your opportunities">
+              {list =>
+                list.length === 0 ? (
+                  <EmptyState>Nothing here yet. Create one to get started.</EmptyState>
+                ) : (
+                  <OpportunityTable items={list} />
+                )
+              }
+            </Loaded>
           </Card>
 
-          {isVolunteer ? (
-            <Card variant="note">
-              <h3>Citizen initiatives need reviewer approval</h3>
-              <p className="muted" style={{ margin: 0 }}>
-                An initiative you propose stays unpublished until a reviewer approves it. Once
-                approved it appears in Discover and volunteers can apply.
-              </p>
-            </Card>
-          ) : (
-            <Card variant="note">
-              <h3>Your opportunities publish straight away</h3>
-              <p className="muted" style={{ margin: 0 }}>
-                An organisation account posts directly to Discover with no review step. Only
-                initiatives proposed by volunteers are reviewed before publication.
-              </p>
-            </Card>
-          )}
+          <Card variant="note">
+            <h3>
+              {isVolunteer
+                ? 'Citizen initiatives need reviewer approval'
+                : 'Your opportunities publish straight away'}
+            </h3>
+            <p className="muted" style={{ margin: 0 }}>
+              {isVolunteer
+                ? 'An initiative you propose stays unpublished until a reviewer approves it. Once approved it appears in Discover and volunteers can apply.'
+                : 'An organisation account posts directly to Discover with no review step. Only initiatives proposed by volunteers are reviewed before publication.'}
+            </p>
+          </Card>
         </div>
 
         <aside className="stack">
+          {!isVolunteer && (queue.data ?? []).length > 0 && (
+            <Card variant="tint">
+              <h2 style={{ color: 'var(--primary)' }}>Waiting on you</h2>
+              <p className="muted">
+                {(queue.data ?? []).length} citizen initiative
+                {(queue.data ?? []).length === 1 ? '' : 's'} need a decision before they appear in
+                Discover.
+              </p>
+              <Link to="/manage/review"><Button block>Open the review queue</Button></Link>
+            </Card>
+          )}
+
           <Card>
-            <h2>Collaborator updates</h2>
-            <h3>Maya accepted your invitation</h3>
-            <p className="muted">Restore Kimironko wetland path · 20 min ago</p>
-            <hr />
-            <h3>Invitation to co-organise</h3>
-            <p className="muted">Kimironko seed swap · invited by Leo Gatare</p>
-            <div className="cluster">
-              <Button variant="primary">Accept</Button>
-              <Button>Decline</Button>
-            </div>
-            <p className="muted" style={{ marginTop: 14, marginBottom: 0 }}>
-              Accepted co-organisers can edit details and review submissions.
+            <h2>Attendance</h2>
+            <p className="muted">
+              Show the rotating code at your event so volunteers can check themselves in.
             </p>
+            <Link to="/manage/attendance">
+              <Button block>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="attendance" /> Open attendance
+                </span>
+              </Button>
+            </Link>
           </Card>
         </aside>
       </div>

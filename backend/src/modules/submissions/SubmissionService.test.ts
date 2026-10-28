@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ConflictError, ForbiddenError } from '../../core/errors/HttpErrors'
 import type { ApplicationRecord, ApplicationStore } from '../applications/ApplicationStore'
 import type { OpportunityRecord, OpportunityStore } from '../opportunities/OpportunityStore'
+import type { Notifier } from '../notifications/Notifier'
 import { SubmissionService } from './SubmissionService'
 import type { NewSubmission, SubmissionRecord, SubmissionStore } from './SubmissionStore'
 
@@ -63,6 +64,14 @@ class FakeApplicationStore implements ApplicationStore {
 
   async updateStatus(): Promise<never> {
     throw new Error('not needed in this test')
+  }
+}
+
+class RecordingNotifier implements Notifier {
+  sent: { userId: string; type: string; message: string }[] = []
+
+  async send(userId: string, type: string, message: string) {
+    this.sent.push({ userId, type, message })
   }
 }
 
@@ -142,12 +151,15 @@ class FakeSubmissionStore implements SubmissionStore {
   }
 }
 
+const notifier = new RecordingNotifier()
+
 function build(records: SubmissionRecord[] = [], accepted = ['volunteer-1']) {
   const submissions = new FakeSubmissionStore(records)
   const service = new SubmissionService(
     submissions,
     new FakeApplicationStore(accepted),
     new FakeOpportunityStore(),
+    notifier,
   )
 
   return { service, submissions }
@@ -228,6 +240,16 @@ describe('reviewing hours', () => {
     const { service } = build([makeSubmission({ status: 'APPROVED' })])
 
     await expect(service.decide(organiser, 'submission-1', 'REJECT')).rejects.toThrow(ConflictError)
+  })
+
+  it('tells the volunteer their hours were credited', async () => {
+    const { service } = build([makeSubmission()])
+    notifier.sent = []
+
+    await service.decide(organiser, 'submission-1', 'APPROVE')
+
+    expect(notifier.sent[0].userId).toBe('volunteer-1')
+    expect(notifier.sent[0].message).toContain('portfolio')
   })
 
   it('reports hours that do not exist', async () => {

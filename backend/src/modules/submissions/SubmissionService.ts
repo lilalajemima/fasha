@@ -2,6 +2,7 @@ import { SubmissionStatus, UserRole } from '@prisma/client'
 import { ConflictError, ForbiddenError, NotFoundError } from '../../core/errors/HttpErrors'
 import type { TokenPayload } from '../../core/security/TokenService'
 import type { ApplicationStore } from '../applications/ApplicationStore'
+import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type { OpportunityStore } from '../opportunities/OpportunityStore'
 import type { NewSubmission, SubmissionRecord, SubmissionStore } from './SubmissionStore'
 import { toSubmissionView, type SubmissionView } from './SubmissionView'
@@ -11,6 +12,7 @@ export class SubmissionService {
     private readonly submissions: SubmissionStore,
     private readonly applications: ApplicationStore,
     private readonly opportunities: OpportunityStore,
+    private readonly notifier: Notifier,
   ) {}
 
   async submit(
@@ -77,16 +79,30 @@ export class SubmissionService {
     }
 
     if (decision === 'REJECT') {
-      return toSubmissionView(await this.submissions.reject(submissionId))
+      const rejected = await this.submissions.reject(submissionId)
+
+      await this.notifier.send(
+        rejected.volunteerId,
+        NOTIFICATION_TYPES.hoursDecided,
+        `Your hours for "${rejected.opportunity.title}" were not approved.`,
+      )
+
+      return toSubmissionView(rejected)
     }
 
-    return toSubmissionView(
-      await this.submissions.approveAndCredit(
-        submissionId,
-        submission.hoursClaimed,
-        submission.opportunity.requiredSkills,
-      ),
+    const approved = await this.submissions.approveAndCredit(
+      submissionId,
+      submission.hoursClaimed,
+      submission.opportunity.requiredSkills,
     )
+
+    await this.notifier.send(
+      approved.volunteerId,
+      NOTIFICATION_TYPES.hoursDecided,
+      `${approved.hoursClaimed} hours for "${approved.opportunity.title}" are now on your portfolio.`,
+    )
+
+    return toSubmissionView(approved)
   }
 
   private mayReview(actor: TokenPayload, submission: SubmissionRecord): boolean {

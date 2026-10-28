@@ -14,7 +14,6 @@ export default function SignUp() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -24,7 +23,6 @@ export default function SignUp() {
     if (password.length < MIN_PASSWORD_LENGTH) {
       return setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
     }
-    if (!agreed) return setError('Please accept the terms to continue.')
 
     setBusy(true)
     try {

@@ -1,165 +1,314 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { Loaded, Problem } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, StatusBadge, Tabs, Tag, TextField } from '../../components/ui'
-import { getDeliverables, getReviewApplications } from '../../mocks/api'
-import type { Deliverable, ReviewApplication } from '../../mocks/types'
+import { Button, Card, EmptyState, StatusBadge, Tabs, Tag } from '../../components/ui'
+import { useAuth } from '../../auth/AuthContext'
+import { api } from '../../lib/api'
+import { initials, longDate, sentenceCase } from '../../lib/format'
+import type { ApplicationView, OpportunityView, SubmissionView } from '../../lib/types'
+import { messageFor, useGet } from '../../lib/useGet'
+
+function Queue({ onDecided }: { onDecided: () => void }) {
+  const queue = useGet<OpportunityView[]>('/opportunities/pending')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState('')
+
+  async function decide(id: string, decision: 'APPROVE' | 'REJECT') {
+    setError('')
+    setBusy(id)
+
+    try {
+      await api.patch(`/opportunities/${id}/status`, { decision })
+      queue.reload()
+      onDecided()
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <Card>
+      <h2>Citizen initiatives awaiting approval</h2>
+      <p className="muted">
+        Proposed by volunteers. They stay out of Discover until someone approves them.
+      </p>
+
+      {error && <p className="error" role="alert">{error}</p>}
+
+      <Loaded state={queue} what="the review queue">
+        {items =>
+          items.length === 0 ? (
+            <EmptyState>Nothing is waiting for a decision.</EmptyState>
+          ) : (
+            <div className="divided">
+              {items.map(item => (
+                <div key={item.id}>
+                  <div className="row" style={{ alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 style={{ marginBottom: 2 }}>{item.title}</h3>
+                      <p className="muted" style={{ margin: 0 }}>
+                        {item.creator.name} · {sentenceCase(item.mode)} ·{' '}
+                        {item.location ?? 'Online'} · up to {item.maxCapacity}
+                      </p>
+                    </div>
+                    <StatusBadge tone="warn">Awaiting approval</StatusBadge>
+                  </div>
+
+                  <p style={{ marginTop: 10 }}>{item.description}</p>
+
+                  <div className="cluster" style={{ marginBottom: 14 }}>
+                    {[...item.requiredSkills, ...item.categories].map(tag => (
+                      <Tag key={tag}>{tag}</Tag>
+                    ))}
+                  </div>
+
+                  <div className="cluster">
+                    <Button
+                      variant="primary"
+                      disabled={busy === item.id}
+                      onClick={() => decide(item.id, 'APPROVE')}
+                    >
+                      Approve and publish
+                    </Button>
+                    <Button disabled={busy === item.id} onClick={() => decide(item.id, 'REJECT')}>
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        }
+      </Loaded>
+    </Card>
+  )
+}
+
+function Applicants({ opportunityId }: { opportunityId: string }) {
+  const applicants = useGet<ApplicationView[]>(`/opportunities/${opportunityId}/applications`)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState('')
+
+  async function decide(id: string, decision: 'ACCEPT' | 'REJECT') {
+    setError('')
+    setBusy(id)
+
+    try {
+      await api.patch(`/applications/${id}/status`, { decision })
+      applicants.reload()
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <Card>
+      <h2>Applicants</h2>
+      {error && <p className="error" role="alert">{error}</p>}
+
+      <Loaded state={applicants} what="applicants">
+        {items =>
+          items.length === 0 ? (
+            <EmptyState>Nobody has applied to this one yet.</EmptyState>
+          ) : (
+            <div className="divided">
+              {items.map(application => (
+                <div key={application.id}>
+                  <div className="row" style={{ alignItems: 'flex-start' }}>
+                    <span className="cluster" style={{ gap: 14 }}>
+                      <span className="avatar" style={{ width: 48, height: 48, fontSize: 15 }}>
+                        {initials(application.volunteer.name)}
+                      </span>
+                      <span>
+                        <strong style={{ display: 'block', fontSize: 19 }}>
+                          {application.volunteer.name}
+                        </strong>
+                        <span className="muted">
+                          Applied {longDate(application.createdAt)}
+                        </span>
+                      </span>
+                    </span>
+                    <StatusBadge
+                      tone={
+                        application.status === 'ACCEPTED'
+                          ? 'ok'
+                          : application.status === 'PENDING'
+                            ? 'warn'
+                            : 'bad'
+                      }
+                    >
+                      {sentenceCase(application.status)}
+                    </StatusBadge>
+                  </div>
+
+                  <p style={{ marginTop: 12 }}>&ldquo;{application.motivationStatement}&rdquo;</p>
+
+                  {application.status === 'PENDING' && (
+                    <div className="cluster">
+                      <Button
+                        variant="primary"
+                        disabled={busy === application.id}
+                        onClick={() => decide(application.id, 'ACCEPT')}
+                      >
+                        Accept applicant
+                      </Button>
+                      <Button
+                        disabled={busy === application.id}
+                        onClick={() => decide(application.id, 'REJECT')}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        }
+      </Loaded>
+    </Card>
+  )
+}
+
+function ClaimedHours({ opportunityId }: { opportunityId: string }) {
+  const claims = useGet<SubmissionView[]>(`/opportunities/${opportunityId}/submissions`)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState('')
+
+  async function decide(id: string, decision: 'APPROVE' | 'REJECT') {
+    setError('')
+    setBusy(id)
+
+    try {
+      await api.patch(`/submissions/${id}/status`, { decision })
+      claims.reload()
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <Card>
+      <h2>Claimed hours</h2>
+      <p className="muted">Approving credits the hours to that volunteer&rsquo;s portfolio.</p>
+      {error && <p className="error" role="alert">{error}</p>}
+
+      <Loaded state={claims} what="claimed hours">
+        {items =>
+          items.length === 0 ? (
+            <EmptyState>No hours have been claimed for this one.</EmptyState>
+          ) : (
+            <div className="divided">
+              {items.map(claim => (
+                <div key={claim.id}>
+                  <div className="row" style={{ alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 style={{ marginBottom: 2 }}>{claim.volunteer.name}</h3>
+                      <p className="muted" style={{ margin: 0 }}>
+                        {claim.hoursClaimed} h · sent {longDate(claim.createdAt)}
+                      </p>
+                      <p style={{ margin: '6px 0 0' }}>
+                        <a href={claim.proofUrl} target="_blank" rel="noreferrer">
+                          Open the proof ↗
+                        </a>
+                      </p>
+                    </div>
+                    <StatusBadge
+                      tone={
+                        claim.status === 'APPROVED' ? 'ok' : claim.status === 'PENDING' ? 'warn' : 'bad'
+                      }
+                    >
+                      {sentenceCase(claim.status)}
+                    </StatusBadge>
+                  </div>
+
+                  {claim.status === 'PENDING' && (
+                    <div className="cluster" style={{ marginTop: 12 }}>
+                      <Button
+                        variant="primary"
+                        disabled={busy === claim.id}
+                        onClick={() => decide(claim.id, 'APPROVE')}
+                      >
+                        Approve {claim.hoursClaimed} hours
+                      </Button>
+                      <Button disabled={busy === claim.id} onClick={() => decide(claim.id, 'REJECT')}>
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        }
+      </Loaded>
+    </Card>
+  )
+}
 
 export default function ReviewWorkspace() {
-  const [applications, setApplications] = useState<ReviewApplication[]>([])
-  const [deliverables, setDeliverables] = useState<Deliverable[]>([])
-  const [tab, setTab] = useState('all')
+  const { user } = useAuth()
+  const isVolunteer = user?.role !== 'organisation'
+  const mine = useGet<OpportunityView[]>('/opportunities/mine')
+  const [chosen, setChosen] = useState('')
+  const [tab, setTab] = useState('applicants')
 
-  useEffect(() => {
-    getReviewApplications().then(setApplications)
-    getDeliverables().then(setDeliverables)
-  }, [])
-
-  const application = applications[0]
-  const deliverable = deliverables[0]
-  const showApplication = tab !== 'deliverables' && application
-  const showDeliverable = tab !== 'applications' && deliverable
+  const published = (mine.data ?? []).filter(item => item.status === 'PUBLISHED')
+  const current = chosen || published[0]?.id || ''
 
   return (
     <>
       <PageHeader
         title="Applications & Contributions"
-        action={<Button>Edit opportunity</Button>}
+        meta="Decide who joins, and verify the hours people claim."
       />
 
-      <Card variant="tint">
-        <h3 style={{ color: 'var(--primary)' }}>Accepted co-organiser access</h3>
-        <p className="muted" style={{ margin: 0 }}>
-          You can edit opportunity details and review applications or deliverables. Deleting the
-          opportunity and removing the original creator are not permitted.
-        </p>
-      </Card>
+      <div className="stack">
+        {!isVolunteer && <Queue onDecided={mine.reload} />}
 
-      <div style={{ marginTop: 26 }}>
-        <Tabs active={tab} onChange={setTab} items={[
-          { id: 'all', label: 'All reviews · 15' },
-          { id: 'applications', label: 'Applications · 12' },
-          { id: 'deliverables', label: 'Deliverables · 3' },
-        ]} />
-      </div>
+        {mine.error && <Problem message={mine.error} onRetry={mine.reload} />}
 
-      <div className="two-col">
-        {showApplication && (
-          <Card>
-            <h2>Application · 1 of 12</h2>
-            <StatusBadge tone="warn">Pending decision</StatusBadge>
-            <p className="muted" style={{ marginTop: 12 }}>
-              {application.opportunity} · submitted {application.submitted}
-            </p>
-
-            <div className="row" style={{ alignItems: 'flex-start', marginBottom: 12 }}>
-              <span className="cluster" style={{ gap: 14 }}>
-                <span className="avatar" style={{ width: 48, height: 48, fontSize: 15 }}>AM</span>
-                <span>
-                  <strong style={{ display: 'block', fontSize: 19 }}>{application.name}</strong>
-                  <span className="muted">{application.location} · Volunteer</span>
-                </span>
-              </span>
-              <StatusBadge tone="match">{application.match}% match</StatusBadge>
-            </div>
-
-            <p>{application.bio}</p>
-            <p className="muted">General availability · {application.availability}</p>
-            <div className="cluster">{application.skills.map(s => <Tag key={s}>{s}</Tag>)}</div>
-            <p className="muted" style={{ marginTop: 12 }}>
-              Interests · {application.interests.join(', ')}
-            </p>
-
-            <h3 style={{ marginTop: 20 }}>Motivation</h3>
-            <p>&ldquo;{application.motivation}&rdquo;</p>
-
-            <Card variant="note">
-              <strong>{application.attachment}</strong>
-              <div className="muted" style={{ marginTop: 2 }}>PDF · 2.4 MB · <a href="#file" onClick={e => e.preventDefault()}>Open attachment ↗</a></div>
-            </Card>
-
-            <div style={{ marginTop: 16 }}>
-              <Card variant="tint">
-                <h3 style={{ color: 'var(--primary)' }}>8 places available</h3>
-                <p className="muted" style={{ margin: 0 }}>
-                  12 of 20 volunteers accepted. Application deadline: 14 Oct, 23:59.
-                </p>
-              </Card>
-            </div>
-
-            <div style={{ marginTop: 18 }}>
-              <TextField id="decision-note" label="Decision note (optional)"
-                         placeholder="Add a short message for the applicant..." />
-            </div>
-            <div className="cluster">
-              <Button variant="primary">Accept applicant</Button>
-              <Button>Reject</Button>
-            </div>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              The volunteer receives an in-app application update.
-            </p>
-          </Card>
-        )}
-
-        {showDeliverable && (
-          <Card>
-            <h2>Virtual deliverable · 1 of 3</h2>
-            <StatusBadge tone="warn">Awaiting verification</StatusBadge>
-            <p className="muted" style={{ marginTop: 12 }}>
-              {deliverable.opportunity} · submitted {deliverable.submitted}
-            </p>
-
-            <span className="cluster" style={{ gap: 14, marginBottom: 16 }}>
-              <span className="avatar" style={{ width: 48, height: 48, fontSize: 15 }}>NK</span>
-              <span>
-                <strong style={{ display: 'block', fontSize: 19 }}>{deliverable.name}</strong>
-                <span className="muted">Accepted volunteer · virtual task</span>
-              </span>
-            </span>
-
-            <div className="two-col">
-              <Card variant="tint">
-                <div className="stat-label">Claimed hours</div>
-                <div className="stat-value">{deliverable.hours} h</div>
-              </Card>
-              <Card variant="note">
-                <div className="stat-label">Skill to credit</div>
-                <strong>{deliverable.skill}</strong>
-              </Card>
-            </div>
-
-            <h3 style={{ marginTop: 20 }}>Completion report</h3>
-            <p>{deliverable.report}</p>
-
-            <h3>Proof of work</h3>
-            <Card variant="note">
-              <a href="#proof" onClick={e => e.preventDefault()}>{deliverable.proofLink} ↗</a>
-              <div className="muted" style={{ marginTop: 2 }}>
-                {deliverable.proofFile} · 1.8 MB · <a href="#file" onClick={e => e.preventDefault()}>Open file ↗</a>
+        {published.length === 0 ? (
+          <EmptyState>
+            Once one of your opportunities is published, applicants show up here.
+          </EmptyState>
+        ) : (
+          <>
+            <Card>
+              <div className="field" style={{ marginBottom: 0 }}>
+                <label className="label" htmlFor="which">Opportunity</label>
+                <select
+                  id="which"
+                  className="input"
+                  value={current}
+                  onChange={event => setChosen(event.target.value)}
+                >
+                  {published.map(item => (
+                    <option key={item.id} value={item.id}>{item.title}</option>
+                  ))}
+                </select>
               </div>
             </Card>
 
-            <div style={{ marginTop: 18 }}>
-              <TextField id="review-note" label="Review note"
-                         defaultValue="Clear translation and complete source files. Thank you!" />
-            </div>
+            <Tabs
+              active={tab}
+              onChange={setTab}
+              items={[
+                { id: 'applicants', label: 'Applicants' },
+                { id: 'hours', label: 'Claimed hours' },
+              ]}
+            />
 
-            <Card variant="tint">
-              <h3 style={{ color: 'var(--primary)' }}>Approve to credit the contribution</h3>
-              <p className="muted" style={{ margin: 0 }}>
-                Approval adds {deliverable.hours} verified hours and {deliverable.skill} to{' '}
-                {deliverable.name.split(' ')[0]}&rsquo;s public portfolio. Rejection does not credit
-                hours or skills.
-              </p>
-            </Card>
-
-            <div className="cluster" style={{ marginTop: 18 }}>
-              <Button variant="primary">Approve contribution</Button>
-              <Button>Reject</Button>
-            </div>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              The volunteer receives a task approval or rejection notification.
-            </p>
-          </Card>
+            {tab === 'applicants'
+              ? <Applicants key={current} opportunityId={current} />
+              : <ClaimedHours key={current} opportunityId={current} />}
+          </>
         )}
       </div>
     </>

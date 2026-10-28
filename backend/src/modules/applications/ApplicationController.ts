@@ -4,6 +4,7 @@ import {
   readOptionalString,
   readString,
 } from '../../core/validation/readers'
+import { routeParam } from '../../core/http/params'
 import type { ApplicationService } from './ApplicationService'
 
 const MIN_STATEMENT_LENGTH = 30
@@ -12,7 +13,7 @@ export class ApplicationController {
   constructor(private readonly applications: ApplicationService) {}
 
   apply = async (req: Request, res: Response) => {
-    const view = await this.applications.apply(req.user!, req.params.id, {
+    const view = await this.applications.apply(req.user!, routeParam(req, 'id'), {
       motivationStatement: readString(req.body, 'motivationStatement', MIN_STATEMENT_LENGTH),
       resumeUrl: readOptionalString(req.body, 'resumeUrl'),
     })
@@ -25,13 +26,13 @@ export class ApplicationController {
   }
 
   forOpportunity = async (req: Request, res: Response) => {
-    res.json(await this.applications.forOpportunity(req.user!, req.params.id))
+    res.json(await this.applications.forOpportunity(req.user!, routeParam(req, 'id')))
   }
 
   decide = async (req: Request, res: Response) => {
     const view = await this.applications.decide(
       req.user!,
-      req.params.id,
+      routeParam(req, 'id'),
       readApplicationDecision(req.body),
     )
 
@@ -39,6 +40,6 @@ export class ApplicationController {
   }
 
   withdraw = async (req: Request, res: Response) => {
-    res.json(await this.applications.withdraw(req.user!, req.params.id))
+    res.json(await this.applications.withdraw(req.user!, routeParam(req, 'id')))
   }
 }

@@ -158,9 +158,6 @@ export function readUrl(body: Body, field: string): string {
   if (!value.startsWith('http://') && !value.startsWith('https://')) {
     throw new BadRequestError(`${field} must be a link starting with http`)
   }
-  if (!isValidUrl(value)) {
-    throw new BadRequestError(`${field} must be a valid URL`)
-  }
 
   return value
 }

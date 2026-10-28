@@ -3,6 +3,7 @@ import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '.
 import type { TokenPayload } from '../../core/security/TokenService'
 import type { UserStore } from '../auth/UserStore'
 import type { MatchingService } from '../matching/MatchingService'
+import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type { FeedFilter, NewOpportunity, OpportunityRecord, OpportunityStore } from './OpportunityStore'
 import { toView, type OpportunityView } from './OpportunityView'
 
@@ -13,6 +14,7 @@ export class OpportunityService {
     private readonly opportunities: OpportunityStore,
     private readonly users: UserStore,
     private readonly matching: MatchingService,
+    private readonly notifier: Notifier,
   ) {}
 
   async create(creator: TokenPayload, input: NewOpportunity): Promise<OpportunityView> {
@@ -76,11 +78,19 @@ export class OpportunityService {
       throw new ConflictError('That opportunity has already been reviewed')
     }
 
-    const status = decision === 'APPROVE'
-      ? OpportunityStatus.PUBLISHED
-      : OpportunityStatus.REJECTED
+    const approved = decision === 'APPROVE'
+    const status = approved ? OpportunityStatus.PUBLISHED : OpportunityStatus.REJECTED
+    const updated = await this.opportunities.updateStatus(id, status)
 
-    return toView(await this.opportunities.updateStatus(id, status))
+    await this.notifier.send(
+      updated.creatorId,
+      NOTIFICATION_TYPES.initiativeDecided,
+      approved
+        ? `Your initiative "${updated.title}" was approved and is now in Discover.`
+        : `Your initiative "${updated.title}" was not approved this time.`,
+    )
+
+    return toView(updated)
   }
 
   private statusForNew(creatorRole: string): OpportunityStatus {

@@ -6,6 +6,7 @@ import { applicationRoutes } from './modules/applications/application.routes'
 import { authRoutes } from './modules/auth/auth.routes'
 import { checkinRoutes } from './modules/checkin/checkin.routes'
 import { healthRoutes } from './modules/health/health.routes'
+import { notificationRoutes } from './modules/notifications/notification.routes'
 import { opportunityRoutes } from './modules/opportunities/opportunity.routes'
 import { portfolioRoutes } from './modules/portfolio/portfolio.routes'
 import { profileRoutes } from './modules/profile/profile.routes'
@@ -25,6 +26,7 @@ export function createApp() {
   app.use(checkinRoutes)
   app.use(submissionRoutes)
   app.use(portfolioRoutes)
+  app.use(notificationRoutes)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

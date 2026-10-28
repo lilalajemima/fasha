@@ -6,6 +6,7 @@ import type {
   OpportunityRecord,
   OpportunityStore,
 } from '../opportunities/OpportunityStore'
+import type { Notifier } from '../notifications/Notifier'
 import { ApplicationService } from './ApplicationService'
 import type {
   ApplicationRecord,
@@ -68,6 +69,14 @@ function makeApplication(overrides: Partial<ApplicationRecord> = {}): Applicatio
   }
 }
 
+class RecordingNotifier implements Notifier {
+  sent: { userId: string; type: string; message: string }[] = []
+
+  async send(userId: string, type: string, message: string) {
+    this.sent.push({ userId, type, message })
+  }
+}
+
 class FakeOpportunityStore implements OpportunityStore {
   constructor(private readonly opportunity: OpportunityRecord | null) {}
 
@@ -94,6 +103,8 @@ class FakeOpportunityStore implements OpportunityStore {
   async updateStatus(): Promise<never> {
     throw new Error('not needed in this test')
   }
+
+  async setQrToken() {}
 }
 
 class FakeApplicationStore implements ApplicationStore {
@@ -122,6 +133,17 @@ class FakeApplicationStore implements ApplicationStore {
     return this.existing.filter(record => record.opportunityId === opportunityId)
   }
 
+  async findAccepted(opportunityId: string, volunteerId: string) {
+    return (
+      this.existing.find(
+        record =>
+          record.opportunityId === opportunityId &&
+          record.volunteerId === volunteerId &&
+          record.status === 'ACCEPTED',
+      ) ?? null
+    )
+  }
+
   async acceptIfSpace(applicationId: string, _opportunityId: string, maxCapacity: number) {
     if (this.accepted >= maxCapacity) return null
 
@@ -135,11 +157,13 @@ class FakeApplicationStore implements ApplicationStore {
   }
 }
 
+const notifier = new RecordingNotifier()
+
 function buildService(
   applications: FakeApplicationStore,
   opportunity: OpportunityRecord | null = makeOpportunity(),
 ) {
-  return new ApplicationService(applications, new FakeOpportunityStore(opportunity))
+  return new ApplicationService(applications, new FakeOpportunityStore(opportunity), notifier)
 }
 
 describe('applying', () => {
@@ -232,6 +256,27 @@ describe('deciding on an application', () => {
     await expect(service.decide(organiser, 'application-1', 'REJECT')).rejects.toThrow(
       'already been decided',
     )
+  })
+})
+
+describe('telling people what happened', () => {
+  it('tells the organiser when someone applies', async () => {
+    notifier.sent = []
+
+    await buildService(new FakeApplicationStore()).apply(volunteer, 'opportunity-1', draft)
+
+    expect(notifier.sent[0].userId).toBe('organisation-1')
+    expect(notifier.sent[0].message).toContain('applied')
+  })
+
+  it('tells the volunteer when they get a place', async () => {
+    const store = new FakeApplicationStore([makeApplication()], 1)
+    notifier.sent = []
+
+    await buildService(store).decide(organiser, 'application-1', 'ACCEPT')
+
+    expect(notifier.sent[0].userId).toBe('volunteer-1')
+    expect(notifier.sent[0].message).toContain('place')
   })
 })
 

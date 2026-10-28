@@ -1,44 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Loaded } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
 import { Button, Card, EmptyState, Tabs } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
-import { getManagedOpportunities, isOpen } from '../../mocks/api'
-import type { Opportunity } from '../../mocks/types'
+import { hasPassed } from '../../lib/format'
+import type { OpportunityView } from '../../lib/types'
+import { useGet } from '../../lib/useGet'
 import OpportunityTable from './OpportunityTable'
 
-type Filter = { id: string; label: string; keep: (o: Opportunity) => boolean }
+type Filter = { id: string; label: string; keep: (item: OpportunityView) => boolean }
 
-/** A volunteer's initiatives move through review, so they filter by approval state. */
 const VOLUNTEER_FILTERS: Filter[] = [
   { id: 'all', label: 'All', keep: () => true },
-  { id: 'pending', label: 'Awaiting approval', keep: o => o.status === 'PENDING_APPROVAL' },
-  { id: 'published', label: 'Published', keep: o => o.status === 'PUBLISHED' },
-  { id: 'rejected', label: 'Not approved', keep: o => o.status === 'REJECTED' },
+  { id: 'pending', label: 'Awaiting approval', keep: item => item.status === 'PENDING_APPROVAL' },
+  { id: 'published', label: 'Published', keep: item => item.status === 'PUBLISHED' },
+  { id: 'rejected', label: 'Not approved', keep: item => item.status === 'REJECTED' },
 ]
 
-/** An organisation posts straight to the feed, so what matters is capacity. */
-const ORG_FILTERS: Filter[] = [
+const ORGANISATION_FILTERS: Filter[] = [
   { id: 'all', label: 'All', keep: () => true },
-  { id: 'open', label: 'Open for applications', keep: o => isOpen(o) },
-  { id: 'full', label: 'Full', keep: o => o.filled >= o.capacity },
-  { id: 'virtual', label: 'Virtual', keep: o => o.mode === 'Virtual' },
+  {
+    id: 'open',
+    label: 'Open for applications',
+    keep: item => item.status === 'PUBLISHED' && !hasPassed(item.applicationDeadline),
+  },
+  { id: 'closed', label: 'Closed', keep: item => hasPassed(item.applicationDeadline) },
+  { id: 'virtual', label: 'Virtual', keep: item => item.mode === 'VIRTUAL' },
 ]
 
 export default function Opportunities() {
   const { user } = useAuth()
   const isVolunteer = user?.role !== 'organisation'
-  const filters = isVolunteer ? VOLUNTEER_FILTERS : ORG_FILTERS
-  const [items, setItems] = useState<Opportunity[]>([])
+  const filters = isVolunteer ? VOLUNTEER_FILTERS : ORGANISATION_FILTERS
+  const mine = useGet<OpportunityView[]>('/opportunities/mine')
   const [filter, setFilter] = useState('all')
 
-  useEffect(() => {
-    setFilter('all')
-    getManagedOpportunities(isVolunteer ? 'volunteer' : 'organisation').then(setItems)
-  }, [isVolunteer])
-
-  const keep = filters.find(f => f.id === filter)?.keep ?? (() => true)
-  const visible = items.filter(keep)
+  const keep = filters.find(entry => entry.id === filter)?.keep ?? (() => true)
 
   return (
     <>
@@ -47,7 +45,7 @@ export default function Opportunities() {
         title={isVolunteer ? 'My proposed initiatives' : 'Opportunities'}
         meta={isVolunteer
           ? 'Everything you have proposed, and where each one sits in review.'
-          : 'Everything your organisation has posted, with its capacity and status.'}
+          : 'Everything your organisation has posted.'}
         action={
           <Link to={isVolunteer ? '/initiatives/new' : '/manage/opportunities/new'}>
             <Button variant="primary">
@@ -57,13 +55,20 @@ export default function Opportunities() {
         }
       />
 
-      <Tabs active={filter} onChange={setFilter}
-            items={filters.map(f => ({ id: f.id, label: f.label }))} />
+      <Tabs active={filter} onChange={setFilter} items={filters} />
 
       <Card>
-        {visible.length > 0
-          ? <OpportunityTable items={visible} />
-          : <EmptyState>Nothing here yet.</EmptyState>}
+        <Loaded state={mine} what="your opportunities">
+          {items => {
+            const visible = items.filter(keep)
+
+            return visible.length === 0 ? (
+              <EmptyState>Nothing in this view.</EmptyState>
+            ) : (
+              <OpportunityTable items={visible} />
+            )
+          }}
+        </Loaded>
       </Card>
     </>
   )

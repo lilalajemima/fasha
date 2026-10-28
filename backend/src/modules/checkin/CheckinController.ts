@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'
 import type { QrCodeRenderer } from '../../core/qr/QrCodeRenderer'
 import { readString } from '../../core/validation/readers'
+import { routeParam } from '../../core/http/params'
 import type { CheckinService } from './CheckinService'
 
 export class CheckinController {
@@ -10,7 +11,7 @@ export class CheckinController {
   ) {}
 
   open = async (req: Request, res: Response) => {
-    const opened = await this.checkins.openCheckIn(req.user!, req.params.id)
+    const opened = await this.checkins.openCheckIn(req.user!, routeParam(req, 'id'))
 
     res.json({ ...opened, qrSvg: await this.qrCodes.toSvg(opened.payload) })
   }
@@ -18,7 +19,7 @@ export class CheckinController {
   checkIn = async (req: Request, res: Response) => {
     const view = await this.checkins.checkIn(
       req.user!,
-      req.params.id,
+      routeParam(req, 'id'),
       readString(req.body, 'code', 6),
     )
 
@@ -28,7 +29,7 @@ export class CheckinController {
   markPresent = async (req: Request, res: Response) => {
     const view = await this.checkins.markPresent(
       req.user!,
-      req.params.id,
+      routeParam(req, 'id'),
       readString(req.body, 'volunteerId'),
     )
 
@@ -36,10 +37,10 @@ export class CheckinController {
   }
 
   checkOut = async (req: Request, res: Response) => {
-    res.json(await this.checkins.checkOut(req.user!, req.params.id))
+    res.json(await this.checkins.checkOut(req.user!, routeParam(req, 'id')))
   }
 
   attendance = async (req: Request, res: Response) => {
-    res.json(await this.checkins.attendance(req.user!, req.params.id))
+    res.json(await this.checkins.attendance(req.user!, routeParam(req, 'id')))
   }
 }

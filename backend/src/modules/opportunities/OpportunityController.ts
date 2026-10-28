@@ -9,6 +9,7 @@ import {
   readTagList,
 } from '../../core/validation/readers'
 import type { FeedFilter } from './OpportunityStore'
+import { routeParam } from '../../core/http/params'
 import type { OpportunityService } from './OpportunityService'
 
 export class OpportunityController {
@@ -42,11 +43,11 @@ export class OpportunityController {
   }
 
   detail = async (req: Request, res: Response) => {
-    res.json(await this.opportunities.detail(req.user!, req.params.id))
+    res.json(await this.opportunities.detail(req.user!, routeParam(req, 'id')))
   }
 
   decide = async (req: Request, res: Response) => {
-    res.json(await this.opportunities.decide(req.params.id, readDecision(req.body)))
+    res.json(await this.opportunities.decide(routeParam(req, 'id'), readDecision(req.body)))
   }
 
   private filterFrom(req: Request): FeedFilter {

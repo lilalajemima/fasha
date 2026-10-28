@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express'
+import { routeParam } from '../../core/http/params'
 import type { PortfolioService } from './PortfolioService'
 
 export class PortfolioController {
@@ -9,6 +10,6 @@ export class PortfolioController {
   }
 
   public = async (req: Request, res: Response) => {
-    res.json(await this.portfolios.bySlug(req.params.slug))
+    res.json(await this.portfolios.bySlug(routeParam(req, 'slug')))
   }
 }

@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Loaded } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, Field, RemovableTag, TextField } from '../../components/ui'
+import { Button, Card, Field, RemovableTag, StatusBadge } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
-import { getProfile } from '../../mocks/api'
-import type { Profile as ProfileType } from '../../mocks/types'
-
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+import { api } from '../../lib/api'
+import { initials } from '../../lib/format'
+import type { ProfileView } from '../../lib/types'
+import { messageFor, useGet } from '../../lib/useGet'
 
 function TagEditor({ label, values, placeholder, onAdd, onRemove }: {
-  label: string; values: string[]; placeholder: string
-  onAdd: (value: string) => void; onRemove: (value: string) => void
+  label: string
+  values: string[]
+  placeholder: string
+  onAdd: (value: string) => void
+  onRemove: (value: string) => void
 }) {
   const [draft, setDraft] = useState('')
+
   return (
     <div className="field">
       <div className="label">{label}</div>
@@ -21,103 +26,187 @@ function TagEditor({ label, values, placeholder, onAdd, onRemove }: {
           <RemovableTag key={value} onRemove={() => onRemove(value)}>{value}</RemovableTag>
         ))}
       </div>
-      <input className="input" placeholder={placeholder} value={draft} aria-label={placeholder}
-             onChange={e => setDraft(e.target.value)}
-             onKeyDown={e => {
-               if (e.key === 'Enter' && draft.trim()) {
-                 e.preventDefault(); onAdd(draft.trim()); setDraft('')
-               }
-             }} />
+      <input
+        className="input"
+        placeholder={placeholder}
+        value={draft}
+        aria-label={placeholder}
+        onChange={event => setDraft(event.target.value)}
+        onKeyDown={event => {
+          if (event.key === 'Enter' && draft.trim()) {
+            event.preventDefault()
+            onAdd(draft.trim())
+            setDraft('')
+          }
+        }}
+      />
     </div>
   )
 }
 
-export default function Profile() {
-  const { user, signOut } = useAuth()
+function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void }) {
+  const { signOut } = useAuth()
   const navigate = useNavigate()
-  const [profile, setProfile] = useState<ProfileType | null>(null)
-  useEffect(() => { getProfile().then(p => setProfile({ ...p })) }, [])
-  if (!profile) return null
+  const [name, setName] = useState(loaded.user.name)
+  const [skills, setSkills] = useState(loaded.profile?.skills ?? [])
+  const [interests, setInterests] = useState(loaded.profile?.interests ?? [])
+  const [availability, setAvailability] = useState(loaded.profile?.availability ?? '')
+  const [location, setLocation] = useState(loaded.profile?.location ?? '')
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const update = (patch: Partial<ProfileType>) => setProfile({ ...profile, ...patch })
-  const toggleDay = (day: string) => update({
-    days: profile.days.includes(day) ? profile.days.filter(d => d !== day) : [...profile.days, day],
-  })
+  const isVolunteer = loaded.profile !== null
+
+  async function save(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setSaved(false)
+    setBusy(true)
+
+    try {
+      await api.patch('/profile', {
+        name,
+        ...(isVolunteer
+          ? {
+              skills,
+              interests,
+              availability: availability.trim() === '' ? null : availability.trim(),
+              location: location.trim() === '' ? null : location.trim(),
+            }
+          : {}),
+      })
+      setSaved(true)
+      onSaved()
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
-    <>
-      <PageHeader title="Your Profile"
-                  action={<Button variant="primary">Save changes</Button>} />
+    <form onSubmit={save}>
+      <PageHeader
+        title="Your Profile"
+        action={
+          <Button type="submit" variant="primary" disabled={busy}>
+            {busy ? 'Saving…' : 'Save changes'}
+          </Button>
+        }
+      />
 
       <div className="page-grid">
         <div className="stack">
+          {error && <p className="error" role="alert">{error}</p>}
+          {saved && <StatusBadge tone="ok">Saved</StatusBadge>}
+
           <Card>
             <h2>About you</h2>
             <div className="cluster" style={{ marginBottom: 18 }}>
-              <span className="avatar" style={{ width: 48, height: 48, fontSize: 15 }}>AM</span>
-              <div>
-                <Button>Change photo</Button>
-                <div className="muted" style={{ marginTop: 6 }}>JPG or PNG · up to 5 MB</div>
-              </div>
+              <span className="avatar" style={{ width: 48, height: 48, fontSize: 15 }}>
+                {initials(name)}
+              </span>
+              <div className="muted">{loaded.user.email}</div>
             </div>
+
             <div className="two-col">
-              <Field id="name" label="Full name" value={profile.name}
-                     onChange={e => update({ name: e.target.value })} />
-              <Field id="location" label="Location" value={profile.location}
-                     onChange={e => update({ location: e.target.value })} />
+              <Field
+                id="name"
+                label="Full name"
+                value={name}
+                required
+                onChange={event => setName(event.target.value)}
+              />
+              {isVolunteer && (
+                <Field
+                  id="location"
+                  label="Location"
+                  value={location}
+                  placeholder="Kimironko, Kigali"
+                  onChange={event => setLocation(event.target.value)}
+                />
+              )}
             </div>
-            <TextField id="bio" label="Short bio" value={profile.bio}
-                       onChange={e => update({ bio: e.target.value })} />
           </Card>
 
-          <Card>
-            <h2>Skills &amp; interests</h2>
-            <p className="muted">These tags help us recommend relevant opportunities.</p>
-            <TagEditor label="Skills" values={profile.skills} placeholder="Search skills..."
-                       onAdd={v => update({ skills: [...profile.skills, v] })}
-                       onRemove={v => update({ skills: profile.skills.filter(s => s !== v) })} />
-            <TagEditor label="Areas of interest" values={profile.interests} placeholder="Search interests..."
-                       onAdd={v => update({ interests: [...profile.interests, v] })}
-                       onRemove={v => update({ interests: profile.interests.filter(i => i !== v) })} />
-          </Card>
+          {isVolunteer && (
+            <>
+              <Card>
+                <h2>Skills &amp; interests</h2>
+                <p className="muted">
+                  These decide what Discover puts in front of you. Press Enter to add one.
+                </p>
+                <TagEditor
+                  label="Skills"
+                  values={skills}
+                  placeholder="Add a skill..."
+                  onAdd={value => setSkills([...skills, value])}
+                  onRemove={value => setSkills(skills.filter(skill => skill !== value))}
+                />
+                <TagEditor
+                  label="Areas of interest"
+                  values={interests}
+                  placeholder="Add an interest..."
+                  onAdd={value => setInterests([...interests, value])}
+                  onRemove={value => setInterests(interests.filter(interest => interest !== value))}
+                />
+              </Card>
 
-          <Card>
-            <h2>General availability</h2>
-            <p className="muted">Choose a usual schedule. Each opportunity has its own dates.</p>
-            <div className="cluster" style={{ marginBottom: 18 }}>
-              {DAYS.map(day => (
-                <button key={day} type="button" className="daychip"
-                        aria-pressed={profile.days.includes(day)} onClick={() => toggleDay(day)}>
-                  {day}{profile.days.includes(day) ? ' ✓' : ''}
-                </button>
-              ))}
-            </div>
-            <div className="two-col">
-              <Field id="time" label="Preferred time" value={profile.preferredTime}
-                     onChange={e => update({ preferredTime: e.target.value })} />
-              <Field id="participation" label="Participation" value={profile.participation}
-                     onChange={e => update({ participation: e.target.value })} />
-            </div>
-          </Card>
+              <Card>
+                <h2>General availability</h2>
+                <p className="muted">A usual pattern. Each opportunity still has its own dates.</p>
+                <Field
+                  id="availability"
+                  label="When you are usually free"
+                  value={availability}
+                  placeholder="Weekend mornings"
+                  onChange={event => setAvailability(event.target.value)}
+                />
+              </Card>
+            </>
+          )}
         </div>
 
         <aside className="stack">
           <Card variant="tint">
-            <h2 style={{ color: 'var(--primary)' }}>You control what&rsquo;s shared</h2>
+            <h2 style={{ color: 'var(--primary)' }}>You control what is shared</h2>
             <p className="muted" style={{ margin: 0 }}>
-              Applications share your profile, motivation and attached resume with the organiser.
-              Your public portfolio only shows your name, bio and verified contributions.
+              Applying shares your profile and motivation with that organiser. Your public
+              portfolio shows only your name and verified contributions.
             </p>
           </Card>
-          <Link to="/portfolio"><Button block>Preview public portfolio</Button></Link>
+
+          {isVolunteer && (
+            <Link to="/portfolio"><Button block>Preview public portfolio</Button></Link>
+          )}
 
           <Card>
             <h2>Account</h2>
-            <p className="muted">Signed in as {user?.email ?? 'this device'}.</p>
-            <Button block onClick={() => { signOut(); navigate('/signin') }}>Sign out</Button>
+            <p className="muted">Signed in as {loaded.user.email}.</p>
+            <Button
+              type="button"
+              block
+              onClick={() => {
+                signOut()
+                navigate('/signin')
+              }}
+            >
+              Sign out
+            </Button>
           </Card>
         </aside>
       </div>
-    </>
+    </form>
+  )
+}
+
+export default function Profile() {
+  const me = useGet<ProfileView>('/auth/me')
+
+  return (
+    <Loaded state={me} what="your profile">
+      {loaded => <Editor key={loaded.user.id} loaded={loaded} onSaved={me.reload} />}
+    </Loaded>
   )
 }

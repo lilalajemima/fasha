@@ -3,7 +3,6 @@ import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import MobileNav from '../components/MobileNav'
 import { useAuth } from '../auth/AuthContext'
-import { unreadCount } from '../mocks/api'
 import { MANAGE_NAV, PARTICIPATE_NAV, type NavItem } from './navItems'
 import './Shell.css'
 
@@ -23,11 +22,6 @@ function plates(items: NavItem[], compact = false) {
   ))
 }
 
-/**
- * One shell for the whole app. A volunteer sees both navigation groups, because
- * a volunteer can organise as well as take part. An organisation sees only the
- * management group, which is the asymmetry the sidebar divider expresses.
- */
 export default function Shell() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
@@ -35,7 +29,6 @@ export default function Shell() {
   const name = user?.name ?? 'Guest'
   const workspace = isVolunteer ? 'Volunteer' : name
   const railItems = isVolunteer ? PARTICIPATE_NAV : MANAGE_NAV
-  const unread = unreadCount()
 
   return (
     <div className="shell">
@@ -53,7 +46,9 @@ export default function Shell() {
         <nav className="side__nav" aria-label="Managing opportunities">{plates(MANAGE_NAV)}</nav>
 
         <div className="side__foot">
-          {user && (
+          {isVolunteer ? (
+            <span>Small actions. Shared impact.</span>
+          ) : (
             <button className="navplate navplate--danger"
                     onClick={() => { signOut(); navigate('/signin') }}>
               <Icon name="signout" /> <span>Sign out</span>
@@ -69,9 +64,8 @@ export default function Shell() {
             <Logo size={24} />
           </span>
           <div className="topbar__right">
-            <Link to="/notifications" className="bell" aria-label={`Notifications, ${unread} unread`}>
+            <Link to="/notifications" className="bell" aria-label="Notifications">
               <Icon name="bell" />
-              {unread > 0 && <span className="bell__count">{unread}</span>}
             </Link>
             <span className="topbar__divider" />
             <span className="avatar">{initials(name)}</span>

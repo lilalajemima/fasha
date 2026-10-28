@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ConflictError } from '../../core/errors/HttpErrors'
 import { MatchingService } from '../matching/MatchingService'
+import type { Notifier } from '../notifications/Notifier'
 import { OpportunityService } from './OpportunityService'
 import type {
   FeedFilter,
@@ -30,6 +31,14 @@ function makeRecord(overrides: Partial<OpportunityRecord> = {}): OpportunityReco
     updatedAt: new Date(),
     creator: { id: 'organisation-1', name: 'Green Neighbourhood', role: 'ORGANISATION' },
     ...overrides,
+  }
+}
+
+class RecordingNotifier implements Notifier {
+  sent: { userId: string; type: string; message: string }[] = []
+
+  async send(userId: string, type: string, message: string) {
+    this.sent.push({ userId, type, message })
   }
 }
 
@@ -112,8 +121,15 @@ const draft: NewOpportunity = {
   categories: ['Food access'],
 }
 
+const notifier = new RecordingNotifier()
+
 function buildService(records: OpportunityRecord[] = [], users = new FakeUserStore()) {
-  return new OpportunityService(new FakeOpportunityStore(records), users, new MatchingService())
+  return new OpportunityService(
+    new FakeOpportunityStore(records),
+    users,
+    new MatchingService(),
+    notifier,
+  )
 }
 
 describe('creating an opportunity', () => {
@@ -191,5 +207,16 @@ describe('reviewing a volunteer proposal', () => {
 
   it('reports a missing opportunity', async () => {
     await expect(buildService().decide('nope', 'APPROVE')).rejects.toThrow('does not exist')
+  })
+
+  it('tells the person who proposed it', async () => {
+    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL', creatorId: 'volunteer-9' })]
+    notifier.sent = []
+
+    await buildService(records).decide('proposal', 'APPROVE')
+
+    expect(notifier.sent).toHaveLength(1)
+    expect(notifier.sent[0].userId).toBe('volunteer-9')
+    expect(notifier.sent[0].message).toContain('approved')
   })
 })

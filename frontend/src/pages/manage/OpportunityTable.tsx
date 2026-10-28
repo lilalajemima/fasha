@@ -1,15 +1,29 @@
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '../../components/ui'
-import type { Opportunity } from '../../mocks/types'
+import { longDate, sentenceCase } from '../../lib/format'
+import type { OpportunityStatus, OpportunityView } from '../../lib/types'
 
-const label = { PUBLISHED: 'Published', PENDING_APPROVAL: 'Awaiting approval', REJECTED: 'Not approved' } as const
-const tone = { PUBLISHED: 'ok', PENDING_APPROVAL: 'warn', REJECTED: 'bad' } as const
+const LABEL: Record<OpportunityStatus, string> = {
+  PUBLISHED: 'Published',
+  PENDING_APPROVAL: 'Awaiting approval',
+  REJECTED: 'Not approved',
+}
 
-export default function OpportunityTable({ items }: { items: Opportunity[] }) {
+const TONE: Record<OpportunityStatus, 'ok' | 'warn' | 'bad'> = {
+  PUBLISHED: 'ok',
+  PENDING_APPROVAL: 'warn',
+  REJECTED: 'bad',
+}
+
+export default function OpportunityTable({ items }: { items: OpportunityView[] }) {
   return (
     <table className="table">
       <thead>
-        <tr><th>Opportunity</th><th>Capacity</th><th>Status</th></tr>
+        <tr>
+          <th>Opportunity</th>
+          <th>Capacity</th>
+          <th>Status</th>
+        </tr>
       </thead>
       <tbody>
         {items.map(item => (
@@ -17,22 +31,19 @@ export default function OpportunityTable({ items }: { items: Opportunity[] }) {
             <td>
               <strong>{item.title}</strong>
               <div className="muted" style={{ marginTop: 2 }}>
-                {item.citizenLed ? 'Citizen initiative' : item.mode} · {item.date.replace('Sat, ', '')}
+                {sentenceCase(item.mode)} · apply by {longDate(item.applicationDeadline)}
               </div>
               <div style={{ marginTop: 4 }}>
-                {item.status === 'PUBLISHED'
-                  ? <Link to="/manage/review">{item.mode === 'Virtual' ? '3 deliverables' : '5 applications'}</Link>
-                  : <span className="muted">Not public</span>}
+                {item.status === 'PUBLISHED' ? (
+                  <Link to="/manage/review">Review applicants ↗</Link>
+                ) : (
+                  <span className="muted">Not public</span>
+                )}
               </div>
             </td>
-            <td>{item.filled} / {item.capacity}</td>
+            <td>up to {item.maxCapacity}</td>
             <td>
-              <StatusBadge tone={tone[item.status]}>{label[item.status]}</StatusBadge>
-              <div style={{ marginTop: 6 }}>
-                {item.status === 'REJECTED'
-                  ? <Link to="/manage/review">View feedback ↗</Link>
-                  : <Link to="/manage/review">Manage ↗</Link>}
-              </div>
+              <StatusBadge tone={TONE[item.status]}>{LABEL[item.status]}</StatusBadge>
             </td>
           </tr>
         ))}

@@ -1,5 +1,9 @@
 export class TokenStore {
-  constructor(private readonly key: string) {}
+  private readonly key: string
+
+  constructor(key: string) {
+    this.key = key
+  }
 
   read(): string | null {
     return localStorage.getItem(this.key)

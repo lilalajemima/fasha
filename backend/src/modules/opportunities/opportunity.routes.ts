@@ -3,6 +3,8 @@ import { authenticate } from '../../middleware/authenticate'
 import { authorise } from '../../middleware/authorise'
 import { UserRepository } from '../auth/UserRepository'
 import { MatchingService } from '../matching/MatchingService'
+import { NotificationRepository } from '../notifications/NotificationRepository'
+import { DatabaseNotifier } from '../notifications/Notifier'
 import { OpportunityController } from './OpportunityController'
 import { OpportunityRepository } from './OpportunityRepository'
 import { OpportunityService } from './OpportunityService'
@@ -11,6 +13,7 @@ const service = new OpportunityService(
   new OpportunityRepository(),
   new UserRepository(),
   new MatchingService(),
+  new DatabaseNotifier(new NotificationRepository()),
 )
 
 const controller = new OpportunityController(service)

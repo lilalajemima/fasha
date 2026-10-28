@@ -1,291 +1,158 @@
-import { describe, expect, it } from 'vitest'
-import { ConflictError, ForbiddenError } from '../../core/errors/HttpErrors'
-import type {
-  FeedFilter,
-  NewOpportunity,
-  OpportunityRecord,
-  OpportunityStore,
-} from '../opportunities/OpportunityStore'
-import { ApplicationService } from './ApplicationService'
-import type {
-  ApplicationRecord,
-  ApplicationStore,
-  NewApplication,
-} from './ApplicationStore'
+import { ApplicationStatus, OpportunityStatus, UserRole } from '@prisma/client'
+import { ConflictError, ForbiddenError, NotFoundError } from '../../core/errors/HttpErrors'
+import type { TokenPayload } from '../../core/security/TokenService'
+import type { OpportunityRecord, OpportunityStore } from '../opportunities/OpportunityStore'
+import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
+import type { ApplicationRecord, ApplicationStore, NewApplication } from './ApplicationStore'
+import { toApplicationView, type ApplicationView } from './ApplicationView'
 
-const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
-const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+const OPEN_STATUSES: string[] = [ApplicationStatus.PENDING, ApplicationStatus.ACCEPTED]
 
-const volunteer = { userId: 'volunteer-1', role: 'VOLUNTEER' }
-const otherVolunteer = { userId: 'volunteer-2', role: 'VOLUNTEER' }
-const organiser = { userId: 'organisation-1', role: 'ORGANISATION' }
-
-const draft: NewApplication = {
-  motivationStatement: 'I live two streets away and I can bring my own gardening tools.',
-  resumeUrl: null,
-}
-
-function makeOpportunity(overrides: Partial<OpportunityRecord> = {}): OpportunityRecord {
-  return {
-    id: 'opportunity-1',
-    creatorId: 'organisation-1',
-    title: 'Restore the wetland path',
-    description: 'Plant trees and clear the path with the neighbourhood team.',
-    mode: 'PHYSICAL',
-    location: 'Kimironko',
-    maxCapacity: 2,
-    applicationDeadline: tomorrow,
-    status: 'PUBLISHED',
-    qrToken: null,
-    requiredSkills: [],
-    categories: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    creator: { id: 'organisation-1', name: 'Green Neighbourhood', role: 'ORGANISATION' },
-    ...overrides,
-  }
-}
-
-function makeApplication(overrides: Partial<ApplicationRecord> = {}): ApplicationRecord {
-  return {
-    id: 'application-1',
-    opportunityId: 'opportunity-1',
-    volunteerId: 'volunteer-1',
-    motivationStatement: draft.motivationStatement,
-    resumeUrl: null,
-    status: 'PENDING',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    volunteer: { id: 'volunteer-1', name: 'Amara Mensah', email: 'amara@example.com' },
-    opportunity: {
-      id: 'opportunity-1',
-      title: 'Restore the wetland path',
-      creatorId: 'organisation-1',
-      maxCapacity: 2,
-      applicationDeadline: tomorrow,
-    },
-    ...overrides,
-  }
-}
-
-class FakeOpportunityStore implements OpportunityStore {
-  constructor(private readonly opportunity: OpportunityRecord | null) {}
-
-  async create(_creatorId: string, _status: string, _input: NewOpportunity): Promise<never> {
-    throw new Error('not needed in this test')
-  }
-
-  async findPublished(_filter: FeedFilter) {
-    return []
-  }
-
-  async findById() {
-    return this.opportunity
-  }
-
-  async findCreatedBy() {
-    return []
-  }
-
-  async findAwaitingApproval() {
-    return []
-  }
-
-  async updateStatus(): Promise<never> {
-    throw new Error('not needed in this test')
-  }
-
-  async setQrToken() {}
-}
-
-class FakeApplicationStore implements ApplicationStore {
-  accepted = 0
-
+export class ApplicationService {
   constructor(
-    private readonly existing: ApplicationRecord[] = [],
-    private readonly capacityTaken = 0,
-  ) {
-    this.accepted = capacityTaken
+    private readonly applications: ApplicationStore,
+    private readonly opportunities: OpportunityStore,
+    private readonly notifier: Notifier,
+  ) {}
+
+  async apply(
+    actor: TokenPayload,
+    opportunityId: string,
+    input: NewApplication,
+  ): Promise<ApplicationView> {
+    if (actor.role !== UserRole.VOLUNTEER) {
+      throw new ForbiddenError('Only volunteer accounts can apply to an opportunity')
+    }
+
+    const opportunity = await this.loadOpportunity(opportunityId)
+
+    if (opportunity.creatorId === actor.userId) {
+      throw new ConflictError('You cannot apply to your own opportunity')
+    }
+
+    if (opportunity.status !== OpportunityStatus.PUBLISHED) {
+      throw new ConflictError('That opportunity is not open for applications')
+    }
+
+    if (opportunity.applicationDeadline.getTime() <= Date.now()) {
+      throw new ConflictError('The deadline for that opportunity has passed')
+    }
+
+    const record = await this.applications.create(opportunityId, actor.userId, input)
+
+    await this.notifier.send(
+      opportunity.creatorId,
+      NOTIFICATION_TYPES.applicationReceived,
+      `${record.volunteer.name} applied to "${opportunity.title}".`,
+    )
+
+    return toApplicationView(record)
   }
 
-  async create(opportunityId: string, volunteerId: string, input: NewApplication) {
-    return makeApplication({ opportunityId, volunteerId, ...input })
+  async mine(actor: TokenPayload): Promise<ApplicationView[]> {
+    const records = await this.applications.findByVolunteer(actor.userId)
+
+    return records.map(toApplicationView)
   }
 
-  async findById(id: string) {
-    return this.existing.find(record => record.id === id) ?? null
+  async forOpportunity(actor: TokenPayload, opportunityId: string): Promise<ApplicationView[]> {
+    const opportunity = await this.loadOpportunity(opportunityId)
+
+    if (!this.mayManage(actor, opportunity.creatorId)) {
+      throw new ForbiddenError('Only the organiser can see who applied')
+    }
+
+    const records = await this.applications.findForOpportunity(opportunityId)
+
+    return records.map(toApplicationView)
   }
 
-  async findByVolunteer(volunteerId: string) {
-    return this.existing.filter(record => record.volunteerId === volunteerId)
+  async decide(
+    actor: TokenPayload,
+    applicationId: string,
+    decision: 'ACCEPT' | 'REJECT',
+  ): Promise<ApplicationView> {
+    const application = await this.loadApplication(applicationId)
+
+    if (!this.mayManage(actor, application.opportunity.creatorId)) {
+      throw new ForbiddenError('Only the organiser can decide on an application')
+    }
+
+    if (application.status !== ApplicationStatus.PENDING) {
+      throw new ConflictError('That application has already been decided')
+    }
+
+    if (decision === 'REJECT') {
+      const rejected = await this.applications.updateStatus(
+        applicationId,
+        ApplicationStatus.REJECTED,
+      )
+
+      await this.notifier.send(
+        rejected.volunteerId,
+        NOTIFICATION_TYPES.applicationDecided,
+        `Your application for "${rejected.opportunity.title}" was not successful this time.`,
+      )
+
+      return toApplicationView(rejected)
+    }
+
+    const accepted = await this.applications.acceptIfSpace(
+      applicationId,
+      application.opportunityId,
+      application.opportunity.maxCapacity,
+    )
+
+    if (!accepted) {
+      throw new ConflictError('Every place on that opportunity is taken')
+    }
+
+    await this.notifier.send(
+      accepted.volunteerId,
+      NOTIFICATION_TYPES.applicationDecided,
+      `You have a place on "${accepted.opportunity.title}".`,
+    )
+
+    return toApplicationView(accepted)
   }
 
-  async findForOpportunity(opportunityId: string) {
-    return this.existing.filter(record => record.opportunityId === opportunityId)
-  }
+  async withdraw(actor: TokenPayload, applicationId: string): Promise<ApplicationView> {
+    const application = await this.loadApplication(applicationId)
 
-  async findAccepted(opportunityId: string, volunteerId: string) {
-    return (
-      this.existing.find(
-        record =>
-          record.opportunityId === opportunityId &&
-          record.volunteerId === volunteerId &&
-          record.status === 'ACCEPTED',
-      ) ?? null
+    if (application.volunteerId !== actor.userId) {
+      throw new ForbiddenError('You can only withdraw your own application')
+    }
+
+    if (!OPEN_STATUSES.includes(application.status)) {
+      throw new ConflictError('That application is already closed')
+    }
+
+    return toApplicationView(
+      await this.applications.updateStatus(applicationId, ApplicationStatus.WITHDRAWN),
     )
   }
 
-  async acceptIfSpace(applicationId: string, _opportunityId: string, maxCapacity: number) {
-    if (this.accepted >= maxCapacity) return null
-
-    this.accepted += 1
-
-    return makeApplication({ id: applicationId, status: 'ACCEPTED' })
+  private mayManage(actor: TokenPayload, creatorId: string): boolean {
+    return actor.userId === creatorId || actor.role === UserRole.ADMIN
   }
 
-  async updateStatus(id: string, status: string) {
-    return makeApplication({ id, status: status as ApplicationRecord['status'] })
+  private async loadOpportunity(id: string): Promise<OpportunityRecord> {
+    const opportunity = await this.opportunities.findById(id)
+
+    if (!opportunity) {
+      throw new NotFoundError('That opportunity does not exist')
+    }
+
+    return opportunity
+  }
+
+  private async loadApplication(id: string): Promise<ApplicationRecord> {
+    const application = await this.applications.findById(id)
+
+    if (!application) {
+      throw new NotFoundError('That application does not exist')
+    }
+
+    return application
   }
 }
-
-function buildService(
-  applications: FakeApplicationStore,
-  opportunity: OpportunityRecord | null = makeOpportunity(),
-) {
-  return new ApplicationService(applications, new FakeOpportunityStore(opportunity))
-}
-
-describe('applying', () => {
-  it('accepts a volunteer application', async () => {
-    const view = await buildService(new FakeApplicationStore()).apply(
-      volunteer,
-      'opportunity-1',
-      draft,
-    )
-
-    expect(view.status).toBe('PENDING')
-  })
-
-  it('refuses an organisation', async () => {
-    const service = buildService(new FakeApplicationStore())
-
-    await expect(service.apply(organiser, 'opportunity-1', draft)).rejects.toThrow(ForbiddenError)
-  })
-
-  it('refuses the organiser of that same opportunity', async () => {
-    const opportunity = makeOpportunity({ creatorId: 'volunteer-1' })
-    const service = buildService(new FakeApplicationStore(), opportunity)
-
-    await expect(service.apply(volunteer, 'opportunity-1', draft)).rejects.toThrow(
-      'You cannot apply to your own opportunity',
-    )
-  })
-
-  it('refuses one that is still awaiting approval', async () => {
-    const opportunity = makeOpportunity({ status: 'PENDING_APPROVAL' })
-    const service = buildService(new FakeApplicationStore(), opportunity)
-
-    await expect(service.apply(volunteer, 'opportunity-1', draft)).rejects.toThrow(ConflictError)
-  })
-
-  it('refuses one whose deadline has passed', async () => {
-    const opportunity = makeOpportunity({ applicationDeadline: yesterday })
-    const service = buildService(new FakeApplicationStore(), opportunity)
-
-    await expect(service.apply(volunteer, 'opportunity-1', draft)).rejects.toThrow(
-      'The deadline for that opportunity has passed',
-    )
-  })
-
-  it('reports an opportunity that does not exist', async () => {
-    const service = buildService(new FakeApplicationStore(), null)
-
-    await expect(service.apply(volunteer, 'nope', draft)).rejects.toThrow('does not exist')
-  })
-})
-
-describe('deciding on an application', () => {
-  it('accepts while there is room', async () => {
-    const store = new FakeApplicationStore([makeApplication()], 1)
-    const view = await buildService(store).decide(organiser, 'application-1', 'ACCEPT')
-
-    expect(view.status).toBe('ACCEPTED')
-  })
-
-  it('refuses to overfill the opportunity', async () => {
-    const store = new FakeApplicationStore([makeApplication()], 2)
-    const service = buildService(store)
-
-    await expect(service.decide(organiser, 'application-1', 'ACCEPT')).rejects.toThrow(
-      'Every place on that opportunity is taken',
-    )
-  })
-
-  it('rejects without touching capacity', async () => {
-    const store = new FakeApplicationStore([makeApplication()], 2)
-    const view = await buildService(store).decide(organiser, 'application-1', 'REJECT')
-
-    expect(view.status).toBe('REJECTED')
-    expect(store.accepted).toBe(2)
-  })
-
-  it('stops anyone but the organiser deciding', async () => {
-    const store = new FakeApplicationStore([makeApplication()])
-    const service = buildService(store)
-
-    await expect(service.decide(otherVolunteer, 'application-1', 'ACCEPT')).rejects.toThrow(
-      ForbiddenError,
-    )
-  })
-
-  it('refuses to decide the same application twice', async () => {
-    const store = new FakeApplicationStore([makeApplication({ status: 'ACCEPTED' })])
-    const service = buildService(store)
-
-    await expect(service.decide(organiser, 'application-1', 'REJECT')).rejects.toThrow(
-      'already been decided',
-    )
-  })
-})
-
-describe('withdrawing', () => {
-  it('lets the applicant pull out', async () => {
-    const store = new FakeApplicationStore([makeApplication()])
-    const view = await buildService(store).withdraw(volunteer, 'application-1')
-
-    expect(view.status).toBe('WITHDRAWN')
-  })
-
-  it('stops someone withdrawing another volunteer application', async () => {
-    const store = new FakeApplicationStore([makeApplication()])
-    const service = buildService(store)
-
-    await expect(service.withdraw(otherVolunteer, 'application-1')).rejects.toThrow(ForbiddenError)
-  })
-
-  it('refuses when it was already rejected', async () => {
-    const store = new FakeApplicationStore([makeApplication({ status: 'REJECTED' })])
-    const service = buildService(store)
-
-    await expect(service.withdraw(volunteer, 'application-1')).rejects.toThrow('already closed')
-  })
-})
-
-describe('listing', () => {
-  it('shows the organiser who applied', async () => {
-    const store = new FakeApplicationStore([makeApplication()])
-    const list = await buildService(store).forOpportunity(organiser, 'opportunity-1')
-
-    expect(list).toHaveLength(1)
-    expect(list[0].volunteer.name).toBe('Amara Mensah')
-  })
-
-  it('hides the list from another volunteer', async () => {
-    const store = new FakeApplicationStore([makeApplication()])
-    const service = buildService(store)
-
-    await expect(service.forOpportunity(otherVolunteer, 'opportunity-1')).rejects.toThrow(
-      ForbiddenError,
-    )
-  })
-})
