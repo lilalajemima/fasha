@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, tokenStore } from '../lib/api'
 
-export type Role = 'volunteer' | 'organisation'
+export type Role = 'volunteer' | 'organisation' | 'admin'
+export type SignUpRole = 'volunteer' | 'organisation'
 export type User = { id: string; name: string; email: string; role: Role }
 
-type ServerRole = 'VOLUNTEER' | 'ORGANISATION'
+type ServerRole = 'VOLUNTEER' | 'ORGANISATION' | 'ADMIN'
 type ServerUser = { id: string; name: string; email: string; role: ServerRole }
 type AuthResponse = { token: string; user: ServerUser }
 
-type SignUpInput = { name: string; email: string; password: string; role: Role }
+type SignUpInput = { name: string; email: string; password: string; role: SignUpRole }
 
 type AuthValue = {
   user: User | null
@@ -18,27 +19,38 @@ type AuthValue = {
   signOut: () => void
 }
 
-function toUser(user: ServerUser): User {
-  return { ...user, role: user.role === 'ORGANISATION' ? 'organisation' : 'volunteer' }
+const ROLES: Record<ServerRole, Role> = {
+  VOLUNTEER: 'volunteer',
+  ORGANISATION: 'organisation',
+  ADMIN: 'admin',
 }
 
-function toServerRole(role: Role): ServerRole {
+function toUser(user: ServerUser): User {
+  return { ...user, role: ROLES[user.role] ?? 'volunteer' }
+}
+
+function toServerRole(role: SignUpRole): ServerRole {
   return role === 'organisation' ? 'ORGANISATION' : 'VOLUNTEER'
+}
+
+export function homeFor(role: Role): string {
+  if (role === 'admin') return '/admin'
+  if (role === 'organisation') return '/manage'
+
+  return '/discover'
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [ready, setReady] = useState(false)
+  const [ready, setReady] = useState(() => tokenStore.read() === null)
 
   useEffect(() => {
-    if (!tokenStore.read()) {
-      setReady(true)
-      return
-    }
+    if (!tokenStore.read()) return
 
-    api.get<{ user: ServerUser }>('/auth/me')
+    api
+      .get<{ user: ServerUser }>('/auth/me')
       .then(({ user: me }) => setUser(toUser(me)))
       .catch(() => tokenStore.clear())
       .finally(() => setReady(true))

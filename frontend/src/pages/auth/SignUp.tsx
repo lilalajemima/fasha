@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { Button, Field } from '../../components/ui'
-import { useAuth, type Role } from '../../auth/AuthContext'
+import { homeFor, useAuth, type SignUpRole } from '../../auth/AuthContext'
 import AuthPanel from './AuthPanel'
 
 const MIN_PASSWORD_LENGTH = 8
@@ -10,7 +10,7 @@ const MIN_PASSWORD_LENGTH = 8
 export default function SignUp() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState<Role>('volunteer')
+  const [role, setRole] = useState<SignUpRole>('volunteer')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,14 +20,16 @@ export default function SignUp() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError('')
+
     if (password.length < MIN_PASSWORD_LENGTH) {
       return setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
     }
 
     setBusy(true)
+
     try {
       const user = await signUp({ name, email, password, role })
-      navigate(user.role === 'volunteer' ? '/discover' : '/manage')
+      navigate(homeFor(user.role))
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : 'Could not create the account')
     } finally {
@@ -71,7 +73,6 @@ export default function SignUp() {
                autoComplete="new-password" hint={`Use at least ${MIN_PASSWORD_LENGTH} characters.`}
                onChange={e => setPassword(e.target.value)} />
 
-
         {error && <p className="error" role="alert">{error}</p>}
 
         <Button type="submit" variant="primary" block disabled={busy}>
@@ -79,8 +80,6 @@ export default function SignUp() {
             ? 'Creating your account…'
             : role === 'volunteer' ? 'Create volunteer account' : 'Create organisation account'}
         </Button>
-
-        <hr />
       </form>
     </AuthPanel>
   )

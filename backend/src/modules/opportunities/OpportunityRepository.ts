@@ -36,6 +36,7 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
         status: OpportunityStatus.PUBLISHED,
         applicationDeadline: { gte: new Date() },
         ...(filter.mode ? { mode: filter.mode } : {}),
+        ...(filter.sector ? { sector: filter.sector } : {}),
         ...(filter.search
           ? {
               OR: [
@@ -70,10 +71,14 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
     })
   }
 
-  updateStatus(id: string, status: OpportunityStatus): Promise<OpportunityRecord> {
+  updateStatus(
+    id: string,
+    status: OpportunityStatus,
+    reviewNote: string | null,
+  ): Promise<OpportunityRecord> {
     return this.db.opportunity.update({
       where: { id },
-      data: { status },
+      data: { status, reviewNote, reviewedAt: new Date() },
       include: withCreator,
     })
   }

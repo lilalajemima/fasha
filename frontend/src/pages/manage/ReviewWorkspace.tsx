@@ -1,90 +1,11 @@
 import { useState } from 'react'
 import { Loaded, Problem } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, EmptyState, StatusBadge, Tabs, Tag } from '../../components/ui'
-import { useAuth } from '../../auth/AuthContext'
+import { Button, Card, EmptyState, StatusBadge, Tabs } from '../../components/ui'
 import { api } from '../../lib/api'
 import { initials, longDate, sentenceCase } from '../../lib/format'
 import type { ApplicationView, OpportunityView, SubmissionView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
-
-function Queue({ onDecided }: { onDecided: () => void }) {
-  const queue = useGet<OpportunityView[]>('/opportunities/pending')
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState('')
-
-  async function decide(id: string, decision: 'APPROVE' | 'REJECT') {
-    setError('')
-    setBusy(id)
-
-    try {
-      await api.patch(`/opportunities/${id}/status`, { decision })
-      queue.reload()
-      onDecided()
-    } catch (problem) {
-      setError(messageFor(problem))
-    } finally {
-      setBusy('')
-    }
-  }
-
-  return (
-    <Card>
-      <h2>Citizen initiatives awaiting approval</h2>
-      <p className="muted">
-        Proposed by volunteers. They stay out of Discover until someone approves them.
-      </p>
-
-      {error && <p className="error" role="alert">{error}</p>}
-
-      <Loaded state={queue} what="the review queue">
-        {items =>
-          items.length === 0 ? (
-            <EmptyState>Nothing is waiting for a decision.</EmptyState>
-          ) : (
-            <div className="divided">
-              {items.map(item => (
-                <div key={item.id}>
-                  <div className="row" style={{ alignItems: 'flex-start' }}>
-                    <div>
-                      <h3 style={{ marginBottom: 2 }}>{item.title}</h3>
-                      <p className="muted" style={{ margin: 0 }}>
-                        {item.creator.name} · {sentenceCase(item.mode)} ·{' '}
-                        {item.location ?? 'Online'} · up to {item.maxCapacity}
-                      </p>
-                    </div>
-                    <StatusBadge tone="warn">Awaiting approval</StatusBadge>
-                  </div>
-
-                  <p style={{ marginTop: 10 }}>{item.description}</p>
-
-                  <div className="cluster" style={{ marginBottom: 14 }}>
-                    {[...item.requiredSkills, ...item.categories].map(tag => (
-                      <Tag key={tag}>{tag}</Tag>
-                    ))}
-                  </div>
-
-                  <div className="cluster">
-                    <Button
-                      variant="primary"
-                      disabled={busy === item.id}
-                      onClick={() => decide(item.id, 'APPROVE')}
-                    >
-                      Approve and publish
-                    </Button>
-                    <Button disabled={busy === item.id} onClick={() => decide(item.id, 'REJECT')}>
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        }
-      </Loaded>
-    </Card>
-  )
-}
 
 function Applicants({ opportunityId }: { opportunityId: string }) {
   const applicants = useGet<ApplicationView[]>(`/opportunities/${opportunityId}/applications`)
@@ -253,8 +174,6 @@ function ClaimedHours({ opportunityId }: { opportunityId: string }) {
 }
 
 export default function ReviewWorkspace() {
-  const { user } = useAuth()
-  const isVolunteer = user?.role !== 'organisation'
   const mine = useGet<OpportunityView[]>('/opportunities/mine')
   const [chosen, setChosen] = useState('')
   const [tab, setTab] = useState('applicants')
@@ -270,8 +189,6 @@ export default function ReviewWorkspace() {
       />
 
       <div className="stack">
-        {!isVolunteer && <Queue onDecided={mine.reload} />}
-
         {mine.error && <Problem message={mine.error} onRetry={mine.reload} />}
 
         {published.length === 0 ? (

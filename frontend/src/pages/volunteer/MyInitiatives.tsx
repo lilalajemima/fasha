@@ -43,9 +43,14 @@ export default function MyInitiatives() {
                   <div>
                     <h3 style={{ marginBottom: 2 }}>{item.title}</h3>
                     <p className="muted" style={{ margin: 0 }}>
-                      {item.location ?? 'Online'} · up to {item.maxCapacity} volunteers · apply by{' '}
-                      {longDate(item.applicationDeadline)}
+                      {item.sector ?? 'Sector not set'} · up to {item.maxCapacity} volunteers ·
+                      apply by {longDate(item.applicationDeadline)}
                     </p>
+                    {item.status === 'REJECTED' && item.reviewNote && (
+                      <p style={{ margin: '8px 0 0' }}>
+                        <strong>Reviewer:</strong> {item.reviewNote}
+                      </p>
+                    )}
                   </div>
                   <StatusBadge tone={TONE[item.status]}>{LABEL[item.status]}</StatusBadge>
                 </div>

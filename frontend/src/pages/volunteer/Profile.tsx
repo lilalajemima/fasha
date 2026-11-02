@@ -6,6 +6,7 @@ import { Button, Card, Field, RemovableTag, StatusBadge } from '../../components
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import { initials } from '../../lib/format'
+import { SECTORS } from '../../lib/sectors'
 import type { ProfileView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
 
@@ -52,6 +53,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
   const [interests, setInterests] = useState(loaded.profile?.interests ?? [])
   const [availability, setAvailability] = useState(loaded.profile?.availability ?? '')
   const [location, setLocation] = useState(loaded.profile?.location ?? '')
+  const [sector, setSector] = useState(loaded.profile?.sector ?? '')
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -73,6 +75,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
               interests,
               availability: availability.trim() === '' ? null : availability.trim(),
               location: location.trim() === '' ? null : location.trim(),
+              sector: sector === '' ? null : sector,
             }
           : {}),
       })
@@ -151,6 +154,28 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                   onAdd={value => setInterests([...interests, value])}
                   onRemove={value => setInterests(interests.filter(interest => interest !== value))}
                 />
+              </Card>
+
+              <Card>
+                <h2>Where you are</h2>
+                <p className="muted">
+                  Your sector is how community works are reported, and it helps us show you
+                  anything happening nearby.
+                </p>
+                <div className="field">
+                  <label className="label" htmlFor="sector">Sector</label>
+                  <select
+                    id="sector"
+                    className="input"
+                    value={sector}
+                    onChange={event => setSector(event.target.value)}
+                  >
+                    <option value="">Not set</option>
+                    {SECTORS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
               </Card>
 
               <Card>

@@ -4,13 +4,18 @@ import {
   readDecision,
   readFutureDate,
   readMode,
+  readOptionalFutureDate,
   readOptionalString,
+  readSector,
+  readShortText,
   readString,
   readTagList,
 } from '../../core/validation/readers'
 import type { FeedFilter } from './OpportunityStore'
 import { routeParam } from '../../core/http/params'
 import type { OpportunityService } from './OpportunityService'
+
+const MAX_NOTE_LENGTH = 400
 
 export class OpportunityController {
   constructor(private readonly opportunities: OpportunityService) {}
@@ -21,8 +26,11 @@ export class OpportunityController {
       description: readString(req.body, 'description', 20),
       mode: readMode(req.body),
       location: readOptionalString(req.body, 'location'),
+      sector: readSector(req.body, 'sector'),
       maxCapacity: readCount(req.body, 'maxCapacity'),
       applicationDeadline: readFutureDate(req.body, 'applicationDeadline'),
+      startsAt: readOptionalFutureDate(req.body, 'startsAt'),
+      endsAt: readFutureDate(req.body, 'endsAt'),
       requiredSkills: readTagList(req.body, 'requiredSkills'),
       categories: readTagList(req.body, 'categories'),
     })
@@ -47,16 +55,24 @@ export class OpportunityController {
   }
 
   decide = async (req: Request, res: Response) => {
-    res.json(await this.opportunities.decide(routeParam(req, 'id'), readDecision(req.body)))
+    const view = await this.opportunities.decide(
+      routeParam(req, 'id'),
+      readDecision(req.body),
+      readShortText(req.body, 'reviewNote', MAX_NOTE_LENGTH),
+    )
+
+    res.json(view)
   }
 
   private filterFrom(req: Request): FeedFilter {
     const search = typeof req.query.q === 'string' ? req.query.q.trim() : ''
     const mode = req.query.mode
+    const sector = typeof req.query.sector === 'string' ? req.query.sector.trim() : ''
 
     return {
       search: search.length > 0 ? search : null,
       mode: mode === 'PHYSICAL' || mode === 'VIRTUAL' ? mode : null,
+      sector: sector.length > 0 ? sector : null,
     }
   }
 }

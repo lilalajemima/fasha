@@ -2,6 +2,7 @@ import cors from 'cors'
 import express from 'express'
 import { env } from './core/config/env'
 import { errorHandler, notFoundHandler } from './core/http/errorHandler'
+import { adminRoutes } from './modules/admin/admin.routes'
 import { applicationRoutes } from './modules/applications/application.routes'
 import { authRoutes } from './modules/auth/auth.routes'
 import { checkinRoutes } from './modules/checkin/checkin.routes'
@@ -27,6 +28,7 @@ export function createApp() {
   app.use(submissionRoutes)
   app.use(portfolioRoutes)
   app.use(notificationRoutes)
+  app.use(adminRoutes)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

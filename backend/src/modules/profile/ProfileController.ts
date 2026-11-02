@@ -1,5 +1,11 @@
 import type { Request, Response } from 'express'
-import { hasField, readShortText, readString, readTagList } from '../../core/validation/readers'
+import {
+  hasField,
+  readOptionalSector,
+  readShortText,
+  readString,
+  readTagList,
+} from '../../core/validation/readers'
 import type { ProfileService, ProfileUpdate } from './ProfileService'
 
 const MAX_TEXT_LENGTH = 120
@@ -24,6 +30,10 @@ export class ProfileController {
 
     if (hasField(body, 'location')) {
       update.location = readShortText(body, 'location', MAX_TEXT_LENGTH)
+    }
+
+    if (hasField(body, 'sector')) {
+      update.sector = readOptionalSector(body, 'sector')
     }
 
     return update

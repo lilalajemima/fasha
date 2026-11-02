@@ -1,4 +1,6 @@
 const baseUrl = (process.env.API_URL ?? 'http://localhost:4000').replace(/\/$/, '')
+const adminEmail = process.env.SMOKE_ADMIN_EMAIL ?? ''
+const adminPassword = process.env.SMOKE_ADMIN_PASSWORD ?? ''
 const stamp = Date.now()
 
 let passed = 0
@@ -63,6 +65,9 @@ function draftOpportunity(overrides = {}) {
     location: 'Kimironko',
     maxCapacity: 1,
     applicationDeadline: inDays(7),
+    startsAt: inDays(8),
+    endsAt: inDays(9),
+    sector: 'Kimironko',
     requiredSkills: ['Teamwork'],
     categories: ['Environment'],
     ...overrides,
@@ -421,6 +426,28 @@ async function main() {
 
   const unknownSlug = await call('GET', '/p/nobody-at-all')
   check('an unknown portfolio address is a 404', unknownSlug.status === 404, `status ${unknownSlug.status}`)
+
+  console.log('\nnotifications')
+  const organiserFeed = await call('GET', '/notifications', { token: organisationToken })
+  check('the organiser was told about an application', list(organiserFeed.body?.items).some(
+    entry => entry.type === 'APPLICATION_RECEIVED'), JSON.stringify(organiserFeed.body?.unread))
+
+  const volunteerFeed = await call('GET', '/notifications', { token: volunteerToken })
+  const inbox = list(volunteerFeed.body?.items)
+  check('the volunteer was told they got a place', inbox.some(
+    entry => entry.type === 'APPLICATION_DECIDED'))
+  check('the volunteer was told their hours were credited', inbox.some(
+    entry => entry.type === 'HOURS_DECIDED'))
+  check('unread counts what has not been opened', volunteerFeed.body?.unread === inbox.length)
+
+  const readOne = await call('PATCH', `/notifications/${inbox[0]?.id}/read`, { token: volunteerToken })
+  check('reading one drops the count', readOne.body?.unread === inbox.length - 1, `got ${readOne.body?.unread}`)
+
+  const notYours = await call('PATCH', `/notifications/${inbox[0]?.id}/read`, { token: secondToken })
+  check('you cannot read someone else notification', notYours.status === 404, `status ${notYours.status}`)
+
+  const readAll = await call('PATCH', '/notifications/read-all', { token: volunteerToken })
+  check('marking all read clears the count', readAll.body?.unread === 0, `got ${readAll.body?.unread}`)
 
   console.log('\nedges')
   const missing = await call('GET', '/opportunities/does-not-exist', { token: volunteerToken })

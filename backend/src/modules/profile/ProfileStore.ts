@@ -3,6 +3,7 @@ export type ProfileChanges = {
   interests?: string[]
   availability?: string | null
   location?: string | null
+  sector?: string | null
 }
 
 export type PortfolioOwner = {

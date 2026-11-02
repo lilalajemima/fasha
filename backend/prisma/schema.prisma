@@ -75,6 +75,7 @@ model VolunteerProfile {
   interests     String[] @default([])
   availability  String?
   location      String?
+  sector        String?
   portfolioSlug String   @unique @map("portfolio_slug")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -91,9 +92,14 @@ model Opportunity {
   description         String            @db.Text
   mode                OpportunityMode
   location            String?
+  sector              String?
   maxCapacity         Int               @map("max_capacity")
   applicationDeadline DateTime          @map("application_deadline")
+  startsAt            DateTime?         @map("starts_at")
+  endsAt              DateTime?         @map("ends_at")
   status              OpportunityStatus @default(PENDING_APPROVAL)
+  reviewNote          String?           @map("review_note")
+  reviewedAt          DateTime?         @map("reviewed_at")
   qrToken             String?           @map("qr_token")
   requiredSkills      String[]          @default([]) @map("required_skills")
   categories          String[]          @default([])

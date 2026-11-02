@@ -1,6 +1,11 @@
-export default function Logo({ size = 28, showWord = true }: { size?: number; showWord?: boolean }) {
+export default function Logo({ size = 28, showWord = true, showMark = true }: {
+  size?: number
+  showWord?: boolean
+  showMark?: boolean
+}) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      {showMark && (
       <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
         <circle cx="16" cy="16" r="11" fill="none" stroke="var(--imigongo-black)" strokeWidth="2" />
         <circle cx="16" cy="16" r="3.2" fill="var(--primary)" />
@@ -11,6 +16,7 @@ export default function Logo({ size = 28, showWord = true }: { size?: number; sh
           </g>
         ))}
       </svg>
+      )}
       {showWord && (
         <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: size * 0.82,
                        letterSpacing: '-0.01em' }}>

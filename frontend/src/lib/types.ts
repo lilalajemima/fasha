@@ -10,9 +10,13 @@ export type OpportunityView = {
   description: string
   mode: OpportunityMode
   location: string | null
+  sector: string | null
   maxCapacity: number
   applicationDeadline: string
+  startsAt: string | null
+  endsAt: string | null
   status: OpportunityStatus
+  reviewNote: string | null
   requiredSkills: string[]
   categories: string[]
   createdAt: string
@@ -64,6 +68,7 @@ export type ProfileView = {
     interests: string[]
     availability: string | null
     location: string | null
+    sector: string | null
     portfolioSlug: string
   } | null
 }
@@ -78,4 +83,50 @@ export type PortfolioView = {
     creditedOn: string
     opportunity: { id: string; title: string; mode: OpportunityMode }
   }[]
+}
+
+export type NotificationView = {
+  id: string
+  type: string
+  message: string
+  isRead: boolean
+  createdAt: string
+}
+
+export type NotificationFeed = {
+  unread: number
+  items: NotificationView[]
+}
+
+export type AdminSummary = {
+  people: { volunteers: number; organisations: number }
+  initiatives: {
+    published: number
+    citizenProposed: number
+    citizenApproved: number
+    citizenRejected: number
+    awaitingReview: number
+    approvalRate: number
+  }
+  attendance: {
+    acceptedPlaces: number
+    checkedIn: number
+    scanned: number
+    byHand: number
+    hoursCredited: number
+    turnoutRate: number
+  }
+  sectors: { sector: string; opportunities: number }[]
+}
+
+export type ActivityRow = {
+  id: string
+  title: string
+  sector: string | null
+  organiser: string
+  organiserRole: ServerRole
+  status: OpportunityStatus
+  applications: number
+  accepted: number
+  checkedIn: number
 }

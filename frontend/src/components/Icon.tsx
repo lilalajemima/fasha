@@ -1,7 +1,7 @@
 export type IconName =
   | 'discover' | 'activity' | 'portfolio' | 'profile' | 'initiatives'
   | 'overview' | 'opportunities' | 'review' | 'attendance' | 'bell' | 'scan' | 'link' | 'share'
-  | 'menu' | 'close' | 'signout'
+  | 'menu' | 'close' | 'signout' | 'caret'
 
 const PATHS: Record<IconName, string> = {
   discover:      'M12 3a9 9 0 100 18 9 9 0 000-18zM15 9l-2 4-4 2 2-4 4-2z',
@@ -20,6 +20,7 @@ const PATHS: Record<IconName, string> = {
   menu:          'M4 7h16M4 12h16M4 17h16',
   close:         'M6 6l12 12M18 6L6 18',
   signout:       'M10 5H6a1 1 0 00-1 1v12a1 1 0 001 1h4M15 8l4 4-4 4M19 12H9',
+  caret:         'M6 9l6 6 6-6',
 }
 
 export default function Icon({ name, size = 17 }: { name: IconName; size?: number }) {

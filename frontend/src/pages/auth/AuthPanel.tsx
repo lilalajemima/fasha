@@ -1,33 +1,40 @@
 import type { ReactNode } from 'react'
-import Icon from '../../components/Icon'
+import ImageSlider, { type Slide } from '../../components/ImageSlider'
 import Imigongo from '../../components/Imigongo'
 import Logo from '../../components/Logo'
 import './Auth.css'
 
-const POINTS = [
-  { icon: 'discover', text: 'Find opportunities that fit your skills' },
-  { icon: 'profile', text: 'Create change with others' },
-  { icon: 'portfolio', text: 'Celebrate verified contributions' },
-] as const
+const SLIDES: Slide[] = [
+  { src: 'network.jpg', caption: 'neighbours connected across a sector' },
+  { src: 'together.jpg', caption: 'hands lifting something together' },
+  { src: 'hands.jpg', caption: 'raised hands in many colours' },
+  { src: 'crowd.jpg', caption: 'a painted crowd of people' },
+]
 
 export default function AuthPanel({ children }: { children: ReactNode }) {
   return (
     <div className="auth">
       <aside className="auth__panel">
-        <div className="auth__brand"><Logo size={30} /></div>
-        <h1 className="auth__headline">Mukarakaza neza <br />Kuri<br />Fasha</h1>
-        <div style={{ maxWidth: 440 }}><Imigongo /></div>
-        <ul className="auth__points">
-          {POINTS.map(point => (
-            <li key={point.text}>
-              <span style={{ color: 'var(--imigongo-black)', display: 'flex' }}>
-                <Icon name={point.icon} size={19} />
-              </span>
-              {point.text}
-            </li>
-          ))}
-        </ul>
+        <ImageSlider slides={SLIDES} />
+
+        <div className="auth__panel-body">
+          <div className="auth__brand"><Logo size={30} showMark={false} /></div>
+
+          <div className="auth__words">
+            <h1 className="auth__headline">Murakaza neza kuri Fasha</h1>
+
+            <div style={{ maxWidth: 520, margin: '4px 0 26px' }}><Imigongo tone="light" /></div>
+
+            <p className="auth__sub">
+              Find meaningful ways to volunteer, bring people together and build a record of your
+              contribution.
+            </p>
+
+
+          </div>
+        </div>
       </aside>
+
       <main className="auth__main">{children}</main>
     </div>
   )

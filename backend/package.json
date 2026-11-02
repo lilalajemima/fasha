@@ -16,7 +16,8 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "smoke": "node scripts/smoke.mjs",
-    "db:seed": "ts-node-dev --transpile-only prisma/seed.ts"
+    "db:seed": "ts-node-dev --transpile-only prisma/seed.ts",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",

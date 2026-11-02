@@ -9,8 +9,11 @@ export type NewOpportunity = {
   description: string
   mode: OpportunityMode
   location: string | null
+  sector: string
   maxCapacity: number
   applicationDeadline: Date
+  startsAt: Date | null
+  endsAt: Date
   requiredSkills: string[]
   categories: string[]
 }
@@ -18,6 +21,7 @@ export type NewOpportunity = {
 export type FeedFilter = {
   search: string | null
   mode: OpportunityMode | null
+  sector: string | null
 }
 
 export interface OpportunityStore {
@@ -30,6 +34,10 @@ export interface OpportunityStore {
   findById(id: string): Promise<OpportunityRecord | null>
   findCreatedBy(creatorId: string): Promise<OpportunityRecord[]>
   findAwaitingApproval(): Promise<OpportunityRecord[]>
-  updateStatus(id: string, status: OpportunityStatus): Promise<OpportunityRecord>
+  updateStatus(
+    id: string,
+    status: OpportunityStatus,
+    reviewNote: string | null,
+  ): Promise<OpportunityRecord>
   setQrToken(id: string, qrToken: string): Promise<void>
 }

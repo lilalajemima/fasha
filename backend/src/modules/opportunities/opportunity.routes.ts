@@ -17,13 +17,13 @@ const service = new OpportunityService(
 )
 
 const controller = new OpportunityController(service)
-const approvers = authorise('ORGANISATION', 'ADMIN')
+const reviewers = authorise('ADMIN')
 
 export const opportunityRoutes = Router()
 
 opportunityRoutes.get('/opportunities', authenticate, controller.feed)
 opportunityRoutes.post('/opportunities', authenticate, controller.create)
 opportunityRoutes.get('/opportunities/mine', authenticate, controller.mine)
-opportunityRoutes.get('/opportunities/pending', authenticate, approvers, controller.awaitingApproval)
+opportunityRoutes.get('/opportunities/pending', authenticate, reviewers, controller.awaitingApproval)
 opportunityRoutes.get('/opportunities/:id', authenticate, controller.detail)
-opportunityRoutes.patch('/opportunities/:id/status', authenticate, approvers, controller.decide)
+opportunityRoutes.patch('/opportunities/:id/status', authenticate, reviewers, controller.decide)

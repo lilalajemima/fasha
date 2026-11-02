@@ -2,21 +2,22 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { Button, Card, Field } from '../../components/ui'
-import { useAuth, type Role } from '../../auth/AuthContext'
+import { homeFor, useAuth, type SignUpRole } from '../../auth/AuthContext'
 import { demoAccounts } from '../../lib/demo'
 import AuthPanel from './AuthPanel'
 
 export default function SignIn() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState<Role>('volunteer')
+  const [role, setRole] = useState<SignUpRole>('volunteer')
   const [email, setEmail] = useState(demoAccounts?.volunteer.email ?? '')
   const [password, setPassword] = useState(demoAccounts?.volunteer.password ?? '')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  function choose(next: Role) {
+  function choose(next: SignUpRole) {
     if (!demoAccounts) return
+
     setRole(next)
     setEmail(demoAccounts[next].email)
     setPassword(demoAccounts[next].password)
@@ -26,9 +27,10 @@ export default function SignIn() {
     event.preventDefault()
     setError('')
     setBusy(true)
+
     try {
       const user = await signIn(email, password)
-      navigate(user.role === 'volunteer' ? '/discover' : '/manage')
+      navigate(homeFor(user.role))
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : 'Could not sign in')
     } finally {
@@ -44,10 +46,7 @@ export default function SignIn() {
       </div>
 
       <form className="auth__form" onSubmit={handleSubmit}>
-        <span className="eyebrow">Welcome back</span>
-        <h1>Sign in to Fasha</h1>
-        <p className="lede" style={{ marginBottom: 26 }}>
-        </p>
+        <h1 style={{ marginBottom: 26 }}>Sign in to Fasha</h1>
 
         {demoAccounts && (
           <div className="role-grid">
@@ -79,6 +78,20 @@ export default function SignIn() {
           {busy ? 'Signing in…' : 'Sign in'}
         </Button>
 
+        {demoAccounts && (
+          <div style={{ marginTop: 22 }}>
+            <Card variant="note">
+              <h3>Demo accounts</h3>
+              <p className="muted" style={{ marginBottom: 10 }}>
+                Choosing an account type above fills these in.
+              </p>
+              <div className="muted">
+                Volunteer · {demoAccounts.volunteer.email}<br />
+                Organisation · {demoAccounts.organisation.email}
+              </div>
+            </Card>
+          </div>
+        )}
       </form>
     </AuthPanel>
   )

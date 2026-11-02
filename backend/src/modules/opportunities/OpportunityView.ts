@@ -6,9 +6,13 @@ export type OpportunityView = {
   description: string
   mode: string
   location: string | null
+  sector: string | null
   maxCapacity: number
   applicationDeadline: string
+  startsAt: string | null
+  endsAt: string | null
   status: string
+  reviewNote: string | null
   requiredSkills: string[]
   categories: string[]
   createdAt: string
@@ -23,9 +27,13 @@ export function toView(record: OpportunityRecord, matchScore?: number): Opportun
     description: record.description,
     mode: record.mode,
     location: record.location,
+    sector: record.sector,
     maxCapacity: record.maxCapacity,
     applicationDeadline: record.applicationDeadline.toISOString(),
+    startsAt: record.startsAt ? record.startsAt.toISOString() : null,
+    endsAt: record.endsAt ? record.endsAt.toISOString() : null,
     status: record.status,
+    reviewNote: record.reviewNote,
     requiredSkills: record.requiredSkills,
     categories: record.categories,
     createdAt: record.createdAt.toISOString(),

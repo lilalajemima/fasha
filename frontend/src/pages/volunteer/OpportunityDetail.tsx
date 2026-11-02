@@ -5,7 +5,7 @@ import PageHeader from '../../components/PageHeader'
 import { Button, Card, StatusBadge, Tag, TextField } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
-import { dateAndTime, hasPassed, sentenceCase } from '../../lib/format'
+import { dateAndTime, hasPassed, sentenceCase, whenLabel } from '../../lib/format'
 import type { OpportunityView, ProfileView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
 
@@ -138,7 +138,7 @@ export default function OpportunityDetail() {
           <PageHeader
             eyebrow={`${item.creator.name} · ${sentenceCase(item.mode)}`}
             title={item.title}
-            meta={`${item.location ?? 'Online'} · apply by ${dateAndTime(item.applicationDeadline)}`}
+            meta={`${whenLabel(item.startsAt, item.endsAt)} · ${item.location ?? 'Online'}`}
           />
 
           <div className="page-grid">

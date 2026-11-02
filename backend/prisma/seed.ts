@@ -12,11 +12,21 @@ const accounts = {
     name: requireEnv('SEED_ORGANISATION_NAME'),
     email: requireEnv('SEED_ORGANISATION_EMAIL').toLowerCase(),
   },
+  admin: {
+    name: requireEnv('SEED_ADMIN_NAME'),
+    email: requireEnv('SEED_ADMIN_EMAIL').toLowerCase(),
+  },
   password: requireEnv('SEED_PASSWORD'),
 }
 
 function inDays(days: number) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+}
+
+function atHour(days: number, hour: number) {
+  const when = inDays(days)
+  when.setHours(hour, 0, 0, 0)
+  return when
 }
 
 function slugify(name: string) {
@@ -44,6 +54,7 @@ async function main() {
           interests: ['Environment', 'Education', 'Food access'],
           availability: 'Weekend mornings',
           location: 'Kimironko, Kigali',
+          sector: 'Kimironko',
           portfolioSlug: slugify(accounts.volunteer.name),
         },
       },
@@ -61,6 +72,17 @@ async function main() {
     },
   })
 
+  await prisma.user.upsert({
+    where: { email: accounts.admin.email },
+    update: {},
+    create: {
+      name: accounts.admin.name,
+      email: accounts.admin.email,
+      passwordHash,
+      role: UserRole.ADMIN,
+    },
+  })
+
   const opportunities = [
     {
       creatorId: organisation.id,
@@ -70,8 +92,11 @@ async function main() {
         'wetland garden. No gardening experience is needed, we provide tools and a short briefing.',
       mode: OpportunityMode.PHYSICAL,
       location: 'Kimironko wetland, Gasabo',
+      sector: 'Kimironko',
       maxCapacity: 20,
       applicationDeadline: inDays(7),
+      startsAt: atHour(9, 8),
+      endsAt: atHour(9, 12),
       status: OpportunityStatus.PUBLISHED,
       requiredSkills: ['Teamwork'],
       categories: ['Environment', 'Outdoors'],
@@ -82,8 +107,11 @@ async function main() {
       description: 'Lay out a short guide that volunteers can print and hand to parents.',
       mode: OpportunityMode.VIRTUAL,
       location: null,
+      sector: 'Kimironko',
       maxCapacity: 6,
       applicationDeadline: inDays(10),
+      startsAt: null,
+      endsAt: atHour(17, 23),
       status: OpportunityStatus.PUBLISHED,
       requiredSkills: ['Graphic design'],
       categories: ['Education'],
@@ -94,8 +122,11 @@ async function main() {
       description: 'Sort donations and prepare welcoming food parcels for local families.',
       mode: OpportunityMode.PHYSICAL,
       location: 'Kimironko Market hall',
+      sector: 'Kimironko',
       maxCapacity: 18,
       applicationDeadline: inDays(12),
+      startsAt: atHour(14, 9),
+      endsAt: atHour(14, 13),
       status: OpportunityStatus.PUBLISHED,
       requiredSkills: ['Teamwork'],
       categories: ['Food access'],
@@ -108,8 +139,11 @@ async function main() {
         'welcome visitors, label seed packets and set up tables at the community garden.',
       mode: OpportunityMode.PHYSICAL,
       location: 'Kimironko community garden',
+      sector: 'Kimironko',
       maxCapacity: 15,
       applicationDeadline: inDays(14),
+      startsAt: atHour(16, 10),
+      endsAt: atHour(16, 13),
       status: OpportunityStatus.PENDING_APPROVAL,
       requiredSkills: ['Teamwork'],
       categories: ['Environment', 'Gardening'],
@@ -124,6 +158,7 @@ async function main() {
   console.log('Seeded:')
   console.log(`  ${accounts.volunteer.email} (volunteer)`)
   console.log(`  ${accounts.organisation.email} (organisation)`)
+  console.log(`  ${accounts.admin.email} (admin)`)
   console.log(`  ${opportunities.length} opportunities, one awaiting approval`)
 }
 

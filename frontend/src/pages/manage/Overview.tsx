@@ -12,7 +12,6 @@ export default function Overview() {
   const { user } = useAuth()
   const isVolunteer = user?.role !== 'organisation'
   const mine = useGet<OpportunityView[]>('/opportunities/mine')
-  const queue = useGet<OpportunityView[]>(isVolunteer ? null : '/opportunities/pending')
 
   const items = mine.data ?? []
   const published = items.filter(item => item.status === 'PUBLISHED').length
@@ -47,7 +46,6 @@ export default function Overview() {
             <>
               <StatTile label="Opportunities posted" value={items.length} />
               <StatTile label="Published" value={published} />
-              <StatTile label="Citizen initiatives to review" value={(queue.data ?? []).length} />
             </>
           )}
         </div>
@@ -83,18 +81,6 @@ export default function Overview() {
         </div>
 
         <aside className="stack">
-          {!isVolunteer && (queue.data ?? []).length > 0 && (
-            <Card variant="tint">
-              <h2 style={{ color: 'var(--primary)' }}>Waiting on you</h2>
-              <p className="muted">
-                {(queue.data ?? []).length} citizen initiative
-                {(queue.data ?? []).length === 1 ? '' : 's'} need a decision before they appear in
-                Discover.
-              </p>
-              <Link to="/manage/review"><Button block>Open the review queue</Button></Link>
-            </Card>
-          )}
-
           <Card>
             <h2>Attendance</h2>
             <p className="muted">

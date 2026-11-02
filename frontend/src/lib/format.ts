@@ -43,3 +43,13 @@ export function initials(name: string): string {
     .map(part => part[0]?.toUpperCase() ?? '')
     .join('')
 }
+
+export function whenLabel(startsAt: string | null, endsAt: string | null): string {
+  if (startsAt && endsAt) {
+    return `${longDate(startsAt)}, ${timeOfDay(startsAt)} to ${timeOfDay(endsAt)}`
+  }
+
+  if (endsAt) return `Due by ${longDate(endsAt)}`
+
+  return 'Date to be confirmed'
+}

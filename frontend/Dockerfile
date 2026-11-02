@@ -1,0 +1,27 @@
+FROM node:22-slim AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+ARG VITE_API_URL
+ARG VITE_DEMO_VOLUNTEER_EMAIL
+ARG VITE_DEMO_ORGANISATION_EMAIL
+ARG VITE_DEMO_PASSWORD
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_DEMO_VOLUNTEER_EMAIL=$VITE_DEMO_VOLUNTEER_EMAIL
+ENV VITE_DEMO_ORGANISATION_EMAIL=$VITE_DEMO_ORGANISATION_EMAIL
+ENV VITE_DEMO_PASSWORD=$VITE_DEMO_PASSWORD
+
+RUN npm run build
+
+FROM nginx:1.27-alpine AS runtime
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80

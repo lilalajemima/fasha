@@ -31,6 +31,16 @@ export class ApiClient {
     return this.send<T>('PATCH', path, body)
   }
 
+  async download(path: string): Promise<Blob> {
+    const response = await this.fetchOrFail('GET', path)
+
+    if (!response.ok) {
+      throw new ApiError(response.status, `Could not download that file (${response.status})`)
+    }
+
+    return response.blob()
+  }
+
   private async send<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await this.fetchOrFail(method, path, body)
     const payload = await this.readBody(response)

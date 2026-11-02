@@ -12,6 +12,8 @@ import type {
 import type { NewAccount, UserStore, UserWithProfile } from '../auth/UserStore'
 
 const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+const later = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000)
 
 function makeRecord(overrides: Partial<OpportunityRecord> = {}): OpportunityRecord {
   return {
@@ -21,9 +23,14 @@ function makeRecord(overrides: Partial<OpportunityRecord> = {}): OpportunityReco
     description: 'Plant trees and clear the path with the neighbourhood team.',
     mode: 'PHYSICAL',
     location: 'Kimironko',
+    sector: 'Kimironko',
     maxCapacity: 20,
     applicationDeadline: tomorrow,
+    startsAt: tomorrow,
+    endsAt: tomorrow,
     status: 'PUBLISHED',
+    reviewNote: null,
+    reviewedAt: null,
     qrToken: null,
     requiredSkills: [],
     categories: [],
@@ -71,9 +78,10 @@ class FakeOpportunityStore implements OpportunityStore {
     return this.records.filter(record => record.status === 'PENDING_APPROVAL')
   }
 
-  async updateStatus(id: string, status: string) {
+  async updateStatus(id: string, status: string, reviewNote: string | null) {
     const record = this.records.find(entry => entry.id === id)!
     record.status = status as OpportunityRecord['status']
+    record.reviewNote = reviewNote
     return record
   }
 
@@ -115,13 +123,26 @@ const draft: NewOpportunity = {
   description: 'Sort donations and prepare parcels for families nearby.',
   mode: 'PHYSICAL',
   location: 'Kimironko market',
+  sector: 'Kimironko',
   maxCapacity: 12,
   applicationDeadline: tomorrow,
+  startsAt: nextWeek,
+  endsAt: later,
   requiredSkills: ['Teamwork'],
   categories: ['Food access'],
 }
 
 const notifier = new RecordingNotifier()
+
+function citizenProposal(overrides: Partial<OpportunityRecord> = {}): OpportunityRecord {
+  return makeRecord({
+    id: 'proposal',
+    status: 'PENDING_APPROVAL',
+    creatorId: 'volunteer-1',
+    creator: { id: 'volunteer-1', name: 'Amara Mensah', role: 'VOLUNTEER' },
+    ...overrides,
+  })
+}
 
 function buildService(records: OpportunityRecord[] = [], users = new FakeUserStore()) {
   return new OpportunityService(
@@ -143,6 +164,39 @@ describe('creating an opportunity', () => {
     const view = await buildService().create({ userId: 'volunteer-1', role: 'VOLUNTEER' }, draft)
 
     expect(view.status).toBe('PENDING_APPROVAL')
+  })
+
+  it('refuses a physical opportunity with no start time', async () => {
+    const service = buildService()
+
+    await expect(
+      service.create({ userId: 'organisation-1', role: 'ORGANISATION' }, { ...draft, startsAt: null }),
+    ).rejects.toThrow('needs a start time')
+  })
+
+  it('refuses one that finishes before it starts', async () => {
+    const service = buildService()
+
+    await expect(
+      service.create({ userId: 'organisation-1', role: 'ORGANISATION' }, {
+        ...draft,
+        startsAt: later,
+        endsAt: nextWeek,
+      }),
+    ).rejects.toThrow('finish after it starts')
+  })
+
+  it('refuses applications that close after the work is over', async () => {
+    const service = buildService()
+
+    await expect(
+      service.create({ userId: 'organisation-1', role: 'ORGANISATION' }, {
+        ...draft,
+        applicationDeadline: later,
+        startsAt: nextWeek,
+        endsAt: nextWeek,
+      }),
+    ).rejects.toThrow('cannot close after the work is over')
   })
 
   it('refuses a physical opportunity with no location', async () => {
@@ -183,21 +237,22 @@ describe('the feed', () => {
 
 describe('reviewing a volunteer proposal', () => {
   it('publishes it when approved', async () => {
-    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL' })]
+    const records = [citizenProposal()]
     const view = await buildService(records).decide('proposal', 'APPROVE')
 
     expect(view.status).toBe('PUBLISHED')
   })
 
   it('rejects it when turned down', async () => {
-    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL' })]
-    const view = await buildService(records).decide('proposal', 'REJECT')
+    const records = [citizenProposal()]
+    const view = await buildService(records).decide('proposal', 'REJECT', 'Please add a date.')
 
     expect(view.status).toBe('REJECTED')
+    expect(view.reviewNote).toBe('Please add a date.')
   })
 
   it('refuses to review the same proposal twice', async () => {
-    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL' })]
+    const records = [citizenProposal()]
     const service = buildService(records)
 
     await service.decide('proposal', 'APPROVE')
@@ -205,12 +260,20 @@ describe('reviewing a volunteer proposal', () => {
     await expect(service.decide('proposal', 'APPROVE')).rejects.toThrow(ConflictError)
   })
 
+  it('refuses to review a post an organisation made', async () => {
+    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL' })]
+
+    await expect(buildService(records).decide('proposal', 'APPROVE')).rejects.toThrow(
+      'Only citizen initiatives go through review',
+    )
+  })
+
   it('reports a missing opportunity', async () => {
     await expect(buildService().decide('nope', 'APPROVE')).rejects.toThrow('does not exist')
   })
 
   it('tells the person who proposed it', async () => {
-    const records = [makeRecord({ id: 'proposal', status: 'PENDING_APPROVAL', creatorId: 'volunteer-9' })]
+    const records = [citizenProposal({ creatorId: 'volunteer-9' })]
     notifier.sent = []
 
     await buildService(records).decide('proposal', 'APPROVE')

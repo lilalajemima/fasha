@@ -1,3 +1,4 @@
+import { SECTORS, isSector } from '../domain/sectors'
 import { BadRequestError } from '../errors/HttpErrors'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -160,4 +161,30 @@ export function readUrl(body: Body, field: string): string {
   }
 
   return value
+}
+
+export function readSector(body: Body, field: string): string {
+  const value = readString(body, field)
+
+  if (!isSector(value)) {
+    throw new BadRequestError(`${field} must be one of: ${SECTORS.join(', ')}`)
+  }
+
+  return value
+}
+
+export function readOptionalSector(body: Body, field: string): string | null {
+  const value = body[field]
+
+  if (value === null || value === undefined || value === '') return null
+
+  return readSector(body, field)
+}
+
+export function readOptionalFutureDate(body: Body, field: string): Date | null {
+  const value = body[field]
+
+  if (value === null || value === undefined || value === '') return null
+
+  return readFutureDate(body, field)
 }

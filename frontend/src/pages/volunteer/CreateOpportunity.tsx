@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader'
 import { Button, Card, Field, RemovableTag, StatusBadge, Tag, TextField } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
+import { SECTORS } from '../../lib/sectors'
 import type { OpportunityMode } from '../../lib/types'
 import { messageFor } from '../../lib/useGet'
 
@@ -59,8 +60,11 @@ export default function CreateOpportunity() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [place, setPlace] = useState('')
+  const [sector, setSector] = useState('Kimironko')
   const [capacity, setCapacity] = useState('15')
   const [deadline, setDeadline] = useState('')
+  const [startsAt, setStartsAt] = useState('')
+  const [endsAt, setEndsAt] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [error, setError] = useState('')
@@ -77,8 +81,11 @@ export default function CreateOpportunity() {
         description: description.trim(),
         mode,
         location: mode === 'PHYSICAL' ? place.trim() : null,
+        sector,
         maxCapacity: Number(capacity),
         applicationDeadline: new Date(deadline).toISOString(),
+        startsAt: mode === 'PHYSICAL' ? new Date(startsAt).toISOString() : null,
+        endsAt: new Date(endsAt).toISOString(),
         requiredSkills: skills,
         categories,
       })
@@ -176,6 +183,54 @@ export default function CreateOpportunity() {
               />
             )}
 
+            <div className="field">
+              <label className="label" htmlFor="sector">Sector</label>
+              <select
+                id="sector"
+                className="input"
+                value={sector}
+                onChange={event => setSector(event.target.value)}
+              >
+                {SECTORS.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              <div className="hint">
+                Used for reporting to the sector committee, and for filtering the feed.
+              </div>
+            </div>
+
+            {mode === 'PHYSICAL' ? (
+              <div className="two-col">
+                <Field
+                  id="startsAt"
+                  label="Starts"
+                  type="datetime-local"
+                  value={startsAt}
+                  required
+                  onChange={event => setStartsAt(event.target.value)}
+                />
+                <Field
+                  id="endsAt"
+                  label="Ends"
+                  type="datetime-local"
+                  value={endsAt}
+                  required
+                  onChange={event => setEndsAt(event.target.value)}
+                />
+              </div>
+            ) : (
+              <Field
+                id="endsAt"
+                label="Work due by"
+                type="datetime-local"
+                value={endsAt}
+                required
+                hint="Volunteers submit their hours and proof by this date."
+                onChange={event => setEndsAt(event.target.value)}
+              />
+            )}
+
             <div className="two-col">
               <Field
                 id="capacity"
@@ -197,7 +252,8 @@ export default function CreateOpportunity() {
             </div>
 
             <p className="muted" style={{ marginBottom: 0 }}>
-              Applying closes when the deadline passes or every place is taken.
+              Applying closes when the deadline passes or every place is taken, and the
+              deadline has to be on or before the day it happens.
             </p>
           </Card>
 

@@ -7,7 +7,8 @@ import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type { FeedFilter, NewOpportunity, OpportunityRecord, OpportunityStore } from './OpportunityStore'
 import { toView, type OpportunityView } from './OpportunityView'
 
-const APPROVER_ROLES: string[] = [UserRole.ORGANISATION, UserRole.ADMIN]
+const DIRECT_PUBLISH_ROLES: string[] = [UserRole.ORGANISATION, UserRole.ADMIN]
+const REVIEWER_ROLES: string[] = [UserRole.ADMIN]
 
 export class OpportunityService {
   constructor(
@@ -20,6 +21,18 @@ export class OpportunityService {
   async create(creator: TokenPayload, input: NewOpportunity): Promise<OpportunityView> {
     if (input.mode === 'PHYSICAL' && !input.location) {
       throw new BadRequestError('A physical opportunity needs a location')
+    }
+
+    if (input.mode === 'PHYSICAL' && !input.startsAt) {
+      throw new BadRequestError('A physical opportunity needs a start time')
+    }
+
+    if (input.startsAt && input.startsAt.getTime() >= input.endsAt.getTime()) {
+      throw new BadRequestError('It has to finish after it starts')
+    }
+
+    if (input.applicationDeadline.getTime() > input.endsAt.getTime()) {
+      throw new BadRequestError('Applications cannot close after the work is over')
     }
 
     const record = await this.opportunities.create(
@@ -71,36 +84,46 @@ export class OpportunityService {
     return records.map(record => toView(record))
   }
 
-  async decide(id: string, decision: 'APPROVE' | 'REJECT'): Promise<OpportunityView> {
+  async decide(
+    id: string,
+    decision: 'APPROVE' | 'REJECT',
+    reviewNote: string | null = null,
+  ): Promise<OpportunityView> {
     const record = await this.findOrFail(id)
 
     if (record.status !== OpportunityStatus.PENDING_APPROVAL) {
       throw new ConflictError('That opportunity has already been reviewed')
     }
 
+    if (record.creator.role !== UserRole.VOLUNTEER) {
+      throw new ConflictError('Only citizen initiatives go through review')
+    }
+
     const approved = decision === 'APPROVE'
     const status = approved ? OpportunityStatus.PUBLISHED : OpportunityStatus.REJECTED
-    const updated = await this.opportunities.updateStatus(id, status)
+    const updated = await this.opportunities.updateStatus(id, status, reviewNote)
 
     await this.notifier.send(
       updated.creatorId,
       NOTIFICATION_TYPES.initiativeDecided,
       approved
         ? `Your initiative "${updated.title}" was approved and is now in Discover.`
-        : `Your initiative "${updated.title}" was not approved this time.`,
+        : `Your initiative "${updated.title}" was not approved this time.${
+            reviewNote ? ` ${reviewNote}` : ''
+          }`,
     )
 
     return toView(updated)
   }
 
   private statusForNew(creatorRole: string): OpportunityStatus {
-    return APPROVER_ROLES.includes(creatorRole)
+    return DIRECT_PUBLISH_ROLES.includes(creatorRole)
       ? OpportunityStatus.PUBLISHED
       : OpportunityStatus.PENDING_APPROVAL
   }
 
   private mayInspect(viewer: TokenPayload, record: OpportunityRecord): boolean {
-    return viewer.userId === record.creatorId || APPROVER_ROLES.includes(viewer.role)
+    return viewer.userId === record.creatorId || REVIEWER_ROLES.includes(viewer.role)
   }
 
   private async findOrFail(id: string): Promise<OpportunityRecord> {
