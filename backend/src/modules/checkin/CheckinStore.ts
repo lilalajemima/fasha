@@ -2,7 +2,13 @@ import type { Checkin, CheckInMethod } from '@prisma/client'
 
 export type CheckinRecord = Checkin & {
   volunteer: { id: string; name: string }
-  opportunity: { id: string; title: string; creatorId: string; requiredSkills: string[] }
+  opportunity: {
+    id: string
+    title: string
+    creatorId: string
+    requiredSkills: string[]
+    qrToken: string | null
+  }
 }
 
 export interface CheckinStore {

@@ -1,12 +1,12 @@
 import { CheckInMethod, UserRole } from '@prisma/client'
-import { ConflictError, ForbiddenError, NotFoundError, UnauthorisedError } from '../../core/errors/HttpErrors'
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnauthorisedError } from '../../core/errors/HttpErrors'
 import type { Clock } from '../../core/time/Clock'
 import type { TokenPayload } from '../../core/security/TokenService'
 import type { TotpService } from '../../core/security/TotpService'
 import type { ApplicationStore } from '../applications/ApplicationStore'
 import type { OpportunityRecord, OpportunityStore } from '../opportunities/OpportunityStore'
 import type { CheckinRecord, CheckinStore } from './CheckinStore'
-import { hoursBetween, toCheckinView, type CheckinView } from './CheckinView'
+import { hoursBetween, toAttendanceCsv, toCheckinView, type CheckinView } from './CheckinView'
 
 export type CheckinCode = {
   code: string
@@ -21,6 +21,7 @@ export class CheckinService {
     private readonly applications: ApplicationStore,
     private readonly totp: TotpService,
     private readonly clock: Clock,
+    private readonly siteUrl: string,
   ) {}
 
   async openCheckIn(actor: TokenPayload, opportunityId: string): Promise<CheckinCode> {
@@ -35,7 +36,7 @@ export class CheckinService {
     return {
       code,
       secondsRemaining: this.totp.secondsRemaining(now),
-      payload: `fasha:${opportunityId}:${code}`,
+      payload: `${this.siteUrl}/check-in?o=${opportunityId}&c=${code}`,
     }
   }
 
@@ -78,7 +79,11 @@ export class CheckinService {
     )
   }
 
-  async checkOut(actor: TokenPayload, checkinId: string): Promise<CheckinView> {
+  async checkOut(
+    actor: TokenPayload,
+    checkinId: string,
+    code: string | null = null,
+  ): Promise<CheckinView> {
     const checkin = await this.loadCheckin(checkinId)
 
     if (!this.mayCloseOff(actor, checkin)) {
@@ -87,6 +92,10 @@ export class CheckinService {
 
     if (checkin.checkoutTime) {
       throw new ConflictError('That volunteer is already checked out')
+    }
+
+    if (actor.userId === checkin.volunteerId) {
+      this.assertCodeMatches(checkin.opportunity.qrToken, code)
     }
 
     const leftAt = this.clock.now()
@@ -100,6 +109,14 @@ export class CheckinService {
         checkin.opportunity.requiredSkills,
       ),
     )
+  }
+
+  async attendanceCsv(actor: TokenPayload, opportunityId: string): Promise<string> {
+    const opportunity = await this.loadOpportunity(opportunityId)
+
+    this.assertOrganiser(actor, opportunity)
+
+    return toAttendanceCsv(await this.checkins.findForOpportunity(opportunityId))
   }
 
   async attendance(actor: TokenPayload, opportunityId: string): Promise<CheckinView[]> {
@@ -118,6 +135,16 @@ export class CheckinService {
     await this.opportunities.setQrToken(opportunityId, secret)
 
     return secret
+  }
+
+  private assertCodeMatches(secret: string | null, code: string | null): void {
+    if (!code) {
+      throw new BadRequestError('Enter the code the organiser is showing to check out')
+    }
+
+    if (!secret || !this.totp.verify(secret, code, this.clock.now())) {
+      throw new UnauthorisedError('That code has expired, ask the organiser for the current one')
+    }
   }
 
   private assertOrganiser(actor: TokenPayload, opportunity: OpportunityRecord): void {

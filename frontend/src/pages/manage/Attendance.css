@@ -1,0 +1,18 @@
+.events { display: grid; gap: 12px; }
+.event-card { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center;
+              background: var(--surface-card); border: 1px solid var(--neutral-border);
+              border-radius: var(--radius); padding: 18px; }
+.event-card:hover { border-color: var(--primary); }
+.event-card h3 { margin: 0 0 4px; }
+.event-card__meta { color: var(--charcoal-muted); font-size: 14px; margin: 0; }
+
+.register__head { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+  .register, .register * { visibility: visible; }
+  .register { position: absolute; left: 0; top: 0; width: 100%; border: 0; padding: 0; }
+  .register__head { display: block; margin-bottom: 18px; }
+  .register__hide { display: none; }
+  .table th, .table td { padding: 6px 8px; font-size: 12px; }
+}

@@ -5,7 +5,9 @@ import type { CheckinRecord, CheckinStore } from './CheckinStore'
 
 const withBothSides = {
   volunteer: { select: { id: true, name: true } },
-  opportunity: { select: { id: true, title: true, creatorId: true, requiredSkills: true } },
+  opportunity: {
+    select: { id: true, title: true, creatorId: true, requiredSkills: true, qrToken: true },
+  },
 } as const
 
 export class CheckinRepository extends BaseRepository implements CheckinStore {

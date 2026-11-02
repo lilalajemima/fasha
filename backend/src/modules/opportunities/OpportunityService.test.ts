@@ -25,9 +25,9 @@ function makeRecord(overrides: Partial<OpportunityRecord> = {}): OpportunityReco
     location: 'Kimironko',
     sector: 'Kimironko',
     maxCapacity: 20,
-    applicationDeadline: tomorrow,
-    startsAt: tomorrow,
-    endsAt: tomorrow,
+    applicationDeadline: new Date(later.getTime() + 86400000),
+    startsAt: nextWeek,
+    endsAt: later,
     status: 'PUBLISHED',
     reviewNote: null,
     reviewedAt: null,
@@ -50,7 +50,7 @@ class RecordingNotifier implements Notifier {
 }
 
 class FakeOpportunityStore implements OpportunityStore {
-  constructor(private readonly records: OpportunityRecord[] = []) {}
+  constructor(private readonly records: OpportunityRecord[] = []) { }
 
   async create(creatorId: string, status: string, input: NewOpportunity) {
     const record = makeRecord({
@@ -85,11 +85,11 @@ class FakeOpportunityStore implements OpportunityStore {
     return record
   }
 
-  async setQrToken() {}
+  async setQrToken() { }
 }
 
 class FakeUserStore implements UserStore {
-  constructor(private readonly skills: string[] = [], private readonly interests: string[] = []) {}
+  constructor(private readonly skills: string[] = [], private readonly interests: string[] = []) { }
 
   async findByEmail() {
     return null
@@ -192,9 +192,9 @@ describe('creating an opportunity', () => {
     await expect(
       service.create({ userId: 'organisation-1', role: 'ORGANISATION' }, {
         ...draft,
-        applicationDeadline: later,
+        applicationDeadline: new Date(later.getTime() + 86400000),
         startsAt: nextWeek,
-        endsAt: nextWeek,
+        endsAt: later,
       }),
     ).rejects.toThrow('cannot close after the work is over')
   })

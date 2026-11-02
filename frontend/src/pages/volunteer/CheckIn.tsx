@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Imigongo from '../../components/Imigongo'
 import { Loaded } from '../../components/Loader'
 import Logo from '../../components/Logo'
@@ -9,9 +9,14 @@ import { timeOfDay } from '../../lib/format'
 import type { ApplicationView, CheckinView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
 
-function CheckInForm({ accepted }: { accepted: ApplicationView[] }) {
-  const [opportunityId, setOpportunityId] = useState(accepted[0]?.opportunity.id ?? '')
-  const [code, setCode] = useState('')
+function CheckInForm({ accepted, scanned }: {
+  accepted: ApplicationView[]
+  scanned: { opportunityId: string; code: string }
+}) {
+  const [opportunityId, setOpportunityId] = useState(
+    scanned.opportunityId || accepted[0]?.opportunity.id || '',
+  )
+  const [code, setCode] = useState(scanned.code)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [checkin, setCheckin] = useState<CheckinView | null>(null)
@@ -31,13 +36,17 @@ function CheckInForm({ accepted }: { accepted: ApplicationView[] }) {
     }
   }
 
-  async function checkOut() {
+  async function checkOut(event: FormEvent) {
+    event.preventDefault()
+
     if (!checkin) return
+
     setError('')
     setBusy(true)
 
     try {
-      setCheckin(await api.patch<CheckinView>(`/checkins/${checkin.id}/checkout`))
+      setCheckin(await api.patch<CheckinView>(`/checkins/${checkin.id}/checkout`, { code }))
+      setCode('')
     } catch (problem) {
       setError(messageFor(problem))
     } finally {
@@ -65,13 +74,26 @@ function CheckInForm({ accepted }: { accepted: ApplicationView[] }) {
             <Link to="/portfolio"><Button block>View portfolio</Button></Link>
           </>
         ) : (
-          <>
+          <form onSubmit={checkOut}>
             <hr />
-            <p className="muted">Check out before you leave so your hours are recorded.</p>
-            <Button block variant="primary" disabled={busy} onClick={checkOut}>
-              {busy ? 'Checking out…' : 'Check out now'}
+            <p className="muted">
+              Before you leave, enter the code the organiser is showing now. It changes every 30
+              seconds, so it has to be done at the event.
+            </p>
+            <Field
+              id="checkout-code"
+              label="Six digit code"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              value={code}
+              required
+              onChange={event => setCode(event.target.value.replace(/\D/g, ''))}
+            />
+            <Button type="submit" block variant="primary" disabled={busy || code.length !== 6}>
+              {busy ? 'Checking out…' : 'Check out'}
             </Button>
-          </>
+          </form>
         )}
 
         {error && <p className="error" role="alert">{error}</p>}
@@ -123,7 +145,9 @@ function CheckInForm({ accepted }: { accepted: ApplicationView[] }) {
       </form>
 
       <p className="muted" style={{ marginTop: 14, marginBottom: 0 }}>
-        A code only works for about a minute, so a screenshot taken earlier will be refused.
+        {scanned.code
+          ? 'Scanned. Check the opportunity is right, then press check in.'
+          : 'A code only works for about a minute, so a screenshot taken earlier will be refused.'}
       </p>
     </Card>
   )
@@ -131,6 +155,11 @@ function CheckInForm({ accepted }: { accepted: ApplicationView[] }) {
 
 export default function CheckIn() {
   const applications = useGet<ApplicationView[]>('/applications/mine')
+  const [params] = useSearchParams()
+  const scanned = {
+    opportunityId: params.get('o') ?? '',
+    code: (params.get('c') ?? '').replace(/\D/g, '').slice(0, 6),
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-base)' }}>
@@ -160,7 +189,11 @@ export default function CheckIn() {
               <>
                 <StatusBadge tone="ok">ACCEPTED ATTENDEE</StatusBadge>
                 <div style={{ marginTop: 18 }}>
-                  <CheckInForm accepted={accepted} />
+                  <CheckInForm
+                    key={scanned.code}
+                    accepted={accepted}
+                    scanned={scanned}
+                  />
                 </div>
               </>
             )

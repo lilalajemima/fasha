@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import type { QrCodeRenderer } from '../../core/qr/QrCodeRenderer'
-import { readString } from '../../core/validation/readers'
+import { readOptionalString, readString } from '../../core/validation/readers'
 import { routeParam } from '../../core/http/params'
 import type { CheckinService } from './CheckinService'
 
@@ -37,7 +37,22 @@ export class CheckinController {
   }
 
   checkOut = async (req: Request, res: Response) => {
-    res.json(await this.checkins.checkOut(req.user!, routeParam(req, 'id')))
+    const view = await this.checkins.checkOut(
+      req.user!,
+      routeParam(req, 'id'),
+      readOptionalString(req.body ?? {}, 'code'),
+    )
+
+    res.json(view)
+  }
+
+  attendanceCsv = async (req: Request, res: Response) => {
+    const csv = await this.checkins.attendanceCsv(req.user!, routeParam(req, 'id'))
+    const stamp = new Date().toISOString().slice(0, 10)
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="attendance-${stamp}.csv"`)
+    res.send(csv)
   }
 
   attendance = async (req: Request, res: Response) => {

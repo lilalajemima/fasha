@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { env } from '../../core/config/env'
 import { QrCodeRenderer } from '../../core/qr/QrCodeRenderer'
 import { TotpService } from '../../core/security/TotpService'
 import { SystemClock } from '../../core/time/Clock'
@@ -15,6 +16,7 @@ const service = new CheckinService(
   new ApplicationRepository(),
   new TotpService(),
   new SystemClock(),
+  env.clientOrigin,
 )
 
 const controller = new CheckinController(service, new QrCodeRenderer())
@@ -25,4 +27,5 @@ checkinRoutes.post('/opportunities/:id/checkin-code', authenticate, controller.o
 checkinRoutes.post('/opportunities/:id/checkins', authenticate, controller.checkIn)
 checkinRoutes.post('/opportunities/:id/checkins/manual', authenticate, controller.markPresent)
 checkinRoutes.get('/opportunities/:id/checkins', authenticate, controller.attendance)
+checkinRoutes.get('/opportunities/:id/attendance.csv', authenticate, controller.attendanceCsv)
 checkinRoutes.patch('/checkins/:id/checkout', authenticate, controller.checkOut)

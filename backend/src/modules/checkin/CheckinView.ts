@@ -1,3 +1,4 @@
+import { toCsv } from '../../core/export/csv'
 import type { CheckinRecord } from './CheckinStore'
 
 export type CheckinView = {
@@ -26,4 +27,20 @@ export function toCheckinView(record: CheckinRecord): CheckinView {
     volunteer: record.volunteer,
     opportunity: { id: record.opportunity.id, title: record.opportunity.title },
   }
+}
+
+export function toAttendanceCsv(records: CheckinRecord[]): string {
+  return toCsv(
+    ['Volunteer', 'Date', 'Checked in', 'Checked out', 'Hours', 'How'],
+    records.map(record => [
+      record.volunteer.name,
+      record.checkinTime.toISOString().slice(0, 10),
+      record.checkinTime.toISOString().slice(11, 16),
+      record.checkoutTime ? record.checkoutTime.toISOString().slice(11, 16) : '',
+      record.checkoutTime
+        ? hoursBetween(record.checkinTime, record.checkoutTime).toFixed(2)
+        : '',
+      record.method === 'QR' ? 'Scanned' : 'By hand',
+    ]),
+  )
 }

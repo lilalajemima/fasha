@@ -339,6 +339,8 @@ async function main() {
   check('the organiser gets a six digit code', /^\d{6}$/.test(opened.body?.code ?? ''), JSON.stringify(opened.body))
   check('the code comes with a countdown', opened.body?.secondsRemaining > 0)
   check('a QR image comes back', (opened.body?.qrSvg ?? '').startsWith('<svg'))
+  check('the QR holds a link a phone can open', (opened.body?.payload ?? '').startsWith('http'),
+    opened.body?.payload)
 
   const wrongCode = await call('POST', `/opportunities/${sessionId}/checkins`, {
     token: volunteerToken,
@@ -370,13 +372,30 @@ async function main() {
   })
   check('the organiser sees the attendance list', list(attendance.body).length === 1)
 
+  const bareCheckout = await call('PATCH', `/checkins/${checkedIn.body?.id}/checkout`, {
+    token: volunteerToken,
+    body: {},
+  })
+  check('a volunteer cannot check out without the code', bareCheckout.status === 400, `status ${bareCheckout.status}`)
+
+  const freshCode = await call('POST', `/opportunities/${sessionId}/checkin-code`, {
+    token: organisationToken,
+  })
+
   const checkedOut = await call('PATCH', `/checkins/${checkedIn.body?.id}/checkout`, {
     token: volunteerToken,
+    body: { code: freshCode.body?.code },
   })
   check('checking out records the hours', typeof checkedOut.body?.hours === 'number', JSON.stringify(checkedOut.body))
 
+  const register = await call('GET', `/opportunities/${sessionId}/attendance.csv`, {
+    token: organisationToken,
+  })
+  check('the organiser can export the register', String(register.body?.error ?? register.body).includes('Volunteer'), 'no header row')
+
   const checkedOutTwice = await call('PATCH', `/checkins/${checkedIn.body?.id}/checkout`, {
     token: volunteerToken,
+    body: { code: freshCode.body?.code },
   })
   check('you cannot check out twice', checkedOutTwice.status === 409, `status ${checkedOutTwice.status}`)
 

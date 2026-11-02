@@ -65,6 +65,7 @@ function makeCheckin(overrides: Partial<CheckinRecord> = {}): CheckinRecord {
       title: 'Restore the wetland path',
       creatorId: 'organisation-1',
       requiredSkills: ['Teamwork'],
+      qrToken: secret,
     },
     ...overrides,
   }
@@ -191,6 +192,7 @@ function build({
     new FakeApplicationStore(accepted),
     totp,
     clock,
+    'https://fasha.test',
   )
 
   return { service, checkinStore, opportunityStore, clock }
@@ -203,7 +205,9 @@ describe('opening check in', () => {
 
     expect(opened.code).toMatch(/^\d{6}$/)
     expect(opened.secondsRemaining).toBeGreaterThan(0)
-    expect(opened.payload).toBe(`fasha:opportunity-1:${opened.code}`)
+    expect(opened.payload).toBe(
+      `https://fasha.test/check-in?o=opportunity-1&c=${opened.code}`,
+    )
   })
 
   it('creates and stores a secret the first time', async () => {
@@ -290,7 +294,11 @@ describe('checking out', () => {
     const { service, checkinStore } = build({ checkins: [makeCheckin()], clock })
 
     clock.moveOn(2.5)
-    const view = await service.checkOut(volunteer, 'checkin-1')
+    const view = await service.checkOut(
+      volunteer,
+      'checkin-1',
+      totp.generate(secret, clock.now()),
+    )
 
     expect(view.hours).toBe(2.5)
     expect(checkinStore.credited).toEqual({ hours: 2.5, skills: ['Teamwork'] })
@@ -309,6 +317,24 @@ describe('checking out', () => {
     const { service } = build({ checkins: [makeCheckin()] })
 
     await expect(service.checkOut(stranger, 'checkin-1')).rejects.toThrow(ForbiddenError)
+  })
+
+  it('makes the volunteer scan again rather than leaving from home', async () => {
+    const { service } = build({ checkins: [makeCheckin()] })
+
+    await expect(service.checkOut(volunteer, 'checkin-1')).rejects.toThrow(
+      'Enter the code the organiser is showing',
+    )
+  })
+
+  it('refuses a stale code on the way out', async () => {
+    const clock = new StoppedClock(arrival)
+    const { service } = build({ checkins: [makeCheckin()], clock })
+    const old = totp.generate(secret, new Date(arrival.getTime() - 120000))
+
+    clock.moveOn(1)
+
+    await expect(service.checkOut(volunteer, 'checkin-1', old)).rejects.toThrow(UnauthorisedError)
   })
 
   it('refuses a second check out', async () => {
