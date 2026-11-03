@@ -28,4 +28,5 @@ checkinRoutes.post('/opportunities/:id/checkins', authenticate, controller.check
 checkinRoutes.post('/opportunities/:id/checkins/manual', authenticate, controller.markPresent)
 checkinRoutes.get('/opportunities/:id/checkins', authenticate, controller.attendance)
 checkinRoutes.get('/opportunities/:id/attendance.csv', authenticate, controller.attendanceCsv)
+checkinRoutes.get('/checkins/mine', authenticate, controller.stillIn)
 checkinRoutes.patch('/checkins/:id/checkout', authenticate, controller.checkOut)

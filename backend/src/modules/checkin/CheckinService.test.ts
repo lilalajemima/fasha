@@ -170,6 +170,12 @@ class FakeCheckinStore implements CheckinStore {
     )
   }
 
+  async findOpenForVolunteer(volunteerId: string) {
+    return this.records.filter(
+      record => record.volunteerId === volunteerId && !record.checkoutTime,
+    )
+  }
+
   async checkOutAndCredit(id: string, leftAt: Date, hours: number, skills: string[]) {
     this.credited = { hours, skills }
     const record = this.records.find(entry => entry.id === id)!
@@ -347,6 +353,20 @@ describe('checking out', () => {
     const { service } = build()
 
     await expect(service.checkOut(volunteer, 'nope')).rejects.toThrow('does not exist')
+  })
+})
+
+describe('what the volunteer is still inside', () => {
+  it('lists an open check in', async () => {
+    const { service } = build({ checkins: [makeCheckin()] })
+
+    expect(await service.stillIn(volunteer)).toHaveLength(1)
+  })
+
+  it('leaves out one that was closed off', async () => {
+    const { service } = build({ checkins: [makeCheckin({ checkoutTime: arrival })] })
+
+    expect(await service.stillIn(volunteer)).toHaveLength(0)
   })
 })
 

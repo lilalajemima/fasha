@@ -20,6 +20,7 @@ export interface CheckinStore {
   findById(id: string): Promise<CheckinRecord | null>
   findForOpportunity(opportunityId: string): Promise<CheckinRecord[]>
   findOne(opportunityId: string, volunteerId: string): Promise<CheckinRecord | null>
+  findOpenForVolunteer(volunteerId: string): Promise<CheckinRecord[]>
   checkOutAndCredit(
     id: string,
     leftAt: Date,

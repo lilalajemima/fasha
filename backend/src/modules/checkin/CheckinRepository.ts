@@ -45,6 +45,14 @@ export class CheckinRepository extends BaseRepository implements CheckinStore {
     })
   }
 
+  findOpenForVolunteer(volunteerId: string): Promise<CheckinRecord[]> {
+    return this.db.checkin.findMany({
+      where: { volunteerId, checkoutTime: null },
+      include: withBothSides,
+      orderBy: { checkinTime: 'desc' },
+    })
+  }
+
   checkOutAndCredit(
     id: string,
     leftAt: Date,

@@ -111,6 +111,12 @@ export class CheckinService {
     )
   }
 
+  async stillIn(actor: TokenPayload): Promise<CheckinView[]> {
+    const records = await this.checkins.findOpenForVolunteer(actor.userId)
+
+    return records.map(toCheckinView)
+  }
+
   async attendanceCsv(actor: TokenPayload, opportunityId: string): Promise<string> {
     const opportunity = await this.loadOpportunity(opportunityId)
 

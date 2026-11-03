@@ -36,6 +36,10 @@ export class CheckinController {
     res.status(201).json(view)
   }
 
+  stillIn = async (req: Request, res: Response) => {
+    res.json(await this.checkins.stillIn(req.user!))
+  }
+
   checkOut = async (req: Request, res: Response) => {
     const view = await this.checkins.checkOut(
       req.user!,
