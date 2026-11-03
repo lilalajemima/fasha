@@ -64,7 +64,8 @@ function CheckInPanel({ accepted, scanned, onDone }: {
   if (accepted.length === 0) {
     return (
       <EmptyState>
-        You have no accepted places yet, so there is nothing to check in to.
+        Nothing to check in to. Check in is for opportunities you turn up to, and virtual work
+        is recorded by submitting your hours on My activity instead.
       </EmptyState>
     )
   }
@@ -230,7 +231,9 @@ export default function CheckIn() {
   const scanned = opportunityId && code.length === 6 ? { opportunityId, code } : null
 
   const open = openCheckins.data ?? []
-  const accepted = (applications.data ?? []).filter(item => item.status === 'ACCEPTED')
+  const accepted = (applications.data ?? []).filter(
+    item => item.status === 'ACCEPTED' && item.opportunity.mode === 'PHYSICAL',
+  )
   const insideThisOne = scanned
     ? open.some(entry => entry.opportunity.id === scanned.opportunityId)
     : open.length > 0

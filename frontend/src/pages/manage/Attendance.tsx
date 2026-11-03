@@ -3,7 +3,7 @@ import { Loaded, Problem } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
 import { Button, Card, EmptyState, StatTile, StatusBadge } from '../../components/ui'
 import { api } from '../../lib/api'
-import { sentenceCase, timeOfDay, whenLabel } from '../../lib/format'
+import { timeOfDay, whenLabel } from '../../lib/format'
 import type { ApplicationView, CheckinCodeView, CheckinView, OpportunityView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
 import './Attendance.css'
@@ -265,7 +265,9 @@ export default function Attendance() {
   const [chosen, setChosen] = useState('')
   const [query, setQuery] = useState('')
 
-  const published = (mine.data ?? []).filter(item => item.status === 'PUBLISHED')
+  const published = (mine.data ?? []).filter(
+    item => item.status === 'PUBLISHED' && item.mode === 'PHYSICAL',
+  )
   const current = published.find(item => item.id === chosen)
   const words = query.trim().toLowerCase()
 
@@ -321,7 +323,9 @@ export default function Attendance() {
           if (published.length === 0) {
             return (
               <EmptyState>
-                You need a published opportunity before you can take attendance for it.
+                Attendance is for opportunities people turn up to. Publish one that happens in
+                person and it appears here. Virtual work is measured by what volunteers submit,
+                on the Review page.
               </EmptyState>
             )
           }
@@ -340,8 +344,7 @@ export default function Attendance() {
                       {whenLabel(item.startsAt, item.endsAt)} · {item.location ?? 'Online'}
                     </p>
                     <p className="event-card__meta">
-                      {item.sector ?? 'Sector not set'} · {sentenceCase(item.mode)} · up to{' '}
-                      {item.maxCapacity} volunteers
+                      {item.sector ?? 'Sector not set'} · up to {item.maxCapacity} volunteers
                     </p>
                   </div>
                   <span className="cluster">

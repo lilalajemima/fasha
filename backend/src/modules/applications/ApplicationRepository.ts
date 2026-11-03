@@ -12,6 +12,7 @@ const withBothSides = {
       creatorId: true,
       maxCapacity: true,
       applicationDeadline: true,
+      mode: true,
     },
   },
 } as const

@@ -31,7 +31,12 @@ export type ApplicationView = {
   resumeUrl: string | null
   createdAt: string
   volunteer: { id: string; name: string; email: string }
-  opportunity: { id: string; title: string; applicationDeadline: string }
+  opportunity: {
+    id: string
+    title: string
+    applicationDeadline: string
+    mode: OpportunityMode
+  }
 }
 
 export type CheckinView = {

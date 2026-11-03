@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus } from '@prisma/client'
+import type { Application, ApplicationStatus, OpportunityMode } from '@prisma/client'
 
 export type ApplicationRecord = Application & {
   volunteer: { id: string; name: string; email: string }
@@ -8,6 +8,7 @@ export type ApplicationRecord = Application & {
     creatorId: string
     maxCapacity: number
     applicationDeadline: Date
+    mode: OpportunityMode
   }
 }
 

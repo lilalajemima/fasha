@@ -28,6 +28,7 @@ export class CheckinService {
     const opportunity = await this.loadOpportunity(opportunityId)
 
     this.assertOrganiser(actor, opportunity)
+    this.assertHasADoor(opportunity)
 
     const secret = opportunity.qrToken ?? (await this.mintSecret(opportunityId))
     const now = this.clock.now()
@@ -46,6 +47,8 @@ export class CheckinService {
     }
 
     const opportunity = await this.loadOpportunity(opportunityId)
+
+    this.assertHasADoor(opportunity)
 
     if (!opportunity.qrToken) {
       throw new ConflictError('The organiser has not opened check in yet')
@@ -71,6 +74,7 @@ export class CheckinService {
     const opportunity = await this.loadOpportunity(opportunityId)
 
     this.assertOrganiser(actor, opportunity)
+    this.assertHasADoor(opportunity)
     await this.assertAccepted(opportunityId, volunteerId)
     await this.assertNotAlreadyIn(opportunityId, volunteerId)
 
@@ -141,6 +145,14 @@ export class CheckinService {
     await this.opportunities.setQrToken(opportunityId, secret)
 
     return secret
+  }
+
+  private assertHasADoor(opportunity: OpportunityRecord): void {
+    if (opportunity.mode !== 'PHYSICAL') {
+      throw new ConflictError(
+        'Virtual opportunities are measured by what volunteers submit, not by attendance',
+      )
+    }
   }
 
   private assertCodeMatches(secret: string | null, code: string | null): void {

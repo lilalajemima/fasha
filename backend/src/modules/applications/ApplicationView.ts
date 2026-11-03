@@ -7,7 +7,7 @@ export type ApplicationView = {
   resumeUrl: string | null
   createdAt: string
   volunteer: { id: string; name: string; email: string }
-  opportunity: { id: string; title: string; applicationDeadline: string }
+  opportunity: { id: string; title: string; applicationDeadline: string; mode: string }
 }
 
 export function toApplicationView(record: ApplicationRecord): ApplicationView {
@@ -22,6 +22,7 @@ export function toApplicationView(record: ApplicationRecord): ApplicationView {
       id: record.opportunity.id,
       title: record.opportunity.title,
       applicationDeadline: record.opportunity.applicationDeadline.toISOString(),
+      mode: record.opportunity.mode,
     },
   }
 }

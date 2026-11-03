@@ -229,6 +229,14 @@ describe('opening check in', () => {
 
     await expect(service.openCheckIn(volunteer, 'opportunity-1')).rejects.toThrow(ForbiddenError)
   })
+
+  it('refuses a virtual opportunity, which has no door to stand at', async () => {
+    const { service } = build({ opportunity: makeOpportunity({ mode: 'VIRTUAL' }) })
+
+    await expect(service.openCheckIn(organiser, 'opportunity-1')).rejects.toThrow(
+      'measured by what volunteers submit',
+    )
+  })
 })
 
 describe('checking in', () => {
@@ -266,6 +274,15 @@ describe('checking in', () => {
     const code = totp.generate(secret, arrival)
 
     await expect(service.checkIn(volunteer, 'opportunity-1', code)).rejects.toThrow(ConflictError)
+  })
+
+  it('refuses a virtual opportunity', async () => {
+    const { service } = build({ opportunity: makeOpportunity({ mode: 'VIRTUAL' }) })
+    const code = totp.generate(secret, arrival)
+
+    await expect(service.checkIn(volunteer, 'opportunity-1', code)).rejects.toThrow(
+      'measured by what volunteers submit',
+    )
   })
 
   it('refuses before the organiser has opened check in', async () => {

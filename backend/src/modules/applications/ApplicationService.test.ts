@@ -69,6 +69,7 @@ function makeApplication(overrides: Partial<ApplicationRecord> = {}): Applicatio
       creatorId: 'organisation-1',
       maxCapacity: 2,
       applicationDeadline: tomorrow,
+      mode: 'PHYSICAL',
     },
     ...overrides,
   }
