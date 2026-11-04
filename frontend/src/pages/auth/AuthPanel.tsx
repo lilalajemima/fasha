@@ -5,7 +5,6 @@ import Logo from '../../components/Logo'
 import './Auth.css'
 
 const SLIDES: Slide[] = [
-  { src: '/auth/network.jpg', caption: 'neighbours connected across a sector' },
   { src: '/auth/together.jpg', caption: 'hands lifting something together' },
   { src: '/auth/hands.jpg', caption: 'raised hands in many colours' },
   { src: '/auth/crowd.jpg', caption: 'a painted crowd of people' },

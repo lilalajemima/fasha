@@ -256,7 +256,7 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
 /* ---------- page banner ---------- */
 /* Full bleed: it meets the top bar and both edges of the content area, so the
    negative margins mirror the padding the shell sets on .content. */
-.banner { position: relative; height: 150px; display: flex; align-items: flex-end;
+.banner { position: relative; min-height: 150px; display: flex; align-items: flex-end;
           overflow: hidden; padding: 22px 24px;
           margin: calc(var(--pad-top, 34px) * -1) calc(var(--pad-x, 32px) * -1) 20px;
           background-color: var(--primary-deep); background-size: auto 100%;
@@ -311,8 +311,12 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
            border-radius: var(--radius-sm); }
 
 @media (max-width: 760px) {
-  .banner { height: 120px; padding: 16px; }
+  .banner { min-height: 120px; padding: 16px; }
   .banner__title { font-size: 26px; }
+}
+
+@media (max-width: 600px) {
+  .pf-banner.banner { padding: 18px 0 20px; }
 }
 
 /* ---------- tabs inside one record ---------- */
