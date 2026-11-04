@@ -207,24 +207,40 @@ async function main() {
   const mine = await call('GET', '/opportunities/mine', { token: volunteerToken })
   check('mine lists what I created', list(mine.body).some(entry => entry.id === proposal.body?.id))
 
-  console.log('\napproval')
+    console.log('\napproval')
   const queueAsVolunteer = await call('GET', '/opportunities/pending', { token: volunteerToken })
   check('a volunteer cannot see the queue', queueAsVolunteer.status === 403, `status ${queueAsVolunteer.status}`)
 
-  const queue = await call('GET', '/opportunities/pending', { token: organisationToken })
-  check('the proposal is in the queue', list(queue.body).some(entry => entry.id === proposal.body?.id))
+  // Review belongs to the community admin, not to organisations.
+  const queueAsOrganisation = await call('GET', '/opportunities/pending', { token: organisationToken })
+  check('an organisation cannot see the queue', queueAsOrganisation.status === 403, `status ${queueAsOrganisation.status}`)
 
-  const approved = await call('PATCH', `/opportunities/${proposal.body?.id}/status`, {
-    token: organisationToken,
-    body: { decision: 'APPROVE' },
-  })
-  check('approving publishes it', approved.body?.status === 'PUBLISHED', JSON.stringify(approved.body))
+  const adminLogin = adminEmail
+    ? await call('POST', '/auth/login', { body: { email: adminEmail, password: adminPassword } })
+    : { status: 0, body: null }
+  const adminToken = adminLogin.body?.token
 
-  const approvedTwice = await call('PATCH', `/opportunities/${proposal.body?.id}/status`, {
-    token: organisationToken,
-    body: { decision: 'APPROVE' },
-  })
-  check('it cannot be approved twice', approvedTwice.status === 409, `status ${approvedTwice.status}`)
+  if (!adminToken) {
+    console.log('  skip  the review queue needs SMOKE_ADMIN_EMAIL and SMOKE_ADMIN_PASSWORD')
+  } else {
+    check('a community admin can sign in', adminLogin.status === 200, `status ${adminLogin.status}`)
+
+    const queue = await call('GET', '/opportunities/pending', { token: adminToken })
+    check('the proposal is in the queue', list(queue.body).some(entry => entry.id === proposal.body?.id))
+
+    // reviewNote is sent on every decision; null means the admin left no feedback.
+    const approved = await call('PATCH', `/opportunities/${proposal.body?.id}/status`, {
+      token: adminToken,
+      body: { decision: 'APPROVE', reviewNote: null },
+    })
+    check('approving publishes it', approved.body?.status === 'PUBLISHED', JSON.stringify(approved.body))
+
+    const approvedTwice = await call('PATCH', `/opportunities/${proposal.body?.id}/status`, {
+      token: adminToken,
+      body: { decision: 'APPROVE', reviewNote: null },
+    })
+    check('it cannot be approved twice', approvedTwice.status === 409, `status ${approvedTwice.status}`)
+  }
 
   console.log('\napplications')
   const organisationApplying = await call('POST', `/opportunities/${published.body?.id}/applications`, {

@@ -38,15 +38,25 @@ class FakeProfileStore implements ProfileStore {
 }
 
 class FakePortfolioStore implements PortfolioStore {
-  constructor(private readonly records: PortfolioRecord[]) {}
+  constructor(
+    private readonly records: PortfolioRecord[],
+    private readonly organised = 0,
+  ) {}
 
   async findForVolunteer() {
     return this.records
   }
+
+  async countOrganised() {
+    return this.organised
+  }
 }
 
-function build(records: PortfolioRecord[], known: PortfolioOwner | null = owner) {
-  return new PortfolioService(new FakePortfolioStore(records), new FakeProfileStore(known))
+function build(records: PortfolioRecord[], known: PortfolioOwner | null = owner, organised = 0) {
+  return new PortfolioService(
+    new FakePortfolioStore(records, organised),
+    new FakeProfileStore(known),
+  )
 }
 
 describe('a portfolio', () => {
@@ -78,10 +88,21 @@ describe('a portfolio', () => {
     expect(view.totals.skills).toEqual(['Graphic design', 'Teamwork'])
   })
 
+  /**
+   * Organising is reported separately from hours on purpose: an organiser must
+   * never be the one verifying their own participation.
+   */
+  it('reports initiatives organised apart from hours verified', async () => {
+    const view = await build([makeEntry()], owner, 3).bySlug('amara-mensah')
+
+    expect(view.totals.organised).toBe(3)
+    expect(view.totals.hours).toBe(2.5)
+  })
+
   it('shows an empty portfolio rather than failing', async () => {
     const view = await build([]).bySlug('amara-mensah')
 
-    expect(view.totals).toEqual({ hours: 0, opportunities: 0, skills: [] })
+    expect(view.totals).toEqual({ hours: 0, opportunities: 0, organised: 0, skills: [] })
     expect(view.entries).toEqual([])
   })
 

@@ -1,66 +1,104 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Loaded } from '../components/Loader'
 import PageHeader from '../components/PageHeader'
-import { Button, Card, EmptyState, StatusBadge } from '../components/ui'
-import { getNotifications } from '../mocks/api'
-import type { AppNotification, NotificationKind } from '../mocks/types'
+import { Button, Card, EmptyState, StatusBadge, type Tone } from '../components/ui'
+import { api } from '../lib/api'
+import { longDate } from '../lib/format'
+import type { NotificationFeed, NotificationView } from '../lib/types'
+import { messageFor, useGet } from '../lib/useGet'
+import { useNotifications } from '../notifications/NotificationsContext'
 
-const LABEL: Record<NotificationKind, string> = {
-  application: 'Application',
-  approval: 'Verified',
-  invite: 'Invitation',
-  reminder: 'Reminder',
-  review: 'Under review',
+/** The server sends a type; the page decides what to call it and how loud it is. */
+const KINDS: Record<string, { label: string; tone: Tone }> = {
+  APPLICATION_RECEIVED: { label: 'Application', tone: 'info' },
+  APPLICATION_DECIDED: { label: 'Application', tone: 'ok' },
+  INITIATIVE_DECIDED: { label: 'Initiative', tone: 'ok' },
+  HOURS_DECIDED: { label: 'Hours', tone: 'ok' },
 }
-const TONE: Record<NotificationKind, 'ok' | 'warn' | 'info' | 'neutral'> = {
-  application: 'info',
-  approval: 'ok',
-  invite: 'info',
-  reminder: 'neutral',
-  review: 'warn',
+
+function kindOf(type: string): { label: string; tone: Tone } {
+  return KINDS[type] ?? { label: 'Update', tone: 'neutral' }
 }
 
 export default function Notifications() {
-  const [items, setItems] = useState<AppNotification[]>([])
-  useEffect(() => { getNotifications().then(list => setItems(list.map(n => ({ ...n })))) }, [])
+  const feed = useGet<NotificationFeed>('/notifications')
+  // The bell in the top bar counts the same unread items, so it reloads too.
+  const { refresh } = useNotifications()
+  const [problem, setProblem] = useState('')
+  const [busy, setBusy] = useState('')
 
-  const unread = items.filter(n => !n.read).length
-  const markAll = () => setItems(items.map(n => ({ ...n, read: true })))
-  const markOne = (id: string) =>
-    setItems(items.map(n => (n.id === id ? { ...n, read: true } : n)))
+  async function run(id: string, work: () => Promise<unknown>) {
+    setProblem('')
+    setBusy(id)
+
+    try {
+      await work()
+      feed.reload()
+      refresh()
+    } catch (failure) {
+      setProblem(messageFor(failure))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  function markOne(item: NotificationView) {
+    run(item.id, () => api.patch(`/notifications/${item.id}/read`))
+  }
+
+  function markAll() {
+    run('all', () => api.patch('/notifications/read-all'))
+  }
+
+  const unread = feed.data?.unread ?? 0
 
   return (
     <>
       <PageHeader
         title="Notifications"
-        meta={unread === 0 ? 'You are up to date.' : `${unread} unread`}
-        action={<Button onClick={markAll} disabled={unread === 0}>Mark all as read</Button>}
+        action={
+          <Button disabled={unread === 0 || busy === 'all'} onClick={markAll}>
+            {busy === 'all' ? 'Marking…' : 'Mark all as read'}
+          </Button>
+        }
       />
 
-      <Card>
-        <div className="divided">
-          {items.map(n => (
-            <div key={n.id} className="row" style={{ alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0 }}>
-                <div className="cluster" style={{ marginBottom: 6 }}>
-                  <StatusBadge tone={TONE[n.kind]}>{LABEL[n.kind]}</StatusBadge>
-                  {!n.read && <span className="dot" aria-label="Unread" />}
-                  <span className="muted">{n.when}</span>
-                </div>
-                <h3 style={{ marginBottom: 2 }}>{n.title}</h3>
-                <p className="muted" style={{ margin: 0 }}>{n.body}</p>
-              </div>
-              <div className="cluster">
-                {n.link && <Link to={n.link} onClick={() => markOne(n.id)}>Open ↗</Link>}
-                {!n.read && (
-                  <button className="linkbtn" onClick={() => markOne(n.id)}>Mark as read</button>
-                )}
-              </div>
+      {problem && <p className="error" role="alert">{problem}</p>}
+
+      <Loaded state={feed} what="your notifications">
+        {data => (
+          <Card>
+            <div className="divided">
+              {data.items.map(item => {
+                const kind = kindOf(item.type)
+
+                return (
+                  <div key={item.id} className="row" style={{ alignItems: 'flex-start' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="cluster" style={{ marginBottom: 6 }}>
+                        <StatusBadge tone={kind.tone}>{kind.label}</StatusBadge>
+                        {!item.isRead && <span className="dot" aria-label="Unread" />}
+                        <span className="muted">{longDate(item.createdAt)}</span>
+                      </div>
+                      <p style={{ margin: 0 }}>{item.message}</p>
+                    </div>
+                    {!item.isRead && (
+                      <button
+                        className="linkbtn"
+                        disabled={busy === item.id}
+                        onClick={() => markOne(item)}
+                      >
+                        Mark as read
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+              {data.items.length === 0 && <EmptyState>Nothing yet.</EmptyState>}
             </div>
-          ))}
-          {items.length === 0 && <EmptyState>Nothing yet.</EmptyState>}
-        </div>
-      </Card>
+          </Card>
+        )}
+      </Loaded>
 
       <p className="muted" style={{ marginTop: 20 }}>
         Fasha sends notifications inside the app only. There is no email or SMS, which keeps the

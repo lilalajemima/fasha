@@ -17,6 +17,7 @@
     "db:studio": "prisma studio",
     "smoke": "node scripts/smoke.mjs",
     "db:seed": "ts-node-dev --transpile-only prisma/seed.ts",
+    "db:cleanup": "ts-node-dev --transpile-only prisma/cleanup.ts",
     "postinstall": "prisma generate"
   },
   "keywords": [],
