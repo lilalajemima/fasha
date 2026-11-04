@@ -35,12 +35,10 @@ export default function Portfolio() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-base)' }}>
-      <header className="topbar">
+            <header className="topbar">
         <Logo size={24} />
         <div className="topbar__right">
-          {preview
-            ? <Link to="/profile">← Back to Fasha</Link>
-            : <span className="muted">Public volunteer portfolio</span>}
+          {preview && <Link to="/profile">← Back to Fasha</Link>}
         </div>
       </header>
 

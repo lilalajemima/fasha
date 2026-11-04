@@ -27,7 +27,7 @@ export default function AuthPanel({ children }: { children: ReactNode }) {
               contribution.
             </p>
 
-            <div style={{ maxWidth: 440 }}><Imigongo /></div>
+                        <div style={{ maxWidth: 440 }}><Imigongo tone="light" /></div>
           </div>
         </div>
       </aside>
