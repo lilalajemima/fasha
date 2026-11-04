@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Problem } from '../../components/Loader'
-import PageHeader from '../../components/PageHeader'
 import { Button } from '../../components/ui'
-import { useAuth } from '../../auth/AuthContext'
 import { hasPassed } from '../../lib/format'
 import type { OpportunityView, WorkloadRow } from '../../lib/types'
 import { useGet } from '../../lib/useGet'
@@ -15,8 +13,6 @@ function isActive(item: OpportunityView): boolean {
 }
 
 export default function Overview() {
-  const { user } = useAuth()
-  const isVolunteer = user?.role !== 'organisation'
   const mine = useGet<OpportunityView[]>('/opportunities/mine')
   const workload = useGet<WorkloadRow[]>('/opportunities/mine/workload')
 

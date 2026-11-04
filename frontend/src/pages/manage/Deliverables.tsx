@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Loaded, Problem } from '../../components/Loader'
-import PageHeader from '../../components/PageHeader'
 import { Button, EmptyState, StatusBadge, Tabs } from '../../components/ui'
 import { api } from '../../lib/api'
 import { longDate } from '../../lib/format'
