@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { Loaded } from '../../components/Loader'
-import PageHeader from '../../components/PageHeader'
 import { Button, EmptyState, StatusBadge, Tag } from '../../components/ui'
-import { hasPassed, initials, longDate, sentenceCase, shortDate, whenLabel } from '../../lib/format'
+import { dayBlock, hasPassed, longDate, meta, quantity, sentenceCase, shortDate, whenLabel } from '../../lib/format'
 import { SECTORS } from '../../lib/sectors'
 import type { OpportunityView } from '../../lib/types'
 import { useGet } from '../../lib/useGet'
+import '../../styles/workspace.css'
 import './Discover.css'
 
 const CLOSING = [
@@ -23,7 +23,9 @@ function daysLeft(iso: string): number {
 function Listing({ item }: { item: OpportunityView }) {
   const [open, setOpen] = useState(false)
   const closed = hasPassed(item.applicationDeadline)
-  const left = daysLeft(item.applicationDeadline)
+  const when = whenLabel(item.startsAt, item.endsAt)
+  const on = item.startsAt ?? item.endsAt
+  const tile = on ? dayBlock(on) : null
 
   return (
     <article className="listing">
@@ -33,14 +35,21 @@ function Listing({ item }: { item: OpportunityView }) {
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <span className="listing__logo">{initials(item.creator.name)}</span>
+        {tile ? (
+          <span className="listing__date">
+            <span className="listing__date-day">{tile.weekday}</span>
+            <span className="listing__date-num">{tile.date}</span>
+          </span>
+        ) : (
+          <span />
+        )}
 
         <span>
           <span className="listing__title">{item.title}</span>
           <span className="listing__org">
-            {item.creator.name} · {item.sector ?? 'Sector not set'} · {sentenceCase(item.mode)}
+            {meta(item.creator.name, item.sector, sentenceCase(item.mode))}
           </span>
-          <span className="listing__when">{whenLabel(item.startsAt, item.endsAt)}</span>
+          {when && <span className="listing__when">{when}</span>}
           <span className="cluster">
             {item.matchScore !== undefined && (
               <StatusBadge tone="match">{item.matchScore}% match</StatusBadge>
@@ -48,7 +57,6 @@ function Listing({ item }: { item: OpportunityView }) {
             {[...item.requiredSkills, ...item.categories].slice(0, 3).map(tag => (
               <Tag key={tag}>{tag}</Tag>
             ))}
-            {!closed && left <= 7 && <StatusBadge tone="warn">Closing soon</StatusBadge>}
           </span>
         </span>
 
@@ -61,17 +69,19 @@ function Listing({ item }: { item: OpportunityView }) {
       {open && (
         <div className="listing__body">
           <div className="listing__facts">
-            <div>
-              <div className="minilabel">{item.startsAt ? 'When' : 'Due'}</div>
-              <strong>{whenLabel(item.startsAt, item.endsAt)}</strong>
-            </div>
+            {when && (
+              <div>
+                <div className="minilabel">{item.startsAt ? 'When' : 'Due'}</div>
+                <strong>{when}</strong>
+              </div>
+            )}
             <div>
               <div className="minilabel">Apply by</div>
               <strong>{longDate(item.applicationDeadline)}</strong>
             </div>
             <div>
               <div className="minilabel">Places</div>
-              <strong>up to {item.maxCapacity}</strong>
+              <strong>up to {quantity(item.maxCapacity, 'volunteer')}</strong>
             </div>
             <div>
               <div className="minilabel">Where</div>
@@ -84,7 +94,7 @@ function Listing({ item }: { item: OpportunityView }) {
 
           {item.requiredSkills.length > 0 && (
             <>
-              <div className="minilabel">Skills the organiser asked for</div>
+              <div className="minilabel">Skills</div>
               <div className="cluster" style={{ marginTop: 6 }}>
                 {item.requiredSkills.map(skill => <Tag key={skill}>{skill}</Tag>)}
               </div>
@@ -149,66 +159,51 @@ export default function Discover() {
 
   return (
     <>
-      <PageHeader
-        title="Where Can I help Next?"
-        meta="Everything open across your district, closest to your skills first."
+      <section className="banner banner--discover">
+        <h1 className="banner__title">Where can I help next?</h1>
+      </section>
+
+      <input
+        className="input searchbar"
+        placeholder="Search by title, organiser or skill"
+        value={query}
+        aria-label="Search opportunities"
+        onChange={event => setQuery(event.target.value)}
       />
 
-      <div className="panel">
-        <div className="panel__search">
-          <input
-            className="input"
-            placeholder="Search by title, organiser or skill"
-            value={query}
-            aria-label="Search opportunities"
-            onChange={event => setQuery(event.target.value)}
-          />
-        </div>
+      <div className="filterbar">
+        <select value={format} aria-label="Format" onChange={event => setFormat(event.target.value)}>
+          <option value="all">Any format</option>
+          <option value="PHYSICAL">In person</option>
+          <option value="VIRTUAL">Virtual</option>
+        </select>
 
-        <div className="panel__filters">
-          <select className="input" value={format} aria-label="Format"
-                  onChange={event => setFormat(event.target.value)}>
-            <option value="all">Any format</option>
-            <option value="PHYSICAL">In person</option>
-            <option value="VIRTUAL">Virtual</option>
-          </select>
+        <select value={sector} aria-label="Sector" onChange={event => setSector(event.target.value)}>
+          <option value="">Any sector</option>
+          {SECTORS.map(option => <option key={option} value={option}>{option}</option>)}
+        </select>
 
-          <select className="input" value={sector} aria-label="Sector"
-                  onChange={event => setSector(event.target.value)}>
-            <option value="">Any sector</option>
-            {SECTORS.map(option => <option key={option} value={option}>{option}</option>)}
-          </select>
+        <select value={skill} aria-label="Skill" onChange={event => setSkill(event.target.value)}>
+          <option value="">Any skill</option>
+          {skills.map(option => <option key={option} value={option}>{option}</option>)}
+        </select>
 
-          <select className="input" value={skill} aria-label="Skill"
-                  onChange={event => setSkill(event.target.value)}>
-            <option value="">Any skill</option>
-            {skills.map(option => <option key={option} value={option}>{option}</option>)}
-          </select>
-
-          <select className="input" value={closing} aria-label="Deadline"
-                  onChange={event => setClosing(event.target.value)}>
-            {CLOSING.map(option => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <p className="panel__note">
-          Opportunities are posted by local organisations and by neighbours whose initiatives
-          have been approved.
-        </p>
+        <select value={closing} aria-label="Deadline" onChange={event => setClosing(event.target.value)}>
+          {CLOSING.map(option => (
+            <option key={option.id} value={option.id}>{option.label}</option>
+          ))}
+        </select>
       </div>
 
       <Loaded state={feed} what="opportunities">
         {() => (
           <>
             <div className="board__bar">
-              <span className="board__count">
-                <strong>{ordered.length}</strong>{' '}
-                {ordered.length === 1 ? 'opportunity' : 'opportunities'}
+              <span className="muted">
+                {quantity(ordered.length, 'opportunity', 'opportunities')}
               </span>
 
-              <select className="input" style={{ width: 'auto' }} value={sort}
+              <select className="sortbar" value={sort}
                       aria-label="Sort opportunities"
                       onChange={event => setSort(event.target.value)}>
                 <option value="match">Best match</option>

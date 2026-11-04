@@ -5,10 +5,10 @@ import Logo from '../../components/Logo'
 import './Auth.css'
 
 const SLIDES: Slide[] = [
-  { src: 'network.jpg', caption: 'neighbours connected across a sector' },
-  { src: 'together.jpg', caption: 'hands lifting something together' },
-  { src: 'hands.jpg', caption: 'raised hands in many colours' },
-  { src: 'crowd.jpg', caption: 'a painted crowd of people' },
+  { src: '/auth/network.jpg', caption: 'neighbours connected across a sector' },
+  { src: '/auth/together.jpg', caption: 'hands lifting something together' },
+  { src: '/auth/hands.jpg', caption: 'raised hands in many colours' },
+  { src: '/auth/crowd.jpg', caption: 'a painted crowd of people' },
 ]
 
 export default function AuthPanel({ children }: { children: ReactNode }) {
@@ -18,19 +18,17 @@ export default function AuthPanel({ children }: { children: ReactNode }) {
         <ImageSlider slides={SLIDES} />
 
         <div className="auth__panel-body">
-          <div className="auth__brand"><Logo size={30} showMark={false} /></div>
+          <div className="auth__brand"><Logo size={30} /></div>
 
           <div className="auth__words">
             <h1 className="auth__headline">Murakaza neza kuri Fasha</h1>
-
-            <div style={{ maxWidth: 520, margin: '4px 0 26px' }}><Imigongo tone="light" /></div>
 
             <p className="auth__sub">
               Find meaningful ways to volunteer, bring people together and build a record of your
               contribution.
             </p>
 
-
+            <div style={{ maxWidth: 440 }}><Imigongo /></div>
           </div>
         </div>
       </aside>

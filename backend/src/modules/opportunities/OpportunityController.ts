@@ -11,7 +11,7 @@ import {
   readString,
   readTagList,
 } from '../../core/validation/readers'
-import type { FeedFilter } from './OpportunityStore'
+import type { FeedFilter, NewOpportunity } from './OpportunityStore'
 import { routeParam } from '../../core/http/params'
 import type { OpportunityService } from './OpportunityService'
 
@@ -21,21 +21,29 @@ export class OpportunityController {
   constructor(private readonly opportunities: OpportunityService) {}
 
   create = async (req: Request, res: Response) => {
-    const view = await this.opportunities.create(req.user!, {
-      title: readString(req.body, 'title', 6),
-      description: readString(req.body, 'description', 20),
-      mode: readMode(req.body),
-      location: readOptionalString(req.body, 'location'),
-      sector: readSector(req.body, 'sector'),
-      maxCapacity: readCount(req.body, 'maxCapacity'),
-      applicationDeadline: readFutureDate(req.body, 'applicationDeadline'),
-      startsAt: readOptionalFutureDate(req.body, 'startsAt'),
-      endsAt: readFutureDate(req.body, 'endsAt'),
-      requiredSkills: readTagList(req.body, 'requiredSkills'),
-      categories: readTagList(req.body, 'categories'),
-    })
+    const view = await this.opportunities.create(req.user!, this.draftFrom(req))
 
     res.status(201).json(view)
+  }
+
+  update = async (req: Request, res: Response) => {
+    const view = await this.opportunities.update(
+      req.user!,
+      routeParam(req, 'id'),
+      this.draftFrom(req),
+    )
+
+    res.json(view)
+  }
+
+  close = async (req: Request, res: Response) => {
+    res.json(await this.opportunities.closeEarly(req.user!, routeParam(req, 'id')))
+  }
+
+  remove = async (req: Request, res: Response) => {
+    await this.opportunities.remove(req.user!, routeParam(req, 'id'))
+
+    res.status(204).send()
   }
 
   feed = async (req: Request, res: Response) => {
@@ -44,6 +52,10 @@ export class OpportunityController {
 
   mine = async (req: Request, res: Response) => {
     res.json(await this.opportunities.createdBy(req.user!))
+  }
+
+  workload = async (req: Request, res: Response) => {
+    res.json(await this.opportunities.workload(req.user!))
   }
 
   awaitingApproval = async (_req: Request, res: Response) => {
@@ -62,6 +74,23 @@ export class OpportunityController {
     )
 
     res.json(view)
+  }
+
+  /** Create and update take the same body, so they read it the same way. */
+  private draftFrom(req: Request): NewOpportunity {
+    return {
+      title: readString(req.body, 'title', 6),
+      description: readString(req.body, 'description', 20),
+      mode: readMode(req.body),
+      location: readOptionalString(req.body, 'location'),
+      sector: readSector(req.body, 'sector'),
+      maxCapacity: readCount(req.body, 'maxCapacity'),
+      applicationDeadline: readFutureDate(req.body, 'applicationDeadline'),
+      startsAt: readOptionalFutureDate(req.body, 'startsAt'),
+      endsAt: readFutureDate(req.body, 'endsAt'),
+      requiredSkills: readTagList(req.body, 'requiredSkills'),
+      categories: readTagList(req.body, 'categories'),
+    }
   }
 
   private filterFrom(req: Request): FeedFilter {

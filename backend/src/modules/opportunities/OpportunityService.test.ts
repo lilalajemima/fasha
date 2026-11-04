@@ -85,6 +85,31 @@ class FakeOpportunityStore implements OpportunityStore {
     return record
   }
 
+    async update(id: string, input: NewOpportunity, status: string) {
+    const record = this.records.find(entry => entry.id === id)!
+    Object.assign(record, input, { status: status as OpportunityRecord['status'] })
+    return record
+  }
+
+  async closeApplications(id: string, at: Date) {
+    const record = this.records.find(entry => entry.id === id)!
+    record.applicationDeadline = at
+    return record
+  }
+
+  async remove(id: string) {
+    const at = this.records.findIndex(entry => entry.id === id)
+    this.records.splice(at, 1)
+  }
+
+  async countActivity() {
+    return { applications: this.applications, deliverables: 0, credited: 0 }
+  }
+
+  async countWorkload() {
+    return []
+  }
+
   async setQrToken() { }
 }
 
@@ -281,5 +306,60 @@ describe('reviewing a volunteer proposal', () => {
     expect(notifier.sent).toHaveLength(1)
     expect(notifier.sent[0].userId).toBe('volunteer-9')
     expect(notifier.sent[0].message).toContain('approved')
+  })
+})
+
+describe('changing an initiative after it is posted', () => {
+  const owner = { userId: 'volunteer-1', role: 'VOLUNTEER' }
+
+  it('refuses an edit from somebody who did not create it', async () => {
+    const records = [citizenProposal()]
+
+    await expect(
+      buildService(records).update({ userId: 'volunteer-2', role: 'VOLUNTEER' }, 'proposal', draft),
+    ).rejects.toThrow('belongs to somebody else')
+  })
+
+  it('sends a rejected proposal back for review when it is fixed', async () => {
+    const records = [citizenProposal({ status: 'REJECTED', reviewNote: 'Please add a date.' })]
+
+    const view = await buildService(records).update(owner, 'proposal', draft)
+
+    expect(view.status).toBe('PENDING_APPROVAL')
+  })
+
+  it('refuses an edit once applications have closed', async () => {
+    const records = [
+      citizenProposal({ status: 'PUBLISHED', applicationDeadline: new Date(Date.now() - 1000) }),
+    ]
+
+    await expect(buildService(records).update(owner, 'proposal', draft)).rejects.toThrow(
+      'can no longer be edited',
+    )
+  })
+
+  it('deletes one nobody has touched', async () => {
+    const records = [citizenProposal()]
+    const service = buildService(records)
+
+    await service.remove(owner, 'proposal')
+
+    await expect(service.detail(owner, 'proposal')).rejects.toThrow('does not exist')
+  })
+
+  it('refuses to delete one people have applied to', async () => {
+    const store = new FakeOpportunityStore([citizenProposal()])
+    store.applications = 1
+    const service = new OpportunityService(store, new FakeUserStore(), new MatchingService(), notifier)
+
+    await expect(service.remove(owner, 'proposal')).rejects.toThrow('Close it early instead')
+  })
+
+  it('closes applications early', async () => {
+    const records = [citizenProposal({ status: 'PUBLISHED' })]
+
+    const view = await buildService(records).closeEarly(owner, 'proposal')
+
+    expect(new Date(view.applicationDeadline).getTime()).toBeLessThanOrEqual(Date.now())
   })
 })

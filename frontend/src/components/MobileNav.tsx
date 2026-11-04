@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import Logo from './Logo'
 import { useAuth } from '../auth/AuthContext'
-import { MANAGE_NAV, PARTICIPATE_NAV, type NavItem } from '../layouts/navItems'
+import { MANAGE_NAV, PARTICIPATE_NAV } from '../layouts/navItems'
 
 /**
- * Hamburger navigation for screens without room for the sidebar. It carries every
- * destination, so nothing becomes unreachable on a phone.
+ * Hamburger navigation for screens without room for the sidebar. It carries the
+ * same destinations as the sidebar and nothing more: notifications stay in the
+ * top bar, where they are on every screen size.
  */
 export default function MobileNav() {
   const { user, signOut } = useAuth()
@@ -15,6 +16,7 @@ export default function MobileNav() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const isVolunteer = user?.role !== 'organisation'
+  const items = isVolunteer ? PARTICIPATE_NAV : MANAGE_NAV
 
   // Close on navigation, so a tap on a link does not leave the drawer open.
   useEffect(() => { setOpen(false) }, [pathname])
@@ -25,17 +27,6 @@ export default function MobileNav() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-
-  const group = (title: string, items: NavItem[]) => (
-    <div className="drawer__group">
-      <div className="drawer__title">{title}</div>
-      {items.map(item => (
-        <NavLink key={item.to} to={item.to} end={item.end} className="navplate">
-          <Icon name={item.icon} /> <span>{item.label}</span>
-        </NavLink>
-      ))}
-    </div>
-  )
 
   return (
     <>
@@ -57,19 +48,16 @@ export default function MobileNav() {
 
             <div className="drawer__who">
               <span className="side__group">Your workspace</span>
-              <div className="side__workspace">
-                {isVolunteer ? 'Volunteer' : (user?.name ?? 'Organisation')}
-              </div>
+              <div className="side__workspace">{isVolunteer ? 'Volunteer' : 'Organiser'}</div>
             </div>
 
             <div className="drawer__group">
-              <Link to="/notifications" className="navplate">
-                <Icon name="bell" /> <span>Notifications</span>
-              </Link>
+              {items.map(item => (
+                <NavLink key={item.to} to={item.to} end={item.end} className="navplate">
+                  <Icon name={item.icon} /> <span>{item.label}</span>
+                </NavLink>
+              ))}
             </div>
-
-            {isVolunteer && group('Taking part', PARTICIPATE_NAV)}
-            {group('Managing opportunities', MANAGE_NAV)}
 
             {!isVolunteer && (
               <div className="drawer__group">

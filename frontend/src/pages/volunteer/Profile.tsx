@@ -1,14 +1,24 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loaded } from '../../components/Loader'
-import PageHeader from '../../components/PageHeader'
 import { Button, Card, Field, RemovableTag, StatusBadge } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
-import { initials } from '../../lib/format'
 import { SECTORS } from '../../lib/sectors'
 import type { ProfileView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
+import '../../styles/workspace.css'
+import './Profile.css'
+
+/** "Lydia Runiga" -> "LR". Kept local so the page owns its own small details. */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]!.toUpperCase())
+    .join('')
+}
 
 function TagEditor({ label, values, placeholder, onAdd, onRemove }: {
   label: string
@@ -60,6 +70,18 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
 
   const isVolunteer = loaded.profile !== null
 
+  /** Put every field back to what the server last gave us. */
+  function cancel() {
+    setName(loaded.user.name)
+    setSkills(loaded.profile?.skills ?? [])
+    setInterests(loaded.profile?.interests ?? [])
+    setAvailability(loaded.profile?.availability ?? '')
+    setLocation(loaded.profile?.location ?? '')
+    setSector(loaded.profile?.sector ?? '')
+    setError('')
+    setSaved(false)
+  }
+
   async function save(event: FormEvent) {
     event.preventDefault()
     setError('')
@@ -90,20 +112,17 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
 
   return (
     <form onSubmit={save}>
-      <PageHeader
-        title="Your Profile"
-        action={
-          <Button type="submit" variant="primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save changes'}
-          </Button>
-        }
-      />
+      <section className="banner banner--profile">
+        <h1 className="banner__title">Your profile</h1>
+      </section>
 
-      <div className="page-grid">
+      <div className="profile-grid">
         <div className="stack">
           {error && <p className="error" role="alert">{error}</p>}
           {saved && <StatusBadge tone="ok">Saved</StatusBadge>}
 
+          {/* One sheet. The headings separate the sections; cards would only
+              chop a single form into four boxes. */}
           <Card>
             <h2>About you</h2>
             <div className="cluster" style={{ marginBottom: 18 }}>
@@ -113,7 +132,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
               <div className="muted">{loaded.user.email}</div>
             </div>
 
-            <div className="two-col">
+            <div className="profile-pair">
               <Field
                 id="name"
                 label="Full name"
@@ -131,12 +150,12 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                 />
               )}
             </div>
-          </Card>
 
-          {isVolunteer && (
-            <>
-              <Card>
-                <h2>Skills &amp; interests</h2>
+            {isVolunteer && (
+              <>
+                <div className="profile-rule" />
+
+                <h2>Skills and interests</h2>
                 <p className="muted">
                   These decide what Discover puts in front of you. Press Enter to add one.
                 </p>
@@ -152,16 +171,12 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                   values={interests}
                   placeholder="Add an interest..."
                   onAdd={value => setInterests([...interests, value])}
-                  onRemove={value => setInterests(interests.filter(interest => interest !== value))}
+                  onRemove={value => setInterests(interests.filter(item => item !== value))}
                 />
-              </Card>
 
-              <Card>
+                <div className="profile-rule" />
+
                 <h2>Where you are</h2>
-                <p className="muted">
-                  Your sector is how community works are reported, and it helps us show you
-                  anything happening nearby.
-                </p>
                 <div className="field">
                   <label className="label" htmlFor="sector">Sector</label>
                   <select
@@ -176,11 +191,10 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                     ))}
                   </select>
                 </div>
-              </Card>
 
-              <Card>
+                <div className="profile-rule" />
+
                 <h2>General availability</h2>
-                <p className="muted">A usual pattern. Each opportunity still has its own dates.</p>
                 <Field
                   id="availability"
                   label="When you are usually free"
@@ -188,29 +202,37 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                   placeholder="Weekend mornings"
                   onChange={event => setAvailability(event.target.value)}
                 />
-              </Card>
-            </>
-          )}
+              </>
+            )}
+          </Card>
+
+          <div className="cluster">
+            <Button type="submit" variant="primary" disabled={busy}>
+              {busy ? 'Saving…' : 'Save changes'}
+            </Button>
+            <Button type="button" disabled={busy} onClick={cancel}>Cancel changes</Button>
+          </div>
         </div>
 
         <aside className="stack">
-          <Card variant="tint">
-            <h2 style={{ color: 'var(--primary)' }}>You control what is shared</h2>
-            <p className="muted" style={{ margin: 0 }}>
-              Applying shares your profile and motivation with that organiser. Your public
-              portfolio shows only your name and verified contributions.
-            </p>
-          </Card>
-
           {isVolunteer && (
-            <Link to="/portfolio"><Button block>Preview public portfolio</Button></Link>
+            <Card>
+              <h2>Your public portfolio</h2>
+              <p className="muted">
+                The page anybody with the link can see. Verified contributions only.
+              </p>
+              <Link to="/portfolio">
+                <Button type="button" variant="primary" block>Preview public portfolio</Button>
+              </Link>
+            </Card>
           )}
 
           <Card>
             <h2>Account</h2>
-            <p className="muted">Signed in as {loaded.user.email}.</p>
+            <p className="muted">Signed in as {loaded.user.email}</p>
             <Button
               type="button"
+              variant="primary"
               block
               onClick={() => {
                 signOut()

@@ -1,12 +1,27 @@
 import { useEffect, useState } from 'react'
-import { Loaded, Problem } from '../../components/Loader'
+import { Loading, Problem } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, EmptyState, StatTile, StatusBadge } from '../../components/ui'
+import { Button, EmptyState } from '../../components/ui'
 import { api } from '../../lib/api'
-import { timeOfDay, whenLabel } from '../../lib/format'
-import type { ApplicationView, CheckinCodeView, CheckinView, OpportunityView } from '../../lib/types'
+import { hasPassed, meta, quantity, timeOfDay, whenLabel } from '../../lib/format'
+import { buildRoster, matches } from '../../lib/roster'
+import type {
+  ApplicationView,
+  CheckinCodeView,
+  CheckinView,
+  OpportunityView,
+  WorkloadRow,
+} from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
-import './Attendance.css'
+import './Manage.css'
+
+const CODE_SECONDS = 30
+const LAST_SECONDS = 5
+
+/** 429439 is read back as 429 439, which is how somebody says it out loud. */
+function grouped(code: string): string {
+  return `${code.slice(0, 3)} ${code.slice(3)}`
+}
 
 function CodePanel({ opportunityId }: { opportunityId: string }) {
   const [open, setOpen] = useState(false)
@@ -53,87 +68,82 @@ function CodePanel({ opportunityId }: { opportunityId: string }) {
   }, [open, round, opportunityId])
 
   return (
-    <Card>
-      <h2>Show this to check people in and out</h2>
+    <section className="card codepanel">
+      <h2>Check in code</h2>
 
       {error && <p className="error" role="alert">{error}</p>}
 
       {code ? (
-        <>
+        <div className="codepanel__body">
           <div
-            style={{ display: 'grid', placeItems: 'center', margin: '20px 0' }}
+            className="codepanel__qr"
             dangerouslySetInnerHTML={{ __html: code.qrSvg }}
           />
 
-          <div className="row">
-            <strong className="stat-value" style={{ fontSize: 34, letterSpacing: 4 }}>
-              {code.code}
-            </strong>
-            <strong className="stat-value" style={{ fontSize: 24, color: 'var(--primary)' }}>
-              00:{String(Math.max(secondsLeft, 0)).padStart(2, '0')}
-            </strong>
-          </div>
+          <div>
+            <strong className="codepanel__code">{grouped(code.code)}</strong>
 
-          <div style={{ height: 3, background: 'var(--neutral-border)', borderRadius: 2,
-                        margin: '10px 0 18px' }}>
-            <div style={{ width: `${(Math.max(secondsLeft, 0) / 30) * 100}%`, height: 3,
-                          background: 'var(--primary)', borderRadius: 2 }} />
-          </div>
+            <div className="codepanel__track">
+              <div
+                className={`codepanel__fill${
+                  secondsLeft <= LAST_SECONDS ? ' codepanel__fill--last' : ''
+                }`}
+                style={{ width: `${(Math.max(secondsLeft, 0) / CODE_SECONDS) * 100}%` }}
+              />
+            </div>
 
-          <h3>The same code works both ways</h3>
-          <p className="muted" style={{ marginBottom: 0 }}>
-            Volunteers enter it when they arrive and again when they leave, so nobody can close
-            themselves off from home. It changes every 30 seconds.
-          </p>
-        </>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              The same code checks people out. It changes every 30 seconds.
+            </p>
+          </div>
+        </div>
       ) : (
-        <>
-          <p className="muted">
-            Open check in when the event starts. A code appears here and refreshes itself.
-          </p>
-          <Button variant="primary" block disabled={open} onClick={() => setOpen(true)}>
-            {open ? 'Opening…' : 'Open check in'}
-          </Button>
-        </>
+        <Button variant="primary" block disabled={open} onClick={() => setOpen(true)}>
+          {open ? 'Opening…' : 'Open check in'}
+        </Button>
       )}
-    </Card>
+    </section>
   )
 }
 
 function Register({ opportunity }: { opportunity: OpportunityView }) {
   const checkins = useGet<CheckinView[]>(`/opportunities/${opportunity.id}/checkins`)
   const applicants = useGet<ApplicationView[]>(`/opportunities/${opportunity.id}/applications`)
+  const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState('')
 
-  const present = checkins.data ?? []
   const accepted = (applicants.data ?? []).filter(item => item.status === 'ACCEPTED')
-  const arrived = new Set(present.map(entry => entry.volunteer.id))
-  const missing = accepted.filter(item => !arrived.has(item.volunteer.id))
+  const everyone = buildRoster(accepted, checkins.data ?? [])
+  const here = everyone.filter(row => row.checkedInAt && !row.checkedOutAt).length
+  const left = everyone.filter(row => row.checkedOutAt).length
+  const rows = everyone.filter(row => matches(row, query))
+  const loading = (checkins.loading && !checkins.data) || (applicants.loading && !applicants.data)
+  const problem = checkins.error ?? applicants.error
 
-  async function markPresent(volunteerId: string) {
+  async function checkIn(volunteerId: string) {
     setError('')
     setBusy(volunteerId)
 
     try {
       await api.post(`/opportunities/${opportunity.id}/checkins/manual`, { volunteerId })
       checkins.reload()
-    } catch (problem) {
-      setError(messageFor(problem))
+    } catch (trouble) {
+      setError(messageFor(trouble))
     } finally {
       setBusy('')
     }
   }
 
-  async function checkOut(id: string) {
+  async function checkOut(checkinId: string, volunteerId: string) {
     setError('')
-    setBusy(id)
+    setBusy(volunteerId)
 
     try {
-      await api.patch(`/checkins/${id}/checkout`)
+      await api.patch(`/checkins/${checkinId}/checkout`)
       checkins.reload()
-    } catch (problem) {
-      setError(messageFor(problem))
+    } catch (trouble) {
+      setError(messageFor(trouble))
     } finally {
       setBusy('')
     }
@@ -151,214 +161,228 @@ function Register({ opportunity }: { opportunity: OpportunityView }) {
       link.download = `attendance-${opportunity.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.csv`
       link.click()
       URL.revokeObjectURL(url)
-    } catch (problem) {
-      setError(messageFor(problem))
+    } catch (trouble) {
+      setError(messageFor(trouble))
     }
   }
 
   return (
-    <div className="stack">
-      <Card>
-        <div className="stat-row">
-          <StatTile label="Checked in" value={present.filter(entry => !entry.checkedOutAt).length} />
-          <StatTile label="Checked out" value={present.filter(entry => entry.checkedOutAt).length} />
-          <StatTile label="Not arrived" value={missing.length} />
-          <StatTile
-            label="Scanned"
-            value={present.filter(entry => entry.method === 'QR').length}
-            note={`${present.filter(entry => entry.method === 'MANUAL').length} by hand`}
-          />
-        </div>
-      </Card>
+    <section className="card register">
+      <div className="register__head">
+        <h2 style={{ marginBottom: 4 }}>{opportunity.title}</h2>
+        <p className="muted" style={{ margin: 0 }}>
+          {meta(whenLabel(opportunity.startsAt, opportunity.endsAt), opportunity.location)}
+        </p>
+      </div>
+
+      <p className="roster__count register__hide">
+        <strong>{here}</strong> of {accepted.length} here
+        {left > 0 && <span className="muted"> · {left} left</span>}
+      </p>
+
+      <div className="roster__head register__hide">
+        <input
+          className="input toolbar__search"
+          placeholder="Search volunteers"
+          aria-label="Search volunteers"
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+        />
+        <span className="cluster">
+          <Button className="btn--small" onClick={downloadCsv}>Export CSV</Button>
+          <Button className="btn--small" onClick={() => window.print()}>Print or PDF</Button>
+        </span>
+      </div>
 
       {error && <p className="error" role="alert">{error}</p>}
+      {problem && <Problem message={problem} onRetry={checkins.reload} />}
+      {loading && !problem && <Loading what="the register" />}
 
-      <section className="card register">
-        <div className="register__head">
-          <h2 style={{ marginBottom: 4 }}>{opportunity.title}</h2>
-          <p className="muted" style={{ margin: 0 }}>
-            {whenLabel(opportunity.startsAt, opportunity.endsAt)} ·{' '}
-            {opportunity.location ?? 'Online'}
-          </p>
-        </div>
+      {!loading && !problem && (
+        rows.length === 0 ? (
+          <EmptyState>
+            {accepted.length === 0
+              ? 'Nobody has been accepted onto this one yet.'
+              : 'Nobody matches that search.'}
+          </EmptyState>
+        ) : (
+          <table className="data">
+            <thead>
+              <tr>
+                <th>Volunteer</th>
+                <th>In</th>
+                <th>Out</th>
+                <th>How</th>
+                <th className="register__hide" aria-hidden="true" />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(row => {
+                const openCheckin = row.checkedOutAt ? null : row.checkinId
 
-        <div className="row register__hide">
-          <h2 style={{ margin: 0 }}>Attendance</h2>
-          <span className="cluster">
-            <Button onClick={downloadCsv}>Download CSV</Button>
-            <Button onClick={() => window.print()}>Print or save as PDF</Button>
-          </span>
-        </div>
+                return (
+                <tr key={row.volunteerId} className="data__row--plain">
+                  <td className="data__title">{row.name}</td>
+                  <td>{row.checkedInAt ? timeOfDay(row.checkedInAt) : '—'}</td>
+                  <td>{row.checkedOutAt ? timeOfDay(row.checkedOutAt) : '—'}</td>
+                  <td>
+                    {row.method === null ? (
+                      <span className="muted">Not arrived</span>
+                    ) : row.method === 'QR' ? (
+                      'Scanned'
+                    ) : (
+                      'By hand'
+                    )}
+                  </td>
+                  <td className="data__actions register__hide">
+                    {!row.checkinId && (
+                      <Button
+                        className="btn--small"
+                        disabled={busy === row.volunteerId}
+                        onClick={() => checkIn(row.volunteerId)}
+                      >
+                        Check in
+                      </Button>
+                    )}
+                    {openCheckin && (
+                      <Button
+                        className="btn--small"
+                        disabled={busy === row.volunteerId}
+                        onClick={() => checkOut(openCheckin, row.volunteerId)}
+                      >
+                        Check out
+                      </Button>
+                    )}
+                    {row.checkedOutAt && <span className="muted">Done</span>}
+                  </td>
+                </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )
+      )}
+    </section>
+  )
+}
 
-        <Loaded state={checkins} what="the register">
-          {items =>
-            items.length === 0 ? (
-              <EmptyState>Nobody has checked in yet.</EmptyState>
-            ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Volunteer</th>
-                    <th>In</th>
-                    <th>Out</th>
-                    <th>Hours</th>
-                    <th>How</th>
-                    <th className="register__hide" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(entry => (
-                    <tr key={entry.id}>
-                      <td>{entry.volunteer.name}</td>
-                      <td>{timeOfDay(entry.checkedInAt)}</td>
-                      <td>{entry.checkedOutAt ? timeOfDay(entry.checkedOutAt) : '—'}</td>
-                      <td>{entry.hours ?? '—'}</td>
-                      <td>{entry.method === 'QR' ? 'Scanned' : 'By hand'}</td>
-                      <td className="register__hide">
-                        {!entry.checkedOutAt && (
-                          <Button disabled={busy === entry.id} onClick={() => checkOut(entry.id)}>
-                            Check out
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )
-          }
-        </Loaded>
-      </section>
-
-      <Card>
-        <h2>Not arrived</h2>
-        <p className="muted">
-          If someone&rsquo;s phone will not work, check them in yourself. It is recorded as by hand
-          rather than scanned, and you can close them off from the table above.
-        </p>
-        <div className="divided">
-          {missing.map(item => (
-            <div key={item.id} className="row">
-              <span>{item.volunteer.name}</span>
-              <Button
-                disabled={busy === item.volunteer.id}
-                onClick={() => markPresent(item.volunteer.id)}
-              >
-                Check in by hand
-              </Button>
-            </div>
-          ))}
-          {missing.length === 0 && accepted.length > 0 && (
-            <EmptyState>Everyone accepted has arrived.</EmptyState>
-          )}
-          {accepted.length === 0 && (
-            <EmptyState>Nobody has been accepted onto this one yet.</EmptyState>
-          )}
-        </div>
-      </Card>
+/**
+ * Taking attendance at one event: the rolling code, then the register. Exported
+ * so a volunteer runs their own initiative's door from inside that initiative.
+ */
+export function AttendancePanel({ opportunity }: { opportunity: OpportunityView }) {
+  return (
+    <div className="stack">
+      <CodePanel opportunityId={opportunity.id} />
+      <Register opportunity={opportunity} />
     </div>
   )
 }
 
+/** The organisation's page: pick one of their events, then take attendance. */
 export default function Attendance() {
   const mine = useGet<OpportunityView[]>('/opportunities/mine')
+  const workload = useGet<WorkloadRow[]>('/opportunities/mine/workload')
   const [chosen, setChosen] = useState('')
   const [query, setQuery] = useState('')
 
   const published = (mine.data ?? []).filter(
     item => item.status === 'PUBLISHED' && item.mode === 'PHYSICAL',
   )
+  const counts = new Map((workload.data ?? []).map(row => [row.opportunityId, row] as const))
+  // Only the next event gets the loud button; the rest are things you could do.
+  const nextUp = published
+    .filter(item => item.startsAt !== null && !hasPassed(item.startsAt))
+    .sort((a, b) => Date.parse(a.startsAt ?? '') - Date.parse(b.startsAt ?? ''))[0]
   const current = published.find(item => item.id === chosen)
   const words = query.trim().toLowerCase()
 
   if (current) {
     return (
       <>
-        <p style={{ marginBottom: 18 }}>
+        <p className="backlink">
           <button className="linkbtn" onClick={() => setChosen('')}>← All events</button>
         </p>
 
-        <PageHeader
-          eyebrow={whenLabel(current.startsAt, current.endsAt)}
-          title={current.title}
-          meta={`${current.location ?? 'Online'} · ${current.sector ?? 'Sector not set'} · up to ${current.maxCapacity} volunteers`}
-        />
+        <PageHeader title={current.title} />
 
-        <div className="page-grid">
-          <CodePanel opportunityId={current.id} />
-          <Register opportunity={current} />
-        </div>
+        <p className="lede" style={{ marginBottom: 18 }}>
+          {meta(
+            whenLabel(current.startsAt, current.endsAt),
+            current.location,
+            current.sector,
+            `up to ${quantity(current.maxCapacity, 'volunteer')}`,
+          )}
+        </p>
+
+        <AttendancePanel opportunity={current} />
       </>
     )
   }
 
+  const visible = published.filter(item =>
+    `${item.title} ${item.sector ?? ''} ${item.location ?? ''}`.toLowerCase().includes(words),
+  )
+
   return (
     <>
-      <PageHeader
-        eyebrow="On the day"
-        title="Attendance"
-        meta="Pick an event to open check in, watch people arrive and export the register."
-      />
+      <section className="banner banner--attendance">
+        <h1 className="banner__title">Attendance</h1>
+      </section>
 
       {mine.error && <Problem message={mine.error} onRetry={mine.reload} />}
 
-      <div style={{ marginBottom: 20 }}>
+      <div className="toolbar">
         <input
-          className="input"
+          className="input toolbar__search"
           placeholder="Search your events"
-          value={query}
           aria-label="Search your events"
+          value={query}
           onChange={event => setQuery(event.target.value)}
         />
+        <span className="toolbar__count">{quantity(visible.length, 'event')}</span>
       </div>
 
-      <Loaded state={mine} what="your events">
-        {() => {
-          const visible = published.filter(item =>
-            `${item.title} ${item.sector ?? ''} ${item.location ?? ''}`
-              .toLowerCase()
-              .includes(words),
-          )
+      {mine.loading && !mine.data && <Loading what="your events" />}
 
-          if (published.length === 0) {
-            return (
-              <EmptyState>
-                Attendance is for opportunities people turn up to. Publish one that happens in
-                person and it appears here. Virtual work is measured by what volunteers submit,
-                on the Review page.
-              </EmptyState>
-            )
-          }
+      {!mine.loading && published.length === 0 && (
+        <EmptyState>
+          Attendance is for work people turn up to. Publish something in person and it appears
+          here. Virtual work is measured by what volunteers send in, on the Deliverables page.
+        </EmptyState>
+      )}
 
-          if (visible.length === 0) {
-            return <EmptyState>Nothing matches that search.</EmptyState>
-          }
+      {published.length > 0 && visible.length === 0 && (
+        <EmptyState>Nothing matches that search.</EmptyState>
+      )}
+
+      <div className="events">
+        {visible.map(item => {
+          const row = counts.get(item.id)
 
           return (
-            <div className="events">
-              {visible.map(item => (
-                <article key={item.id} className="event-card">
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p className="event-card__meta">
-                      {whenLabel(item.startsAt, item.endsAt)} · {item.location ?? 'Online'}
-                    </p>
-                    <p className="event-card__meta">
-                      {item.sector ?? 'Sector not set'} · up to {item.maxCapacity} volunteers
-                    </p>
-                  </div>
-                  <span className="cluster">
-                    <StatusBadge tone="ok">Published</StatusBadge>
-                    <Button variant="primary" onClick={() => setChosen(item.id)}>
-                      Take attendance
-                    </Button>
-                  </span>
-                </article>
-              ))}
-            </div>
+            <article key={item.id} className="event-card">
+              <div>
+                <h3>{item.title}</h3>
+                <p className="data__meta">
+                  {meta(whenLabel(item.startsAt, item.endsAt), item.location, item.sector)}
+                </p>
+                <p className="data__meta">
+                  {row
+                    ? `${row.acceptedApplications} of ${item.maxCapacity} accepted`
+                    : `up to ${quantity(item.maxCapacity, 'volunteer')}`}
+                </p>
+              </div>
+              <Button
+                variant={item.id === nextUp?.id ? 'primary' : 'default'}
+                onClick={() => setChosen(item.id)}
+              >
+                Take attendance
+              </Button>
+            </article>
           )
-        }}
-      </Loaded>
+        })}
+      </div>
     </>
   )
 }

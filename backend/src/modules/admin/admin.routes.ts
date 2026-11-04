@@ -13,4 +13,4 @@ export const adminRoutes = Router()
 
 adminRoutes.get('/admin/summary', authenticate, admins, controller.summary)
 adminRoutes.get('/admin/activity', authenticate, admins, controller.activity)
-adminRoutes.get('/admin/attendance.csv', authenticate, admins, controller.attendanceCsv)
+adminRoutes.get('/admin/report.csv', authenticate, admins, controller.report)

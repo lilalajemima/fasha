@@ -4,149 +4,178 @@ import type {
   ActivityRow,
   AdminStore,
   AttendanceRow,
-  AttendanceTally,
-  InitiativeTally,
-  RoleTally,
+  PeriodTally,
+  ReportFilter,
   SectorTally,
+  Window,
 } from './AdminStore'
 
-const noPeople: RoleTally = { volunteers: 0, organisations: 0 }
+const DAY = 24 * 60 * 60 * 1000
 
-const noInitiatives: InitiativeTally = {
-  published: 0,
-  citizenProposed: 0,
-  citizenApproved: 0,
-  citizenRejected: 0,
-  awaitingReview: 0,
+function tallyOf(overrides: Partial<PeriodTally> = {}): PeriodTally {
+  return {
+    opportunitiesPosted: 0,
+    citizenProposed: 0,
+    published: 0,
+    acceptedPlaces: 0,
+    checkedIn: 0,
+    hoursCredited: 0,
+    ...overrides,
+  }
 }
 
-const noAttendance: AttendanceTally = {
-  acceptedPlaces: 0,
-  checkedIn: 0,
-  scanned: 0,
-  byHand: 0,
-  hoursCredited: 0,
+function eventOf(overrides: Partial<ActivityRow> = {}): ActivityRow {
+  return {
+    id: 'opportunity-1',
+    title: 'Restore the wetland path',
+    description: 'Plant trees with the neighbourhood team.',
+    sector: 'Kimironko',
+    location: 'Kimironko wetland',
+    mode: 'PHYSICAL',
+    organiser: 'Green Neighbourhood',
+    organiserRole: 'ORGANISATION',
+    status: 'PUBLISHED',
+    postedAt: new Date('2026-10-01T08:00:00.000Z'),
+    happenedAt: new Date('2026-10-18T08:00:00.000Z'),
+    applications: 12,
+    accepted: 9,
+    checkedIn: 7,
+    delivered: 0,
+    ...overrides,
+  }
 }
 
-class FakeAdminStore implements AdminStore {
-  constructor(
-    private readonly people: RoleTally = noPeople,
-    private readonly initiatives: InitiativeTally = noInitiatives,
-    private readonly attendance: AttendanceTally = noAttendance,
-    private readonly sectors: SectorTally[] = [],
-    private readonly activity: ActivityRow[] = [],
-    private readonly register: AttendanceRow[] = [],
-  ) {}
+class FakeReports implements AdminStore {
+  readonly windows: Window[] = []
+  readonly filters: ReportFilter[] = []
+  readonly events: ActivityRow[]
+  readonly checkins: AttendanceRow[]
 
-  async countRoles() {
-    return this.people
+  constructor(events: ActivityRow[] = [], checkins: AttendanceRow[] = []) {
+    this.events = events
+    this.checkins = checkins
   }
 
-  async countInitiatives() {
-    return this.initiatives
+  async tally(window: Window): Promise<PeriodTally> {
+    this.windows.push(window)
+
+    return tallyOf({ checkedIn: this.windows.length })
   }
 
-  async countAttendance() {
-    return this.attendance
+  async countAwaitingReview(): Promise<number> {
+    return 2
   }
 
-  async countBySector() {
-    return this.sectors
+  async countBySector(): Promise<SectorTally[]> {
+    return [{ sector: 'Kimironko', opportunities: 4 }]
   }
 
-  async listActivity() {
-    return this.activity
+  async listEvents(filter: ReportFilter): Promise<ActivityRow[]> {
+    this.filters.push(filter)
+
+    return this.events
   }
 
-  async listAttendance() {
-    return this.register
+  async listCheckins(filter: ReportFilter): Promise<AttendanceRow[]> {
+    this.filters.push(filter)
+
+    return this.checkins
   }
 }
 
 describe('the oversight summary', () => {
-  it('works out the share of citizen initiatives approved', async () => {
-    const service = new AdminService(
-      new FakeAdminStore(noPeople, {
-        ...noInitiatives,
-        citizenProposed: 10,
-        citizenApproved: 6,
-        citizenRejected: 2,
-        awaitingReview: 2,
-      }),
-    )
+  it('counts the period and the same length of time before it', async () => {
+    const reports = new FakeReports()
+    const summary = await new AdminService(reports).summary(30)
 
-    const summary = await service.summary()
+    expect(summary.days).toBe(30)
+    expect(summary.comparable).toBe(true)
+    expect(reports.windows).toHaveLength(2)
 
-    expect(summary.initiatives.approvalRate).toBe(75)
+    const [current, previous] = reports.windows
+    const lengthOf = (window: Window) => Math.round((window.to.getTime() - window.from.getTime()) / DAY)
+
+    expect(lengthOf(current!)).toBe(30)
+    expect(lengthOf(previous!)).toBe(30)
+    // The two periods meet, so nothing is counted twice and nothing is missed.
+    expect(previous!.to.getTime()).toBe(current!.from.getTime())
   })
 
-  it('works out turnout against accepted places', async () => {
-    const service = new AdminService(
-      new FakeAdminStore(noPeople, noInitiatives, {
-        ...noAttendance,
-        acceptedPlaces: 20,
-        checkedIn: 13,
-      }),
-    )
+  it('defaults to thirty days when nothing is asked for', async () => {
+    const summary = await new AdminService(new FakeReports()).summary(null)
 
-    const summary = await service.summary()
-
-    expect(summary.attendance.turnoutRate).toBe(65)
+    expect(summary.days).toBe(30)
   })
 
-  it('reports zero rather than dividing by nothing', async () => {
-    const summary = await new AdminService(new FakeAdminStore()).summary()
+  it('has nothing to compare against over all time', async () => {
+    const reports = new FakeReports()
+    const summary = await new AdminService(reports).summary(0)
 
-    expect(summary.initiatives.approvalRate).toBe(0)
-    expect(summary.attendance.turnoutRate).toBe(0)
+    expect(summary.comparable).toBe(false)
+    expect(summary.previous.checkedIn).toBe(0)
+    expect(reports.windows).toHaveLength(1)
+  })
+
+  it('reports what is waiting for a decision whatever the period', async () => {
+    const summary = await new AdminService(new FakeReports()).summary(90)
+
+    expect(summary.awaitingReview).toBe(2)
+    expect(summary.sectors).toEqual([{ sector: 'Kimironko', opportunities: 4 }])
   })
 })
 
-describe('the attendance export', () => {
-  const row: AttendanceRow = {
-    checkedInAt: new Date('2026-11-14T08:05:00.000Z'),
-    checkedOutAt: new Date('2026-11-14T11:35:00.000Z'),
-    method: 'QR',
-    volunteerName: 'Amara Mensah',
-    opportunityTitle: 'Restore the wetland path',
-    sector: 'Kimironko',
-  }
+describe('the district report', () => {
+  it('writes one row per event, with the people counted', async () => {
+    const reports = new FakeReports([eventOf()])
+    const csv = await new AdminService(reports).report('events', { mode: 'PHYSICAL' })
+    const [header, row] = csv.split('\n')
 
-  it('writes a header and one line per check in', async () => {
-    const service = new AdminService(new FakeAdminStore(noPeople, noInitiatives, noAttendance, [], [], [row]))
-    const lines = (await service.attendanceCsv(null, null)).split('\n')
-
-    expect(lines).toHaveLength(2)
-    expect(lines[0]).toContain('Volunteer')
-    expect(lines[1]).toContain('Amara Mensah')
+    expect(header).toContain('Turned up')
+    expect(row).toContain('Restore the wetland path')
+    expect(row).toContain('In person')
+    expect(row).toContain('Kimironko')
+    expect(row?.endsWith('12,9,7,0')).toBe(true)
+    expect(reports.filters[0]?.mode).toBe('PHYSICAL')
   })
 
-  it('counts the hours between the two times', async () => {
-    const service = new AdminService(new FakeAdminStore(noPeople, noInitiatives, noAttendance, [], [], [row]))
-    const csv = await service.attendanceCsv(null, null)
+  it('writes one row per person when the detail is asked for', async () => {
+    const reports = new FakeReports(
+      [],
+      [
+        {
+          checkedInAt: new Date('2026-10-18T06:05:00.000Z'),
+          checkedOutAt: new Date('2026-10-18T09:05:00.000Z'),
+          method: 'QR',
+          volunteerName: 'Amara Mensah',
+          opportunityTitle: 'Restore the wetland path',
+          mode: 'PHYSICAL',
+          sector: 'Kimironko',
+        },
+      ],
+    )
+    const csv = await new AdminService(reports).report('checkins', {})
+    const [header, row] = csv.split('\n')
 
-    expect(csv).toContain('3.50')
+    expect(header).toContain('Volunteer')
+    expect(row).toContain('Amara Mensah')
+    expect(row).toContain('3.00')
+    expect(row).toContain('Scanned')
   })
 
-  it('says how the person was marked present', async () => {
-    const byHand = { ...row, method: 'MANUAL' }
-    const service = new AdminService(new FakeAdminStore(noPeople, noInitiatives, noAttendance, [], [], [byHand]))
+  it('passes the sector and the dates straight through', async () => {
+    const reports = new FakeReports([])
+    const from = new Date('2026-10-01T00:00:00.000Z')
+    const to = new Date('2026-10-31T23:59:59.999Z')
 
-    expect(await service.attendanceCsv(null, null)).toContain('By hand')
+    await new AdminService(reports).report('events', { from, to, sector: 'Kimironko' })
+
+    expect(reports.filters[0]).toEqual({ from, to, mode: null, sector: 'Kimironko' })
   })
 
-  it('quotes a title that holds a comma', async () => {
-    const awkward = { ...row, opportunityTitle: 'Clean up, then plant' }
-    const service = new AdminService(new FakeAdminStore(noPeople, noInitiatives, noAttendance, [], [], [awkward]))
+  it('quotes a title that contains a comma', async () => {
+    const reports = new FakeReports([eventOf({ title: 'Clean up, then plant' })])
+    const csv = await new AdminService(reports).report('events', {})
 
-    expect(await service.attendanceCsv(null, null)).toContain('"Clean up, then plant"')
-  })
-
-  it('leaves the hours blank when nobody checked out', async () => {
-    const open = { ...row, checkedOutAt: null }
-    const service = new AdminService(new FakeAdminStore(noPeople, noInitiatives, noAttendance, [], [], [open]))
-    const lines = (await service.attendanceCsv(null, null)).split('\n')
-
-    expect(lines[1].endsWith(',,Scanned')).toBe(true)
+    expect(csv).toContain('"Clean up, then plant"')
   })
 })

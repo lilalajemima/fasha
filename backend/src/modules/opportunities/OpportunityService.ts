@@ -4,7 +4,13 @@ import type { TokenPayload } from '../../core/security/TokenService'
 import type { UserStore } from '../auth/UserStore'
 import type { MatchingService } from '../matching/MatchingService'
 import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
-import type { FeedFilter, NewOpportunity, OpportunityRecord, OpportunityStore } from './OpportunityStore'
+import type {
+  FeedFilter,
+  NewOpportunity,
+  OpportunityRecord,
+  OpportunityStore,
+  WorkloadRow,
+} from './OpportunityStore'
 import { toView, type OpportunityView } from './OpportunityView'
 
 const DIRECT_PUBLISH_ROLES: string[] = [UserRole.ORGANISATION, UserRole.ADMIN]
@@ -19,21 +25,7 @@ export class OpportunityService {
   ) {}
 
   async create(creator: TokenPayload, input: NewOpportunity): Promise<OpportunityView> {
-    if (input.mode === 'PHYSICAL' && !input.location) {
-      throw new BadRequestError('A physical opportunity needs a location')
-    }
-
-    if (input.mode === 'PHYSICAL' && !input.startsAt) {
-      throw new BadRequestError('A physical opportunity needs a start time')
-    }
-
-    if (input.startsAt && input.startsAt.getTime() >= input.endsAt.getTime()) {
-      throw new BadRequestError('It has to finish after it starts')
-    }
-
-    if (input.applicationDeadline.getTime() > input.endsAt.getTime()) {
-      throw new BadRequestError('Applications cannot close after the work is over')
-    }
+    this.assertShape(input)
 
     const record = await this.opportunities.create(
       creator.userId,
@@ -42,6 +34,74 @@ export class OpportunityService {
     )
 
     return toView(record)
+  }
+
+  /**
+   * Edits are the creator's alone, and only until applications close: changing
+   * the date or the place under somebody who already signed up is the thing
+   * that makes a platform untrustworthy. A rejected proposal is the exception
+   * worth keeping open, since the reviewer's note is useless if it cannot be
+   * acted on; editing one sends it back for review.
+   */
+  async update(
+    actor: TokenPayload,
+    id: string,
+    input: NewOpportunity,
+  ): Promise<OpportunityView> {
+    const record = await this.findOrFail(id)
+
+    this.assertOwner(actor, record)
+    this.assertShape(input)
+
+    if (record.status === OpportunityStatus.PUBLISHED && this.hasPassed(record.applicationDeadline)) {
+      throw new ConflictError('Applications have closed, so this can no longer be edited')
+    }
+
+    const status =
+      record.status === OpportunityStatus.REJECTED
+        ? OpportunityStatus.PENDING_APPROVAL
+        : record.status
+
+    return toView(await this.opportunities.update(id, input, status))
+  }
+
+  /** Stops new applications and keeps everyone's record intact. */
+  async closeEarly(actor: TokenPayload, id: string): Promise<OpportunityView> {
+    const record = await this.findOrFail(id)
+
+    this.assertOwner(actor, record)
+
+    if (record.status !== OpportunityStatus.PUBLISHED) {
+      throw new ConflictError('Only a published opportunity can be closed early')
+    }
+
+    if (this.hasPassed(record.applicationDeadline)) {
+      throw new ConflictError('Applications have already closed')
+    }
+
+    return toView(await this.opportunities.closeApplications(id, new Date()))
+  }
+
+  /**
+   * Deleting is only honest while the opportunity is still nobody else's: one
+   * application, deliverable or credited hour and the row belongs to that
+   * person too.
+   */
+  async remove(actor: TokenPayload, id: string): Promise<void> {
+    const record = await this.findOrFail(id)
+
+    this.assertOwner(actor, record)
+
+    const activity = await this.opportunities.countActivity(id)
+    const attached = activity.applications + activity.deliverables + activity.credited
+
+    if (attached > 0) {
+      throw new ConflictError(
+        'People have already taken part in this one, so it cannot be deleted. Close it early instead.',
+      )
+    }
+
+    await this.opportunities.remove(id)
   }
 
   async feed(viewer: TokenPayload, filter: FeedFilter): Promise<OpportunityView[]> {
@@ -76,6 +136,11 @@ export class OpportunityService {
     const records = await this.opportunities.findCreatedBy(creator.userId)
 
     return records.map(record => toView(record))
+  }
+
+  /** What is waiting on this organiser, one row per opportunity they posted. */
+  async workload(creator: TokenPayload): Promise<WorkloadRow[]> {
+    return this.opportunities.countWorkload(creator.userId)
   }
 
   async awaitingApproval(): Promise<OpportunityView[]> {
@@ -114,6 +179,34 @@ export class OpportunityService {
     )
 
     return toView(updated)
+  }
+
+  private assertShape(input: NewOpportunity): void {
+    if (input.mode === 'PHYSICAL' && !input.location) {
+      throw new BadRequestError('A physical opportunity needs a location')
+    }
+
+    if (input.mode === 'PHYSICAL' && !input.startsAt) {
+      throw new BadRequestError('A physical opportunity needs a start time')
+    }
+
+    if (input.startsAt && input.startsAt.getTime() >= input.endsAt.getTime()) {
+      throw new BadRequestError('It has to finish after it starts')
+    }
+
+    if (input.applicationDeadline.getTime() > input.endsAt.getTime()) {
+      throw new BadRequestError('Applications cannot close after the work is over')
+    }
+  }
+
+  private assertOwner(actor: TokenPayload, record: OpportunityRecord): void {
+    if (actor.userId !== record.creatorId) {
+      throw new ForbiddenError('That opportunity belongs to somebody else')
+    }
+  }
+
+  private hasPassed(moment: Date): boolean {
+    return moment.getTime() <= Date.now()
   }
 
   private statusForNew(creatorRole: string): OpportunityStatus {

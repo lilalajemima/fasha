@@ -1,4 +1,4 @@
-import type { Opportunity, OpportunityMode, OpportunityStatus, UserRole } from '@prisma/client'
+import type { Opportunity, OpportunityMode, OpportunityStatus, UserRole, ActivityCount } from '@prisma/client'
 
 export type OpportunityRecord = Opportunity & {
   creator: { id: string; name: string; role: UserRole }
@@ -24,6 +24,25 @@ export type FeedFilter = {
   sector: string | null
 }
 
+/**
+ * How much is waiting on the organiser for one opportunity. Counted in the
+ * database rather than by loading every application into memory.
+ */
+export type WorkloadRow = {
+  opportunityId: string
+  pendingApplications: number
+  acceptedApplications: number
+  pendingDeliverables: number
+}
+
+/** What other people have attached to an opportunity, which is what decides
+ *  whether it can still be deleted. */
+export type ActivityCount = {
+  applications: number
+  deliverables: number
+  credited: number
+}
+
 export interface OpportunityStore {
   create(
     creatorId: string,
@@ -33,11 +52,20 @@ export interface OpportunityStore {
   findPublished(filter: FeedFilter): Promise<OpportunityRecord[]>
   findById(id: string): Promise<OpportunityRecord | null>
   findCreatedBy(creatorId: string): Promise<OpportunityRecord[]>
+  countWorkload(creatorId: string): Promise<WorkloadRow[]>
+  countActivity(id: string): Promise<ActivityCount>
   findAwaitingApproval(): Promise<OpportunityRecord[]>
+  update(
+    id: string,
+    input: NewOpportunity,
+    status: OpportunityStatus,
+  ): Promise<OpportunityRecord>
   updateStatus(
     id: string,
     status: OpportunityStatus,
     reviewNote: string | null,
   ): Promise<OpportunityRecord>
+  closeApplications(id: string, at: Date): Promise<OpportunityRecord>
+  remove(id: string): Promise<void>
   setQrToken(id: string, qrToken: string): Promise<void>
 }

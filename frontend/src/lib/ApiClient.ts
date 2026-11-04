@@ -31,6 +31,10 @@ export class ApiClient {
     return this.send<T>('PATCH', path, body)
   }
 
+    delete<T = void>(path: string): Promise<T> {
+    return this.send<T>('DELETE', path)
+  }
+
   async download(path: string): Promise<Blob> {
     const response = await this.fetchOrFail('GET', path)
 

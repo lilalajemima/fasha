@@ -31,8 +31,15 @@ export class PortfolioService {
   }
 
   private async buildFor(owner: { userId: string; name: string; portfolioSlug: string }) {
-    const records = await this.entries.findForVolunteer(owner.userId)
+    const [records, organised] = await Promise.all([
+      this.entries.findForVolunteer(owner.userId),
+      this.entries.countOrganised(owner.userId),
+    ])
 
-    return toPortfolioView({ name: owner.name, portfolioSlug: owner.portfolioSlug }, records)
+    return toPortfolioView(
+      { name: owner.name, portfolioSlug: owner.portfolioSlug },
+      records,
+      organised,
+    )
   }
 }

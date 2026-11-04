@@ -20,17 +20,22 @@
   --surface-muted: #F8F8F8;
   --surface-dark:  #18181B;
 
-  /* Status. Outline badges use the saturated hue for border and text,
-     on a white or barely tinted fill, which keeps small labels legible. */
-  --ok:      #059669;  --ok-bg:   #FFFFFF;
-  --warn:    #B45309;  --warn-bg: #FFFFFF;
-  --info:    #2563EB;  --info-bg: #FFFFFF;
-  --bad:     #B91C1C;  --bad-bg:  #FEF2F2;
-  --match:   #DC2626;
+  /* Status. A tinted field with text and a hairline in the same hue, so the
+     colour carries the meaning and the label stays legible at 12px. One hue
+     means one thing everywhere: green done, amber waiting, blue in flight,
+     red stopped, grey inactive. */
+  --ok:      #047857;  --ok-bg:   #ECFDF5;  --ok-line:   #A7F3D0;
+  --warn:    #B45309;  --warn-bg: #FFFBEB;  --warn-line: #FDE68A;
+  --info:    #1D4ED8;  --info-bg: #EFF6FF;  --info-line: #BFDBFE;
+  --bad:     #B91C1C;  --bad-bg:  #FEF2F2;  --bad-line:  #F6DCDC;
+
+  /* A match score is not a status, so it stays out of the semantic palette. */
+  --match:   #18181B;
 
   /* Type */
   --font-display: 'Fugaz One', Impact, system-ui, sans-serif;
   --font-body:    'Work Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Shape */
   --radius-chip: 9999px;

@@ -5,9 +5,10 @@ import PageHeader from '../../components/PageHeader'
 import { Button, Card, StatusBadge, Tag, TextField } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
-import { dateAndTime, hasPassed, sentenceCase, whenLabel } from '../../lib/format'
+import { dateAndTime, hasPassed, meta, quantity, sentenceCase, whenLabel } from '../../lib/format'
 import type { OpportunityView, ProfileView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
+import '../../styles/workspace.css'
 
 const MIN_STATEMENT = 30
 
@@ -54,12 +55,12 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
 
   return (
     <Card>
-      <h2>Apply to join</h2>
+      <h2>Apply</h2>
 
       <div className="row" style={{ alignItems: 'flex-start' }}>
         <div>
           <div className="minilabel">Capacity</div>
-          <strong>up to {item.maxCapacity}</strong>
+          <strong>up to {quantity(item.maxCapacity, 'volunteer')}</strong>
         </div>
         <div>
           <div className="minilabel">Apply by</div>
@@ -70,7 +71,6 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
 
       {me.data?.profile && (
         <>
-          <div className="minilabel">Your shared profile</div>
           <h3 style={{ marginTop: 8, marginBottom: 2 }}>{me.data.user.name}</h3>
           <p className="muted">
             {me.data.profile.location ?? 'Location not set'} ·{' '}
@@ -107,10 +107,6 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
 
           {error && <p className="error" role="alert">{error}</p>}
 
-          <p className="muted" style={{ marginTop: 14 }}>
-            Your profile and motivation will be shared with the organiser.
-          </p>
-
           <Button
             type="submit"
             variant="primary"
@@ -135,49 +131,47 @@ export default function OpportunityDetail() {
         <>
           <p style={{ marginBottom: 18 }}><Link to="/discover">← Back to Discover</Link></p>
 
-          <PageHeader
-            eyebrow={`${item.creator.name} · ${sentenceCase(item.mode)}`}
-            title={item.title}
-            meta={`${whenLabel(item.startsAt, item.endsAt)} · ${item.location ?? 'Online'}`}
-          />
+          <PageHeader title={item.title} />
 
-          <div className="page-grid">
-            <div className="stack">
-              <Card>
-                <div className="cluster">
-                  <StatusBadge tone={item.status === 'PUBLISHED' ? 'ok' : 'warn'}>
-                    {sentenceCase(item.status)}
-                  </StatusBadge>
-                  {item.matchScore !== undefined && (
-                    <StatusBadge tone="match">{item.matchScore}% match</StatusBadge>
-                  )}
-                </div>
+          <p className="lede" style={{ marginBottom: 18 }}>
+            {meta(
+              item.creator.name,
+              sentenceCase(item.mode),
+              whenLabel(item.startsAt, item.endsAt),
+              item.location,
+            )}
+          </p>
 
-                <p style={{ marginTop: 18 }}>{item.description}</p>
-
-                {item.requiredSkills.length > 0 && (
-                  <>
-                    <h3 style={{ marginTop: 18 }}>Skills the organiser asked for</h3>
-                    <div className="cluster">
-                      {item.requiredSkills.map(skill => <Tag key={skill}>{skill}</Tag>)}
-                    </div>
-                  </>
+          <div className="stack form-column">
+            <Card>
+              <div className="cluster">
+                {item.matchScore !== undefined && (
+                  <StatusBadge tone="match">{item.matchScore}% match</StatusBadge>
                 )}
+              </div>
 
-                {item.categories.length > 0 && (
-                  <>
-                    <h3 style={{ marginTop: 18 }}>Areas</h3>
-                    <div className="cluster">
-                      {item.categories.map(category => <Tag key={category}>{category}</Tag>)}
-                    </div>
-                  </>
-                )}
-              </Card>
-            </div>
+              <p style={{ marginTop: 18 }}>{item.description}</p>
 
-            <aside className="stack">
-              <ApplyPanel item={item} />
-            </aside>
+              {item.requiredSkills.length > 0 && (
+                <>
+                  <h3 style={{ marginTop: 18 }}>Skills</h3>
+                  <div className="cluster">
+                    {item.requiredSkills.map(skill => <Tag key={skill}>{skill}</Tag>)}
+                  </div>
+                </>
+              )}
+
+              {item.categories.length > 0 && (
+                <>
+                  <h3 style={{ marginTop: 18 }}>Areas</h3>
+                  <div className="cluster">
+                    {item.categories.map(category => <Tag key={category}>{category}</Tag>)}
+                  </div>
+                </>
+              )}
+            </Card>
+
+            <ApplyPanel item={item} />
           </div>
         </>
       )}

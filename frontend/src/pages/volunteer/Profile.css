@@ -1,0 +1,47 @@
+/* Profile page. Everything here is page-local: no shared stylesheet changes. */
+
+/* Red paper banner, full bleed out of .content's padding. */
+.banner--profile {
+  background-image: url('/banner/red-paper.jpg');
+}
+
+/* Form on the left, portfolio and account stacked on the right. */
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Two fields side by side inside the sheet. */
+.profile-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+}
+
+/* Separates the sections of the one long card. */
+.profile-rule {
+  height: 1px;
+  margin: 26px 0 24px;
+  background: var(--neutral-border, #e4e4e7);
+}
+
+/* The sheet's own section headings sit tighter than a card title would. */
+.profile-grid h2 {
+  margin: 0 0 4px;
+}
+
+.profile-grid h2 + .muted {
+  margin: 0 0 18px;
+}
+
+@media (max-width: 900px) {
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

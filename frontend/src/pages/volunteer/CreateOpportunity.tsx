@@ -1,16 +1,27 @@
-import { useState, type FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, Field, RemovableTag, StatusBadge, Tag, TextField } from '../../components/ui'
+import { Button, Card, Field, RemovableTag, TextField } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
 import { SECTORS } from '../../lib/sectors'
-import type { OpportunityMode } from '../../lib/types'
+import type { OpportunityMode, OpportunityView } from '../../lib/types'
 import { messageFor } from '../../lib/useGet'
 
 const MIN_TITLE = 6
 const MIN_DESCRIPTION = 20
+
+/** ISO back into what a datetime-local input wants, in the reader's own
+ *  timezone, so a loaded record shows the time it was entered as. */
+function forInput(iso: string | null): string {
+  if (!iso) return ''
+
+  const at = new Date(iso)
+  const pad = (part: number) => String(part).padStart(2, '0')
+
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
+}
 
 function TagInput({ label, placeholder, values, onChange }: {
   label: string
@@ -51,10 +62,14 @@ function TagInput({ label, placeholder, values, onChange }: {
 export default function CreateOpportunity() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { id } = useParams()
   const { user } = useAuth()
 
+  const editing = Boolean(id)
   const fromManagement = location.pathname.startsWith('/manage')
   const needsApproval = user?.role !== 'organisation'
+  const noun = needsApproval ? 'initiative' : 'opportunity'
+  const listing = fromManagement ? '/manage/opportunities' : '/initiatives'
 
   const [mode, setMode] = useState<OpportunityMode>('PHYSICAL')
   const [title, setTitle] = useState('')
@@ -67,45 +82,121 @@ export default function CreateOpportunity() {
   const [endsAt, setEndsAt] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
+  const [reviewNote, setReviewNote] = useState<string | null>(null)
+  const [wasRejected, setWasRejected] = useState(false)
+  const [loading, setLoading] = useState(editing)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Editing loads the record once and fills the same fields the create flow uses.
+  useEffect(() => {
+    if (!id) return
+
+    let live = true
+
+    api.get<OpportunityView>(`/opportunities/${id}`)
+      .then(item => {
+        if (!live) return
+
+        setMode(item.mode as OpportunityMode)
+        setTitle(item.title)
+        setDescription(item.description)
+        setPlace(item.location ?? '')
+        setSector(item.sector ?? 'Kimironko')
+        setCapacity(String(item.maxCapacity))
+        setDeadline(forInput(item.applicationDeadline))
+        setStartsAt(forInput(item.startsAt))
+        setEndsAt(forInput(item.endsAt))
+        setSkills(item.requiredSkills)
+        setCategories(item.categories)
+        setReviewNote(item.reviewNote)
+        setWasRejected(item.status === 'REJECTED')
+        setLoading(false)
+      })
+      .catch(problem => {
+        if (!live) return
+
+        setError(messageFor(problem))
+        setLoading(false)
+      })
+
+    return () => {
+      live = false
+    }
+  }, [id])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
     setBusy(true)
 
+    const body = {
+      title: title.trim(),
+      description: description.trim(),
+      mode,
+      location: mode === 'PHYSICAL' ? place.trim() : null,
+      sector,
+      maxCapacity: Number(capacity),
+      applicationDeadline: new Date(deadline).toISOString(),
+      startsAt: mode === 'PHYSICAL' ? new Date(startsAt).toISOString() : null,
+      endsAt: new Date(endsAt).toISOString(),
+      requiredSkills: skills,
+      categories,
+    }
+
     try {
-      await api.post('/opportunities', {
-        title: title.trim(),
-        description: description.trim(),
-        mode,
-        location: mode === 'PHYSICAL' ? place.trim() : null,
-        sector,
-        maxCapacity: Number(capacity),
-        applicationDeadline: new Date(deadline).toISOString(),
-        startsAt: mode === 'PHYSICAL' ? new Date(startsAt).toISOString() : null,
-        endsAt: new Date(endsAt).toISOString(),
-        requiredSkills: skills,
-        categories,
-      })
-      navigate(fromManagement ? '/manage/opportunities' : '/initiatives')
+      if (id) {
+        await api.patch(`/opportunities/${id}`, body)
+      } else {
+        await api.post('/opportunities', body)
+      }
+
+      navigate(listing)
     } catch (problem) {
       setError(messageFor(problem))
       setBusy(false)
     }
   }
 
+  function saveLabel(): string {
+    if (busy) return 'Sending…'
+    if (wasRejected) return 'Save and resubmit'
+    if (editing) return 'Save changes'
+
+    return needsApproval ? 'Submit for approval' : 'Publish opportunity'
+  }
+
+  if (loading) {
+    return (
+      <>
+        <PageHeader title={`Edit ${noun}`} />
+        <p className="muted">Loading…</p>
+      </>
+    )
+  }
+
   return (
     <form onSubmit={submit}>
       <PageHeader
-        eyebrow={fromManagement ? 'Opportunity management' : 'Volunteer creator workspace'}
-        title="Create an opportunity"
-        meta="Bring your community idea to life."
+        title={
+          editing
+            ? `Edit ${noun}`
+            : needsApproval
+              ? 'Propose an initiative'
+              : 'Create an opportunity'
+        }
       />
 
-      <div className="page-grid">
-        <div className="stack">
+      <div className="stack form-column">
+          {wasRejected && reviewNote && (
+            <Card>
+              <h2>What the reviewer asked for</h2>
+              <p className="muted" style={{ marginBottom: 0 }}>
+                {reviewNote} Saving sends it back for review.
+              </p>
+            </Card>
+          )}
+
           <Card>
             <h2>The essentials</h2>
             <Field
@@ -261,45 +352,16 @@ export default function CreateOpportunity() {
 
           <div className="cluster">
             <Button type="submit" variant="primary" disabled={busy}>
-              {busy ? 'Sending…' : needsApproval ? 'Submit for approval' : 'Publish opportunity'}
+              {saveLabel()}
             </Button>
+            {editing && (
+              <Button type="button" disabled={busy} onClick={() => navigate(listing)}>
+                Cancel
+              </Button>
+            )}
           </div>
         </div>
 
-        <aside className="stack">
-          {needsApproval && (
-            <Card>
-              <h2>Before it goes public</h2>
-              <Tag>Citizen initiative</Tag>
-              <p className="muted" style={{ marginTop: 14 }}>
-                Initiatives proposed by volunteers are reviewed before they appear in Discover.
-              </p>
-              <div className="stack">
-                <div>
-                  <StatusBadge tone="warn">1 · Awaiting approval</StatusBadge>
-                  <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
-                    Submitted for review · not in Discover
-                  </p>
-                </div>
-                <div>
-                  <StatusBadge tone="ok">2 · Published</StatusBadge>
-                  <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
-                    Approved · visible in Discover
-                  </p>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          <Card variant="tint">
-            <h2 style={{ color: 'var(--primary)' }}>An idea is a good place to start</h2>
-            <p className="muted" style={{ margin: 0 }}>
-              Both volunteers and organisations can create and manage opportunities. Only
-              volunteers can take part as participants.
-            </p>
-          </Card>
-        </aside>
-      </div>
     </form>
   )
 }

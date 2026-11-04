@@ -1,23 +1,29 @@
 .shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
 
 /* Sidebar */
+/* The sidebar holds its own height, so the foot of it (the next Umuganda) is
+   at the foot of the screen rather than at the foot of a long scroll. */
 .side { background: var(--surface-card); border-right: 1px solid var(--neutral-border);
-        padding: 22px 16px; display: flex; flex-direction: column; }
+        padding: 22px 16px; display: flex; flex-direction: column;
+        position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .side__brand { margin-bottom: 26px; }
-.side__group { font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
-               color: var(--charcoal-muted); }
+.side__group { font-size: 13px; color: var(--charcoal-muted); }
 .side__workspace { font-weight: 700; margin: 2px 0 14px; }
-.side__nav { display: grid; gap: 8px; }
+.side__nav { display: grid; gap: 2px; }
 .side__rule { border: 0; border-top: 1px solid var(--neutral-border); margin: 18px 0; }
-.side__foot { margin-top: auto; color: var(--charcoal-muted); font-size: 12px; padding-top: 24px; }
+.side__foot { margin-top: auto; color: var(--charcoal-muted); font-size: 12px;
+              padding-top: 24px; display: grid; gap: 10px; }
+.side__umuganda { color: var(--charcoal-muted); }
 
-/* A navigation item is a bordered plate, not a bare link */
+/* Only the page you are on is drawn as a plate. The rest are plain links, so
+   the sidebar reads as a list rather than a column of boxes. */
 .navplate { display: flex; align-items: center; gap: 10px; padding: 11px 13px;
-            border: 1px solid var(--neutral-border); border-radius: var(--radius-nav);
-            background: var(--surface-card); color: var(--charcoal-muted);
+            border: 1px solid transparent; border-radius: var(--radius-nav);
+            background: none; color: var(--charcoal-muted);
             font-size: 14px; font-weight: 500; font-family: inherit; text-align: left;
-            width: 100%; cursor: pointer; }
-.navplate:hover { background: var(--surface-muted); text-decoration: none; }
+            width: 100%; cursor: pointer; min-height: 44px; }
+.navplate:hover { background: var(--surface-muted); text-decoration: none;
+                  color: var(--imigongo-black); }
 .navplate.active { background: var(--primary-container); border-color: var(--primary);
                    color: var(--primary); font-weight: 600; }
 
@@ -36,28 +42,19 @@
           font-weight: 700; }
 .topbar__name { font-size: 14px; }
 
-.content { padding: 34px 32px 72px; max-width: 1280px; }
-
-/* Horizontal navigation, used below the sidebar breakpoint */
-.railnav { display: none; }
+.content { --pad-x: 32px; --pad-top: 34px;
+           padding: var(--pad-top) var(--pad-x) 112px; max-width: 1280px; }
 
 @media (max-width: 1100px) {
   .shell { grid-template-columns: 1fr; }
   .side { display: none; }
-  .railnav { display: flex; gap: 8px; overflow-x: auto; padding: 12px 20px;
-             background: var(--surface-card); border-bottom: 1px solid var(--neutral-border); }
-  .railnav .navplate { width: auto; white-space: nowrap; }
-  .content { padding: 26px 20px 72px; }
+  .content { --pad-x: 20px; --pad-top: 26px; padding-bottom: 112px; }
 }
 
 @media (max-width: 700px) {
   .topbar { padding: 12px 16px; }
   .topbar__name { display: none; }
-  .railnav { gap: 0; padding: 0 4px; justify-content: space-between; }
-  .railnav .navplate { flex-direction: column; gap: 4px; border: 0; border-radius: 0;
-                       padding: 10px 6px; font-size: 11px; background: none; }
-  .railnav .navplate.active { background: none; color: var(--primary); }
-  .content { padding: 20px 16px 56px; }
+  .content { --pad-x: 16px; --pad-top: 20px; padding-bottom: 104px; }
 }
 
 
