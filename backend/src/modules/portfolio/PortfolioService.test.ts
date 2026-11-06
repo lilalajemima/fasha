@@ -8,6 +8,8 @@ const owner: PortfolioOwner = {
   userId: 'volunteer-1',
   name: 'Amara Mensah',
   portfolioSlug: 'amara-mensah',
+  avatar: 'data:image/jpeg;base64,AAAA',
+  bio: 'I organise clean-ups around Kimironko.',
 }
 
 function makeEntry(overrides: Partial<PortfolioRecord> = {}): PortfolioRecord {
@@ -38,25 +40,15 @@ class FakeProfileStore implements ProfileStore {
 }
 
 class FakePortfolioStore implements PortfolioStore {
-  constructor(
-    private readonly records: PortfolioRecord[],
-    private readonly organised = 0,
-  ) {}
+  constructor(private readonly records: PortfolioRecord[]) {}
 
   async findForVolunteer() {
     return this.records
   }
-
-  async countOrganised() {
-    return this.organised
-  }
 }
 
-function build(records: PortfolioRecord[], known: PortfolioOwner | null = owner, organised = 0) {
-  return new PortfolioService(
-    new FakePortfolioStore(records, organised),
-    new FakeProfileStore(known),
-  )
+function build(records: PortfolioRecord[], known: PortfolioOwner | null = owner) {
+  return new PortfolioService(new FakePortfolioStore(records), new FakeProfileStore(known))
 }
 
 describe('a portfolio', () => {
@@ -88,21 +80,10 @@ describe('a portfolio', () => {
     expect(view.totals.skills).toEqual(['Graphic design', 'Teamwork'])
   })
 
-  /**
-   * Organising is reported separately from hours on purpose: an organiser must
-   * never be the one verifying their own participation.
-   */
-  it('reports initiatives organised apart from hours verified', async () => {
-    const view = await build([makeEntry()], owner, 3).bySlug('amara-mensah')
-
-    expect(view.totals.organised).toBe(3)
-    expect(view.totals.hours).toBe(2.5)
-  })
-
   it('shows an empty portfolio rather than failing', async () => {
     const view = await build([]).bySlug('amara-mensah')
 
-    expect(view.totals).toEqual({ hours: 0, opportunities: 0, organised: 0, skills: [] })
+    expect(view.totals).toEqual({ hours: 0, opportunities: 0, skills: [] })
     expect(view.entries).toEqual([])
   })
 
@@ -110,6 +91,14 @@ describe('a portfolio', () => {
     const view = await build([makeEntry()]).bySlug('amara-mensah')
 
     expect(view.volunteer.name).toBe('Amara Mensah')
+  })
+
+  /** The public page is the one an employer sees, so it carries the face and the introduction. */
+  it('carries the picture and the introduction', async () => {
+    const view = await build([makeEntry()]).bySlug('amara-mensah')
+
+    expect(view.volunteer.avatar).toBe('data:image/jpeg;base64,AAAA')
+    expect(view.volunteer.bio).toBe('I organise clean-ups around Kimironko.')
   })
 
   it('reports an address nobody owns', async () => {

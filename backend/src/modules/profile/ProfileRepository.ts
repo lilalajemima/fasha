@@ -25,7 +25,7 @@ export class ProfileRepository extends BaseRepository implements ProfileStore {
   ): Promise<PortfolioOwner | null> {
     const profile = await this.db.volunteerProfile.findUnique({
       where,
-      include: { user: { select: { name: true } } },
+      include: { user: { select: { name: true, avatar: true, bio: true } } },
     })
 
     if (!profile) return null
@@ -34,6 +34,8 @@ export class ProfileRepository extends BaseRepository implements ProfileStore {
       userId: profile.userId,
       name: profile.user.name,
       portfolioSlug: profile.portfolioSlug,
+      avatar: profile.user.avatar,
+      bio: profile.user.bio,
     }
   }
 }

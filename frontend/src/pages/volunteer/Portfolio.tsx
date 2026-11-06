@@ -51,15 +51,22 @@ export default function Portfolio() {
               <>
                 <section className="banner pf-banner">
                   <div className="pf-banner__row">
-                    <div>
-                      <h1 className="banner__title">{view.volunteer.name}</h1>
-                      <p className="pf-banner__role">Volunteer</p>
+                    <div className="pf-who">
+                      {view.volunteer.avatar && (
+                        <img className="pf-who__picture" src={view.volunteer.avatar} alt="" />
+                      )}
+                      <div>
+                        <h1 className="banner__title">{view.volunteer.name}</h1>
+                        <p className="pf-banner__role">Volunteer</p>
+                      </div>
                     </div>
                     <CopyLink link={link} />
                   </div>
                 </section>
 
                 <main className="pf-sheet">
+                  {view.volunteer.bio && <p className="pf-bio">{view.volunteer.bio}</p>}
+
                   <Card>
                     <div className="stat-row">
                       <div>

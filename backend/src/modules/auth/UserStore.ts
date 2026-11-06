@@ -8,11 +8,18 @@ export type NewAccount = {
 
 export type UserWithProfile = User & { profile: VolunteerProfile | null }
 
+/** What anybody, whichever role, can change about their own account. */
+export type AccountChanges = {
+  name?: string
+  bio?: string | null
+  avatar?: string | null
+}
+
 export interface UserStore {
   findByEmail(email: string): Promise<User | null>
   findById(id: string): Promise<User | null>
   findWithProfile(id: string): Promise<UserWithProfile | null>
   createVolunteer(account: NewAccount, portfolioSlug: string): Promise<User>
   createOrganisation(account: NewAccount): Promise<User>
-  updateName(id: string, name: string): Promise<void>
+  updateAccount(id: string, changes: AccountChanges): Promise<void>
 }

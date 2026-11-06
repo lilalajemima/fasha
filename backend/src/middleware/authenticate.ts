@@ -1,16 +1,35 @@
+import { UserStatus } from '@prisma/client'
 import type { NextFunction, Request, Response } from 'express'
 import { tokenService } from '../core/container'
-import { UnauthorisedError } from '../core/errors/HttpErrors'
+import { ForbiddenError, UnauthorisedError } from '../core/errors/HttpErrors'
+import { AccountRepository } from '../modules/accounts/AccountRepository'
 
 const BEARER_PREFIX = 'Bearer '
+const accounts = new AccountRepository()
 
-export function authenticate(req: Request, _res: Response, next: NextFunction) {
+/**
+ * A token lasts seven days and a decision about an account should not wait that
+ * long, so the account is read on every request rather than trusted from the
+ * token alone. Deactivating somebody takes effect on their next request.
+ */
+export async function authenticate(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization
 
   if (!header || !header.startsWith(BEARER_PREFIX)) {
     throw new UnauthorisedError()
   }
 
-  req.user = tokenService.verify(header.slice(BEARER_PREFIX.length))
+  const payload = tokenService.verify(header.slice(BEARER_PREFIX.length))
+  const user = await accounts.findById(payload.userId)
+
+  if (!user || user.status === UserStatus.DELETED) {
+    throw new UnauthorisedError()
+  }
+
+  if (user.status === UserStatus.DEACTIVATED) {
+    throw new ForbiddenError('This account is deactivated')
+  }
+
+  req.user = payload
   next()
 }

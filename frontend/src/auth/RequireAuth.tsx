@@ -1,50 +1,39 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { homeFor, useAuth } from './AuthContext'
+import PasswordGate from '../components/PasswordGate'
+import { homeFor, useAuth, type Role } from './AuthContext'
 
 function Checking() {
   return <p className="empty">Checking your session…</p>
 }
 
-export default function RequireAuth() {
-  const { user, ready } = useAuth()
+/**
+ * One gate for every protected route, so a rule cannot be added to three of
+ * them and forgotten on the fourth. A temporary password gets you in and no
+ * further: until it is replaced, the only thing on screen is the form that
+ * replaces it.
+ */
+function guard(role: Role | null) {
+  return function Guarded() {
+    const { user, ready } = useAuth()
 
-  if (!ready) return <Checking />
-  if (!user) return <Navigate to="/signin" replace />
+    if (!ready) return <Checking />
+    if (!user) return <Navigate to="/signin" replace />
+    if (user.mustChangePassword) return <PasswordGate />
+    if (role && user.role !== role) return <Navigate to={homeFor(user.role)} replace />
 
-  return <Outlet />
+    return <Outlet />
+  }
 }
 
-export function RequireVolunteer() {
-  const { user, ready } = useAuth()
+export default guard(null)
 
-  if (!ready) return <Checking />
-  if (!user) return <Navigate to="/signin" replace />
-  if (user.role !== 'volunteer') return <Navigate to={homeFor(user.role)} replace />
-
-  return <Outlet />
-}
+export const RequireVolunteer = guard('volunteer')
 
 /**
  * The manage workspace is for organisations. A volunteer running their own
  * initiative gets the same tools inside that initiative, not a second
  * workspace listing everybody's work.
  */
-export function RequireOrganisation() {
-  const { user, ready } = useAuth()
+export const RequireOrganisation = guard('organisation')
 
-  if (!ready) return <Checking />
-  if (!user) return <Navigate to="/signin" replace />
-  if (user.role !== 'organisation') return <Navigate to={homeFor(user.role)} replace />
-
-  return <Outlet />
-}
-
-export function RequireAdmin() {
-  const { user, ready } = useAuth()
-
-  if (!ready) return <Checking />
-  if (!user) return <Navigate to="/signin" replace />
-  if (user.role !== 'admin') return <Navigate to={homeFor(user.role)} replace />
-
-  return <Outlet />
-}
+export const RequireAdmin = guard('admin')

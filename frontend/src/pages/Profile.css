@@ -45,3 +45,60 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- the picture ---------- */
+.picture {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.picture__frame {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--primary-container);
+  color: var(--primary);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.picture__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* The real control is the label above it; the input itself only needs to stay
+   reachable by a keyboard. */
+.picture__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A label standing in for a button has to sit on the same baseline as one. */
+label.btn {
+  display: inline-block;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .picture {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

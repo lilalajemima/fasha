@@ -3,10 +3,24 @@ import { api, tokenStore } from '../lib/api'
 
 export type Role = 'volunteer' | 'organisation' | 'admin'
 export type SignUpRole = 'volunteer' | 'organisation'
-export type User = { id: string; name: string; email: string; role: Role }
+export type User = {
+  id: string
+  name: string
+  email: string
+  role: Role
+  mustChangePassword: boolean
+  avatar: string | null
+}
 
 type ServerRole = 'VOLUNTEER' | 'ORGANISATION' | 'ADMIN'
-type ServerUser = { id: string; name: string; email: string; role: ServerRole }
+type ServerUser = {
+  id: string
+  name: string
+  email: string
+  role: ServerRole
+  mustChangePassword: boolean
+  avatar: string | null
+}
 type AuthResponse = { token: string; user: ServerUser }
 
 type SignUpInput = { name: string; email: string; password: string; role: SignUpRole }
@@ -17,6 +31,8 @@ type AuthValue = {
   signUp: (input: SignUpInput) => Promise<User>
   signIn: (email: string, password: string) => Promise<User>
   signOut: () => void
+  /** Re-reads the account, so a new name or picture reaches the top bar. */
+  refresh: () => void
 }
 
 const ROLES: Record<ServerRole, Role> = {
@@ -79,6 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut() {
         tokenStore.clear()
         setUser(null)
+      },
+      refresh() {
+        if (!tokenStore.read()) return
+
+        api
+          .get<{ user: ServerUser }>('/auth/me')
+          .then(({ user: me }) => setUser(toUser(me)))
+          .catch(() => undefined)
       },
     }
   }, [user, ready])

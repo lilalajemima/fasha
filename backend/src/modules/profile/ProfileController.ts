@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'
 import {
   hasField,
+  readOptionalImage,
   readOptionalSector,
   readShortText,
   readString,
@@ -9,6 +10,7 @@ import {
 import type { ProfileService, ProfileUpdate } from './ProfileService'
 
 const MAX_TEXT_LENGTH = 120
+const MAX_BIO_LENGTH = 600
 
 export class ProfileController {
   constructor(private readonly profiles: ProfileService) {}
@@ -21,6 +23,8 @@ export class ProfileController {
     const update: ProfileUpdate = {}
 
     if (hasField(body, 'name')) update.name = readString(body, 'name', 2)
+    if (hasField(body, 'bio')) update.bio = readShortText(body, 'bio', MAX_BIO_LENGTH)
+    if (hasField(body, 'avatar')) update.avatar = readOptionalImage(body, 'avatar')
     if (hasField(body, 'skills')) update.skills = readTagList(body, 'skills')
     if (hasField(body, 'interests')) update.interests = readTagList(body, 'interests')
 

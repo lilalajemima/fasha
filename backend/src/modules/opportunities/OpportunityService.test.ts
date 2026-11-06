@@ -138,7 +138,7 @@ class FakeUserStore implements UserStore {
     throw new Error('not needed in this test')
   }
 
-  async updateName(_id: string, _name: string) {
+  async updateAccount() {
     throw new Error('not needed in this test')
   }
 }

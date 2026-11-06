@@ -161,3 +161,31 @@
     grid-auto-columns: min(82vw, 300px);
   }
 }
+/* ---------- the person ---------- */
+.pf-who {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pf-who__picture {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, .85);
+}
+
+/* Their own words, before the numbers. */
+.pf-bio {
+  max-width: 62ch;
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .pf-who__picture { width: 56px; height: 56px; }
+}

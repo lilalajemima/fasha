@@ -2,6 +2,7 @@ import cors from 'cors'
 import express from 'express'
 import { env } from './core/config/env'
 import { errorHandler, notFoundHandler } from './core/http/errorHandler'
+import { accountRoutes } from './modules/accounts/accounts.routes'
 import { adminRoutes } from './modules/admin/admin.routes'
 import { applicationRoutes } from './modules/applications/application.routes'
 import { authRoutes } from './modules/auth/auth.routes'
@@ -21,6 +22,7 @@ export function createApp() {
 
   app.use(healthRoutes)
   app.use(authRoutes)
+  app.use(accountRoutes)
   app.use(opportunityRoutes)
   app.use(profileRoutes)
   app.use(applicationRoutes)

@@ -73,7 +73,9 @@ export default function Shell() {
               {unread > 0 && <span className="bell__count">{unread}</span>}
             </Link>
             <span className="topbar__divider" />
-            <span className="avatar">{initials(name)}</span>
+            <span className="avatar">
+              {user?.avatar ? <img src={user.avatar} alt="" /> : initials(name)}
+            </span>
             <span className="topbar__name">{name}</span>
           </div>
         </header>

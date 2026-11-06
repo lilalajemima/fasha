@@ -10,6 +10,8 @@ export type PortfolioOwner = {
   userId: string
   name: string
   portfolioSlug: string
+  avatar: string | null
+  bio: string | null
 }
 
 export interface ProfileStore {

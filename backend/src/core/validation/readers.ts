@@ -33,8 +33,43 @@ export function readEmail(body: Body): string {
   return email
 }
 
-export function readPassword(body: Body): string {
-  return readString(body, 'password', MIN_PASSWORD_LENGTH)
+export function readPassword(body: Body, field = 'password'): string {
+  return readString(body, field, MIN_PASSWORD_LENGTH)
+}
+
+const IMAGE_PATTERN = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/
+/** Roughly 150KB once decoded. The browser resizes to about 256px before sending. */
+const MAX_IMAGE_CHARS = 200_000
+
+/**
+ * A picture arrives as a data URL the browser has already resized. Anything
+ * else, or anything oversized, is refused here rather than stored and dealt
+ * with later.
+ */
+export function readOptionalImage(body: Body, field: string): string | null {
+  const value = body[field]
+
+  if (value === null || value === '') {
+    return null
+  }
+
+  if (typeof value !== 'string') {
+    throw new BadRequestError(`${field} must be an image`)
+  }
+
+  if (value.length > MAX_IMAGE_CHARS) {
+    throw new BadRequestError('That picture is too large. Choose a smaller one.')
+  }
+
+  if (!IMAGE_PATTERN.test(value)) {
+    throw new BadRequestError('That is not a picture Fasha can store')
+  }
+
+  return value
+}
+
+export function readStatus(body: Body) {
+  return readChoice(body, 'status', ['ACTIVE', 'DEACTIVATED'] as const)
 }
 
 export function readChoice<T extends string>(

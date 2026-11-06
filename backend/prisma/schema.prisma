@@ -12,6 +12,15 @@ enum UserRole {
   ADMIN
 }
 
+/// An account's lifecycle. A deleted account keeps its row so that other
+/// people's registers, applications and credited hours stay intact; what is
+/// removed is the person's identity and their way back in.
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+  DELETED
+}
+
 enum OpportunityMode {
   PHYSICAL
   VIRTUAL
@@ -53,6 +62,14 @@ model User {
   email        String    @unique
   passwordHash String    @map("password_hash")
   role         UserRole  @default(VOLUNTEER)
+  /// A square picture the browser has already resized, kept as a data URL.
+  /// Small enough to live on the row; Supabase Storage is the step after.
+  avatar       String?
+  bio          String?
+  status       UserStatus @default(ACTIVE)
+  mustChangePassword Boolean @default(false) @map("must_change_password")
+  deactivatedAt DateTime? @map("deactivated_at")
+  deletedAt     DateTime? @map("deleted_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 

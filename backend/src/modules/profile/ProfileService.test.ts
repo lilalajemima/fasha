@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BadRequestError, ForbiddenError } from '../../core/errors/HttpErrors'
-import type { NewAccount, UserStore, UserWithProfile } from '../auth/UserStore'
+import type { AccountChanges, NewAccount, UserStore, UserWithProfile } from '../auth/UserStore'
 import { ProfileService } from './ProfileService'
 import type { ProfileChanges, ProfileStore } from './ProfileStore'
 
@@ -27,8 +27,8 @@ class FakeUserStore implements UserStore {
     throw new Error('not needed in this test')
   }
 
-  async updateName(_id: string, name: string) {
-    this.user.name = name
+  async updateAccount(_id: string, changes: AccountChanges) {
+    Object.assign(this.user, changes)
   }
 }
 
@@ -122,6 +122,19 @@ describe('updating a profile', () => {
     await expect(
       service.update(organisationToken, { skills: ['Teamwork'] }),
     ).rejects.toThrow(ForbiddenError)
+  })
+
+  /** Name, picture and bio belong to the account, so both roles may set them. */
+  it('lets an organisation set a logo and a bio without a volunteer profile', async () => {
+    const user = buildOrganisation()
+    const view = await serviceFor(user).update(organisationToken, {
+      bio: 'We plant trees along the wetland path.',
+      avatar: 'data:image/png;base64,AAAA',
+    })
+
+    expect(view.user.bio).toBe('We plant trees along the wetland path.')
+    expect(view.user.avatar).toBe('data:image/png;base64,AAAA')
+    expect(view.profile).toBeNull()
   })
 
   it('still lets an organisation rename itself', async () => {

@@ -1,63 +1,56 @@
 #!/usr/bin/env bash
+# Run from the repo root after copying the files in:  bash verify.sh
+set -u
 fail=0
-check() {
-  if [ ! -f "$1" ]; then echo "MISSING  $1"; fail=1
-  elif grep -q "$2" "$1"; then echo "ok       $1"
-  else echo "WRONG    $1  (does not contain: $2)"; fail=1; fi
-}
+ok()  { printf '  ok    %s\n' "$1"; }
+bad() { printf '  FAIL  %s\n' "$1"; fail=1; }
+has() { grep -q -- "$2" "$1" 2>/dev/null; }
 
-check frontend/public/favicon.svg                        "B91C1C"
-check frontend/src/App.tsx                               "DocumentTitle"
-check frontend/src/components/DocumentTitle.tsx          "titleFor"
-check frontend/src/components/PageHeader.tsx             "page-head--display"
-check frontend/src/components/Logo.tsx                   "The wordmark, and nothing else"
-check frontend/src/layouts/Shell.tsx                     "nextUmugandaLabel"
-check frontend/src/layouts/Shell.css                     "Only the page you are on"
-check frontend/src/lib/format.ts                         "export function quantity"
-check frontend/src/lib/umuganda.ts                       "export function nextUmuganda"
-check frontend/src/lib/types.ts                          "sector: string | null"
-check frontend/src/styles/tokens.css                     "ok-line"
-check frontend/src/styles/global.css                     "page-head--display"
-check frontend/src/styles/workspace.css                  "codepanel__fill--last"
-check frontend/src/pages/admin/AdminDashboard.tsx        "No sector recorded"
-check frontend/src/pages/manage/Attendance.tsx           "roster__count"
-check frontend/src/pages/manage/CalendarMonth.tsx        "calendar__umuganda"
-check frontend/src/pages/manage/Applicants.tsx           "quantity("
-check frontend/src/pages/manage/Opportunities.tsx        "quantity("
-check frontend/src/pages/manage/Deliverables.tsx         "btn--small btn--danger"
-check frontend/src/pages/volunteer/Discover.tsx          "listing__date"
-check frontend/src/pages/volunteer/Discover.css          "listing__date-day"
-check frontend/src/pages/volunteer/MyInitiatives.tsx     "meta(item.sector"
-check frontend/src/pages/volunteer/OpportunityDetail.tsx "quantity(item.maxCapacity"
-check frontend/src/pages/volunteer/Portfolio.tsx         "Preview of your public portfolio"
-check backend/prisma/seed.ts                             "nextUmuganda"
-check backend/prisma/cleanup.ts                          "fasha.test"
-check backend/src/modules/admin/AdminStore.ts            "sector: string | null"
-check backend/src/modules/admin/AdminRepository.ts       "sector: row.sector,"
+echo "Files in place"
+for f in \
+  backend/src/modules/accounts/AccountService.ts \
+  backend/src/modules/accounts/UserAdminService.ts \
+  backend/src/modules/accounts/accounts.routes.ts \
+  frontend/src/pages/Profile.tsx \
+  frontend/src/pages/Profile.css \
+  frontend/src/pages/admin/Users.tsx \
+  frontend/src/components/PasswordGate.tsx \
+  frontend/src/lib/image.ts
+do
+  [ -f "$f" ] && ok "$f" || bad "$f is missing"
+done
 
-if grep -rqn "Sector not set\|Date to be confirmed" frontend/src; then
-  echo "TO DO    a placeholder string is still being printed:"
-  grep -rn "Sector not set\|Date to be confirmed" frontend/src | sed 's/^/           /'
-  fail=1
-else
-  echo "ok       no placeholder strings left"
-fi
+echo
+echo "The pages the merge replaces are gone"
+for f in frontend/src/pages/volunteer/Profile.tsx frontend/src/pages/volunteer/Profile.css \
+         frontend/src/pages/AccountSettings.tsx
+do
+  [ -f "$f" ] && bad "$f should be deleted" || ok "$(basename "$f") removed"
+done
 
-if grep -q '"db:cleanup"' backend/package.json; then
-  echo "ok       backend/package.json has db:cleanup"
-else
-  echo "TO DO    add to backend/package.json scripts:"
-  echo '           "db:cleanup": "ts-node-dev --transpile-only prisma/cleanup.ts",'
-  fail=1
-fi
+echo
+echo "Schema and wiring"
+has backend/prisma/schema.prisma 'enum UserStatus' && ok "UserStatus enum" || bad "schema not updated"
+has backend/prisma/schema.prisma 'avatar' && ok "avatar column" || bad "schema not updated"
+has backend/src/app.ts 'accountRoutes' && ok "account routes mounted" || bad "app.ts not updated"
+has backend/src/middleware/authenticate.ts 'UserStatus.DEACTIVATED' \
+  && ok "sessions check the account state" || bad "authenticate.ts not updated"
+has backend/src/modules/auth/UserStore.ts 'updateAccount' \
+  && ok "the user store takes name, bio and picture" || bad "UserStore.ts not updated"
+grep -rq 'updateName' backend/src && bad "something still calls updateName" || ok "no updateName left"
+has frontend/src/App.tsx 'pages/Profile' && ok "one profile page for every role" || bad "App.tsx not updated"
+has frontend/src/auth/AuthContext.tsx 'refresh' && ok "the top bar can refresh" || bad "AuthContext.tsx not updated"
 
-if grep -q 'favicon.svg' frontend/index.html; then
-  echo "ok       frontend/index.html points at the new favicon"
-else
-  echo "TO DO    frontend/index.html still has the Vite icon. Replace the icon link with:"
-  echo '           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />'
-  fail=1
-fi
+echo
+echo "By hand (APPLY.md)"
+has frontend/src/pages/admin/AdminDashboard.tsx "from './Users'" \
+  && ok "the Users tab is wired in" || echo "  TODO  add the Users tab to AdminDashboard.tsx"
+has backend/scripts/smoke.mjs '/account/password' \
+  && ok "the smoke suite covers accounts" || echo "  TODO  paste the account block into smoke.mjs"
+ls backend/prisma/migrations 2>/dev/null | grep -q account \
+  && ok "a migration exists for the new columns" \
+  || echo "  TODO  npm --prefix backend run db:migrate -- --name accounts_and_profiles"
 
-[ $fail -eq 0 ] && echo && echo "All good." || { echo; echo "Fix the lines above before building."; }
-exit $fail
+echo
+[ "$fail" -eq 0 ] && echo "All checks passed." || echo "Something above failed."
+exit "$fail"

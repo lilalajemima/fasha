@@ -37,7 +37,12 @@ export class PortfolioService {
     ])
 
     return toPortfolioView(
-      { name: owner.name, portfolioSlug: owner.portfolioSlug },
+      {
+        name: owner.name,
+        portfolioSlug: owner.portfolioSlug,
+        avatar: owner.avatar,
+        bio: owner.bio,
+      },
       records,
       organised,
     )

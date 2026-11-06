@@ -1,5 +1,10 @@
-import type { User, UserRole } from '@prisma/client'
-import { ConflictError, NotFoundError, UnauthorisedError } from '../../core/errors/HttpErrors'
+import { type User, type UserRole, UserStatus } from '@prisma/client'
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorisedError,
+} from '../../core/errors/HttpErrors'
 import type { PasswordHasher } from '../../core/security/PasswordHasher'
 import type { TokenService } from '../../core/security/TokenService'
 import { toProfileView, type ProfileView } from '../profile/ProfileView'
@@ -17,6 +22,8 @@ export type PublicUser = {
   name: string
   email: string
   role: UserRole
+  mustChangePassword: boolean
+  avatar: string | null
 }
 
 export type AuthResult = {
@@ -57,8 +64,16 @@ export class AuthService {
       ? await this.passwords.matches(password, user.passwordHash)
       : false
 
-    if (!user || !passwordMatches) {
+    // A deleted account keeps its row, so the generic answer covers it: nobody
+    // learns from this endpoint whether an address was ever registered.
+    if (!user || !passwordMatches || user.status === UserStatus.DELETED) {
       throw new UnauthorisedError('Email or password is incorrect')
+    }
+
+    if (user.status === UserStatus.DEACTIVATED) {
+      throw new ForbiddenError(
+        'This account is deactivated. Ask the community admin to restore it.',
+      )
     }
 
     return this.authResultFor(user)
@@ -82,7 +97,14 @@ export class AuthService {
   }
 
   private toPublicUser(user: User): PublicUser {
-    return { id: user.id, name: user.name, email: user.email, role: user.role }
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      mustChangePassword: user.mustChangePassword,
+      avatar: user.avatar,
+    }
   }
 
   private buildPortfolioSlug(name: string): string {

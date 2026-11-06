@@ -21,7 +21,7 @@ import MyInitiative from './pages/volunteer/MyInitiative'
 import MyInitiatives from './pages/volunteer/MyInitiatives'
 import OpportunityDetail from './pages/volunteer/OpportunityDetail'
 import Portfolio from './pages/volunteer/Portfolio'
-import Profile from './pages/volunteer/Profile'
+import Profile from './pages/Profile'
 
 export default function App() {
   return (
@@ -40,7 +40,6 @@ export default function App() {
               <Route path="/discover" element={<Discover />} />
               <Route path="/opportunities/:id" element={<OpportunityDetail />} />
               <Route path="/activity" element={<MyActivity />} />
-              <Route path="/profile" element={<Profile />} />
               <Route path="/initiatives" element={<MyInitiatives />} />
               <Route path="/initiatives/new" element={<CreateOpportunity />} />
               <Route path="/initiatives/:id/edit" element={<CreateOpportunity />} />
@@ -83,6 +82,7 @@ export default function App() {
           <Route element={<RequireAuth />}>
             <Route element={<Shell />}>
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
 

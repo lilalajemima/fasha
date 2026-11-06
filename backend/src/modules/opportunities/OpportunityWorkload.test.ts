@@ -85,7 +85,7 @@ class SilentUsers implements UserStore {
     throw new Error('not needed in this test')
   }
 
-  async updateName() {
+  async updateAccount() {
     throw new Error('not needed in this test')
   }
 }

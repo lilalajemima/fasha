@@ -37,6 +37,7 @@
 .bell__count { background: var(--primary-container); color: var(--primary); font-size: 12px;
                font-weight: 700; border-radius: var(--radius-sm); padding: 1px 8px; }
 .topbar__divider { width: 1px; height: 22px; background: var(--neutral-border); }
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--primary-container);
           color: var(--primary); display: grid; place-items: center; font-size: 11px;
           font-weight: 700; }

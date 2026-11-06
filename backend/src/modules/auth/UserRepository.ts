@@ -1,7 +1,7 @@
 import { type PrismaClient, type User, UserRole } from '@prisma/client'
 import { BaseRepository } from '../../core/database/BaseRepository'
 import { prisma } from '../../core/database/prisma'
-import type { NewAccount, UserStore, UserWithProfile } from './UserStore'
+import type { AccountChanges, NewAccount, UserStore, UserWithProfile } from './UserStore'
 
 export class UserRepository extends BaseRepository implements UserStore {
   constructor(db: PrismaClient = prisma) {
@@ -36,7 +36,7 @@ export class UserRepository extends BaseRepository implements UserStore {
     })
   }
 
-  async updateName(id: string, name: string): Promise<void> {
-    await this.db.user.update({ where: { id }, data: { name } })
+  async updateAccount(id: string, changes: AccountChanges): Promise<void> {
+    await this.db.user.update({ where: { id }, data: changes })
   }
 }

@@ -17,4 +17,5 @@ export const MANAGE_NAV: NavItem[] = [
   { to: '/manage/opportunities', label: 'Opportunities', short: 'Opportunities', icon: 'opportunities', end: true },
   { to: '/manage/review', label: 'Deliverables', short: 'Deliverables', icon: 'review' },
   { to: '/manage/attendance', label: 'Attendance', short: 'Attendance', icon: 'attendance' },
+  { to: '/profile', label: 'Profile', short: 'Profile', icon: 'profile' },
 ]

@@ -9,7 +9,7 @@ export type PortfolioEntryView = {
 }
 
 export type PortfolioView = {
-  volunteer: { name: string; portfolioSlug: string }
+  volunteer: { name: string; portfolioSlug: string; avatar: string | null; bio: string | null }
   totals: { hours: number; opportunities: number; organised: number; skills: string[] }
   entries: PortfolioEntryView[]
 }
@@ -34,7 +34,7 @@ function toEntry(record: PortfolioRecord): PortfolioEntryView {
  * credited time.
  */
 export function toPortfolioView(
-  volunteer: { name: string; portfolioSlug: string },
+  volunteer: { name: string; portfolioSlug: string; avatar: string | null; bio: string | null },
   records: PortfolioRecord[],
   organised: number,
 ): PortfolioView {

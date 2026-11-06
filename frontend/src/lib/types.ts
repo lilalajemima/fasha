@@ -66,8 +66,31 @@ export type SubmissionView = {
   opportunity: { id: string; title: string }
 }
 
+export type UserStatus = 'ACTIVE' | 'DEACTIVATED' | 'DELETED'
+
+/** One account as the community admin's user management table shows it. */
+export type UserView = {
+  id: string
+  name: string
+  email: string
+  role: ServerRole
+  status: UserStatus
+  mustChangePassword: boolean
+  createdAt: string
+  deactivatedAt: string | null
+}
+
 export type ProfileView = {
-  user: { id: string; name: string; email: string; role: ServerRole }
+  user: {
+    id: string
+    name: string
+    email: string
+    role: ServerRole
+    status: UserStatus
+    mustChangePassword: boolean
+    avatar: string | null
+    bio: string | null
+  }
   profile: {
     skills: string[]
     interests: string[]
@@ -79,7 +102,7 @@ export type ProfileView = {
 }
 
 export type PortfolioView = {
-  volunteer: { name: string; portfolioSlug: string }
+  volunteer: { name: string; portfolioSlug: string; avatar: string | null; bio: string | null }
   totals: { hours: number; opportunities: number; organised: number; skills: string[] }
   entries: {
     id: string
