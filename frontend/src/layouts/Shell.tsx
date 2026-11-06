@@ -1,18 +1,35 @@
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import HelpButton from '../components/HelpButton'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import HelpButton, { type HelpNote } from '../components/HelpButton'
 import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import MobileNav from '../components/MobileNav'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth, type Role } from '../auth/AuthContext'
 import { useNotifications } from '../notifications/NotificationsContext'
+import { OVERSIGHT_GUIDE } from '../pages/admin/guide'
 import { ORGANISER_GUIDE } from '../pages/manage/guide'
 import { VOLUNTEER_GUIDE } from '../pages/volunteer/guide'
-import { MANAGE_NAV, PARTICIPATE_NAV, type NavItem } from './navItems'
+import {
+  MANAGE_NAV,
+  OVERSIGHT_NAV,
+  PARTICIPATE_NAV,
+  WORKSPACE_LABEL,
+  WORKSPACE_NAV,
+  workspaceFor,
+  type NavItem,
+} from './navItems'
 import '../styles/workspace.css'
 import './Shell.css'
 
-export { MANAGE_NAV, PARTICIPATE_NAV }
+export { MANAGE_NAV, OVERSIGHT_NAV, PARTICIPATE_NAV }
 export type { NavItem }
+
+/** One guide per workspace, chosen by the role rather than by the path, so no
+ *  page can forget to offer help and none can offer the wrong help. */
+const GUIDES: Record<Role, { title: string; notes: HelpNote[] }> = {
+  volunteer: { title: 'Using Fasha', notes: VOLUNTEER_GUIDE },
+  organisation: { title: 'Running opportunities', notes: ORGANISER_GUIDE },
+  admin: { title: 'Community admin', notes: OVERSIGHT_GUIDE },
+}
 
 function initials(name: string) {
   return name.split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase()
@@ -30,12 +47,10 @@ function plates(items: NavItem[]) {
 export default function Shell() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
-  const isVolunteer = user?.role !== 'organisation'
   const name = user?.name ?? 'Guest'
   const { unread } = useNotifications()
-  // One guide for running opportunities, one for taking part. The shell decides
-  // which by where you are, so no page can forget to offer help.
-  const inManageWorkspace = useLocation().pathname.startsWith('/manage')
+  const workspace = workspaceFor(user?.role)
+  const guide = GUIDES[workspace]
 
   return (
     <div className="shell">
@@ -43,16 +58,14 @@ export default function Shell() {
         <div className="side__brand"><Logo /></div>
         <div className="side__group">Your workspace</div>
         {/* The role, not the name: the name is already in the top bar. */}
-        <div className="side__workspace">{isVolunteer ? 'Volunteer' : 'Organiser'}</div>
+        <div className="side__workspace">{WORKSPACE_LABEL[workspace]}</div>
 
-        {isVolunteer ? (
-          <nav className="side__nav" aria-label="Taking part">{plates(PARTICIPATE_NAV)}</nav>
-        ) : (
-          <nav className="side__nav" aria-label="Managing opportunities">{plates(MANAGE_NAV)}</nav>
-        )}
+        <nav className="side__nav" aria-label={`${WORKSPACE_LABEL[workspace]} navigation`}>
+          {plates(WORKSPACE_NAV[workspace])}
+        </nav>
 
         <div className="side__foot">
-          {!isVolunteer && (
+          {workspace !== 'volunteer' && (
             <button className="navplate navplate--danger"
                     onClick={() => { signOut(); navigate('/signin') }}>
               <Icon name="signout" /> <span>Sign out</span>
@@ -82,10 +95,7 @@ export default function Shell() {
 
         <main className="content"><Outlet /></main>
 
-        <HelpButton
-          title={inManageWorkspace ? 'Running opportunities' : 'Using Fasha'}
-          notes={inManageWorkspace ? ORGANISER_GUIDE : VOLUNTEER_GUIDE}
-        />
+        <HelpButton title={guide.title} notes={guide.notes} />
       </div>
     </div>
   )

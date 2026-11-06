@@ -1,6 +1,7 @@
 export type IconName =
   | 'discover' | 'activity' | 'portfolio' | 'profile' | 'initiatives'
   | 'overview' | 'opportunities' | 'review' | 'attendance' | 'bell' | 'scan' | 'link' | 'share'
+  | 'users' | 'export'
   | 'menu' | 'close' | 'signout' | 'caret'
 
 const PATHS: Record<IconName, string> = {
@@ -17,6 +18,8 @@ const PATHS: Record<IconName, string> = {
   scan:          'M4 8V5a1 1 0 011-1h3M20 8V5a1 1 0 00-1-1h-3M4 16v3a1 1 0 001 1h3M20 16v3a1 1 0 01-1 1h-3M7 12h10',
   link:          'M10 13a4 4 0 005.7 0l2.3-2.3a4 4 0 10-5.7-5.7L11 6.3M14 11a4 4 0 00-5.7 0L6 13.3a4 4 0 105.7 5.7L13 17.7',
   share:         'M17 7a2 2 0 100-4 2 2 0 000 4zM7 14a2 2 0 100-4 2 2 0 000 4zM17 21a2 2 0 100-4 2 2 0 000 4zM9 11l6-3M9 13l6 3',
+  users:         'M9 4a3.2 3.2 0 100 6.4A3.2 3.2 0 009 4zM3 20a6 6 0 0112 0M16 4.6a3.2 3.2 0 010 5.8M18 14.4a6 6 0 013 5.6',
+  export:        'M12 4v10M8.5 10.5L12 14l3.5-3.5M5 18h14',
   menu:          'M4 7h16M4 12h16M4 17h16',
   close:         'M6 6l12 12M18 6L6 18',
   signout:       'M10 5H6a1 1 0 00-1 1v12a1 1 0 001 1h4M15 8l4 4-4 4M19 12H9',

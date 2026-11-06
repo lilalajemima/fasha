@@ -7,6 +7,7 @@ import { longDate, quantity } from '../../lib/format'
 import type { UserView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
 import '../../styles/workspace.css'
+import './Admin.css'
 
 const ROLES = [
   { id: '', label: 'Any role' },
@@ -109,6 +110,10 @@ export default function Users() {
 
   return (
     <>
+      <section className="banner banner--users">
+        <h1 className="banner__title">Users</h1>
+      </section>
+
       <div className="toolbar">
         <input
           className="input toolbar__search"

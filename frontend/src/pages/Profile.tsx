@@ -272,9 +272,13 @@ function Leaving() {
 }
 
 function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void }) {
-  const { signOut, refresh } = useAuth()
+  const { user, signOut, refresh } = useAuth()
   const navigate = useNavigate()
   const isVolunteer = loaded.profile !== null
+  // An admin has no volunteer profile either, so a missing profile cannot stand
+  // in for "organisation": a person is asked for a name and a picture, an
+  // organisation for a logo and what it does.
+  const isOrganisation = !isVolunteer && user?.role === 'organisation'
 
   const [name, setName] = useState(loaded.user.name)
   const [bio, setBio] = useState(loaded.user.bio ?? '')
@@ -359,12 +363,12 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
             {/* One sheet. The headings separate the sections; cards would only
                 chop a single form into four boxes. */}
             <Card>
-              <h2>{isVolunteer ? 'About you' : 'About your organisation'}</h2>
+              <h2>{isOrganisation ? 'About your organisation' : 'About you'}</h2>
 
               <Picture
                 name={name}
                 avatar={avatar}
-                noun={isVolunteer ? 'picture' : 'logo'}
+                noun={isOrganisation ? 'logo' : 'picture'}
                 onPick={pickPicture}
                 onRemove={() => setAvatar(null)}
               />
@@ -372,7 +376,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
               <div className="profile-pair">
                 <Field
                   id="name"
-                  label={isVolunteer ? 'Full name' : 'Organisation name'}
+                  label={isOrganisation ? 'Organisation name' : 'Full name'}
                   value={name}
                   required
                   onChange={event => setName(event.target.value)}
@@ -390,13 +394,13 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
 
               <TextField
                 id="bio"
-                label={isVolunteer ? 'A short introduction' : 'What your organisation does'}
+                label={isOrganisation ? 'What your organisation does' : 'A short introduction'}
                 value={bio}
                 maxLength={600}
                 placeholder={
-                  isVolunteer
-                    ? 'What you like working on, and what you bring to it.'
-                    : 'The work you organise and who it is for.'
+                  isOrganisation
+                    ? 'The work you organise and who it is for.'
+                    : 'What you like working on, and what you bring to it.'
                 }
                 hint={`${bio.length} of 600 characters`}
                 onChange={event => setBio(event.target.value)}

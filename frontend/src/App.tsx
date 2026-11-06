@@ -5,7 +5,11 @@ import DocumentTitle from './components/DocumentTitle'
 import Shell from './layouts/Shell'
 import { NotificationsProvider } from './notifications/NotificationsContext'
 import Notifications from './pages/Notifications'
-import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminActivity from './pages/admin/Activity'
+import Approvals from './pages/admin/Approvals'
+import Export from './pages/admin/Export'
+import AdminOverview from './pages/admin/Overview'
+import Users from './pages/admin/Users'
 import SignIn from './pages/auth/SignIn'
 import SignUp from './pages/auth/SignUp'
 import Applicants from './pages/manage/Applicants'
@@ -61,8 +65,16 @@ export default function App() {
             <Route path="/check-in" element={<CheckIn />} />
           </Route>
 
+          {/* Oversight belongs to the community admin only: one page per job,
+              inside the same shell as the other two workspaces. */}
           <Route element={<RequireAdmin />}>
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route element={<Shell />}>
+              <Route path="/admin" element={<AdminOverview />} />
+              <Route path="/admin/approvals" element={<Approvals />} />
+              <Route path="/admin/users" element={<Users />} />
+              <Route path="/admin/activity" element={<AdminActivity />} />
+              <Route path="/admin/export" element={<Export />} />
+            </Route>
           </Route>
 
           {/* The manage workspace belongs to organisations only. */}
@@ -78,7 +90,7 @@ export default function App() {
             </Route>
           </Route>
 
-          {/* Everyone signed in gets their notifications. */}
+          {/* Everyone signed in gets their notifications and their profile. */}
           <Route element={<RequireAuth />}>
             <Route element={<Shell />}>
               <Route path="/notifications" element={<Notifications />} />

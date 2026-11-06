@@ -1,0 +1,31 @@
+/* Banners for the oversight workspace. One image per page, the way the
+   volunteer and organiser workspaces do it, so a screen is recognisable
+   before you have read its title. */
+
+.banner--oversight { background-image: url('/banner/abstract-red.jpg'); }
+.banner--approvals { background-image: url('/banner/handprints.jpg'); }
+.banner--users     { background-image: url('/banner/people.jpg'); }
+.banner--record    { background-image: url('/banner/baskets.jpg'); }
+.banner--export    { background-image: url('/banner/stripes.jpg'); }
+
+/* Stripes is the lightest of the five, so it needs less of a scrim to keep
+   the title readable; people is the busiest and needs more. */
+.banner--export::after { background: rgba(127, 29, 29, .34); }
+.banner--users::after  { background: rgba(127, 29, 29, .58); }
+
+/* The export preview is a real spreadsheet: twelve columns do not fit any
+   screen, so the table scrolls sideways inside its own box rather than
+   stretching the page. Cells stay on one line so the rows read as rows. */
+.preview { overflow-x: auto; border: 1px solid var(--neutral-border); border-radius: 12px; }
+.preview .data { margin: 0; }
+.preview__cell { white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Four counters in a row need two rows on a phone, and the second row needs
+   its own top border with no stray divider down the left of the third tile. */
+@media (max-width: 760px) {
+  .counters--four { flex-wrap: wrap; }
+  .counters--four .counter { flex: 1 1 50%; padding: 16px 12px; }
+  .counters--four .counter:nth-child(n + 3) { border-top: 1px solid var(--neutral-border); }
+  .counters--four .counter:nth-child(3) { border-left: 0; }
+  .counters--four .counter__value { font-size: 30px; }
+}

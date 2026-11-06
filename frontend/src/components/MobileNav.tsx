@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import Logo from './Logo'
 import { useAuth } from '../auth/AuthContext'
-import { MANAGE_NAV, PARTICIPATE_NAV } from '../layouts/navItems'
+import { WORKSPACE_LABEL, WORKSPACE_NAV, workspaceFor } from '../layouts/navItems'
 
 /**
  * Hamburger navigation for screens without room for the sidebar. It carries the
@@ -15,8 +15,8 @@ export default function MobileNav() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const isVolunteer = user?.role !== 'organisation'
-  const items = isVolunteer ? PARTICIPATE_NAV : MANAGE_NAV
+  const workspace = workspaceFor(user?.role)
+  const items = WORKSPACE_NAV[workspace]
 
   // Close on navigation, so a tap on a link does not leave the drawer open.
   useEffect(() => { setOpen(false) }, [pathname])
@@ -48,7 +48,7 @@ export default function MobileNav() {
 
             <div className="drawer__who">
               <span className="side__group">Your workspace</span>
-              <div className="side__workspace">{isVolunteer ? 'Volunteer' : 'Organiser'}</div>
+              <div className="side__workspace">{WORKSPACE_LABEL[workspace]}</div>
             </div>
 
             <div className="drawer__group">
@@ -59,18 +59,17 @@ export default function MobileNav() {
               ))}
             </div>
 
-            {!isVolunteer && (
+            {workspace === 'volunteer' ? (
+              <p className="muted" style={{ padding: '0 4px' }}>
+                Sign out from the bottom of My profile.
+              </p>
+            ) : (
               <div className="drawer__group">
                 <button className="navplate navplate--danger"
                         onClick={() => { signOut(); navigate('/signin') }}>
                   <Icon name="signout" /> <span>Sign out</span>
                 </button>
               </div>
-            )}
-            {isVolunteer && (
-              <p className="muted" style={{ padding: '0 4px' }}>
-                Sign out from the bottom of My profile.
-              </p>
             )}
           </nav>
         </>
