@@ -24,7 +24,6 @@ const TITLES: { path: string; title: string }[] = [
   { path: '/admin/approvals', title: 'Approvals' },
   { path: '/admin/users', title: 'Users' },
   { path: '/admin/activity', title: 'Activity' },
-  { path: '/admin/export', title: 'Export' },
   { path: '/admin', title: 'Oversight' },
   { path: '/signin', title: 'Sign in' },
   { path: '/signup', title: 'Create an account' },

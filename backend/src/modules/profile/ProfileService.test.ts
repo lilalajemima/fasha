@@ -57,7 +57,7 @@ function buildVolunteer(): UserWithProfile {
     profile: {
       skills: ['Teamwork'],
       interests: ['Environment'],
-      availability: null,
+      availabilitySlots: [],
       location: null,
       portfolioSlug: 'amara-mensah',
     },

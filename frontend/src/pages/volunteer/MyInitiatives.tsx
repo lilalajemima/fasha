@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Loaded } from '../../components/Loader'
 import { Button, EmptyState, StatusBadge } from '../../components/ui'
 import { api } from '../../lib/api'
-import { hasPassed, longDate, meta, quantity } from '../../lib/format'
+import { hasPassed, longDate, meta, quantity, whenLabel } from '../../lib/format'
 import type { OpportunityStatus, OpportunityView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
 import '../../styles/workspace.css'
@@ -124,6 +124,7 @@ export default function MyInitiatives() {
               <thead>
                 <tr>
                   <th>Initiative</th>
+                  <th>When</th>
                   <th>Apply by</th>
                   <th>State</th>
                   <th aria-hidden="true" />
@@ -149,6 +150,8 @@ export default function MyInitiatives() {
                         </div>
                       )}
                     </td>
+                    {/* whenLabel already says "Due by" for work with no start time. */}
+                    <td>{whenLabel(item.startsAt, item.endsAt) ?? 'No date set'}</td>
                     <td>{longDate(item.applicationDeadline)}</td>
                     <td>
                       <StatusBadge tone={TONE[item.status]}>{LABEL[item.status]}</StatusBadge>

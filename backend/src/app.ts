@@ -6,6 +6,7 @@ import { accountRoutes } from './modules/accounts/accounts.routes'
 import { adminRoutes } from './modules/admin/admin.routes'
 import { applicationRoutes } from './modules/applications/application.routes'
 import { authRoutes } from './modules/auth/auth.routes'
+import { catalogueRoutes } from './modules/catalogue/catalogue.routes'
 import { checkinRoutes } from './modules/checkin/checkin.routes'
 import { healthRoutes } from './modules/health/health.routes'
 import { notificationRoutes } from './modules/notifications/notification.routes'
@@ -18,9 +19,11 @@ export function createApp() {
   const app = express()
 
   app.use(cors({ origin: env.clientOrigin, credentials: true }))
-  app.use(express.json({ limit: '1mb' }))
+  // A brief is a PDF carried as base64, so the body can be a few megabytes.
+  app.use(express.json({ limit: '4mb' }))
 
   app.use(healthRoutes)
+  app.use(catalogueRoutes)
   app.use(authRoutes)
   app.use(accountRoutes)
   app.use(opportunityRoutes)

@@ -5,15 +5,22 @@ import { authorise } from '../../middleware/authorise'
 import { AccountController } from './AccountController'
 import { AccountRepository } from './AccountRepository'
 import { AccountService } from './AccountService'
+import { NotificationRepository } from '../notifications/NotificationRepository'
+import { DatabaseNotifier } from '../notifications/Notifier'
 import { UserAdminController } from './UserAdminController'
 import { UserAdminService } from './UserAdminService'
 
 const store = new AccountRepository()
-const account = new AccountController(new AccountService(store, passwordHasher))
+const account = new AccountController(
+  new AccountService(store, passwordHasher, new DatabaseNotifier(new NotificationRepository())),
+)
 const users = new UserAdminController(new UserAdminService(store, passwordHasher))
 const admins = authorise('ADMIN')
 
 export const accountRoutes = Router()
+
+// Nobody is signed in when they have forgotten the password.
+accountRoutes.post('/account/forgotten', account.forgotten)
 
 // Your own account.
 accountRoutes.post('/account/password', authenticate, account.changePassword)

@@ -6,12 +6,9 @@
 .banner--approvals { background-image: url('/banner/handprints.jpg'); }
 .banner--users     { background-image: url('/banner/people.jpg'); }
 .banner--record    { background-image: url('/banner/baskets.jpg'); }
-.banner--export    { background-image: url('/banner/stripes.jpg'); }
 
-/* Stripes is the lightest of the five, so it needs less of a scrim to keep
-   the title readable; people is the busiest and needs more. */
-.banner--export::after { background: rgba(127, 29, 29, .34); }
-.banner--users::after  { background: rgba(127, 29, 29, .58); }
+/* People is the busiest of the four, so its title needs more of a scrim. */
+.banner--users::after { background: rgba(127, 29, 29, .58); }
 
 /* The export preview is a real spreadsheet: twelve columns do not fit any
    screen, so the table scrolls sideways inside its own box rather than

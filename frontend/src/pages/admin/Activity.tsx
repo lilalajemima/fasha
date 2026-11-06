@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Loaded } from '../../components/Loader'
-import { EmptyState } from '../../components/ui'
+import { Button, EmptyState } from '../../components/ui'
 import { longDate, quantity, sentenceCase } from '../../lib/format'
 import { PER_PAGE, pageCount, pageNumbers, pageSlice } from '../../lib/paging'
 import { SECTORS } from '../../lib/sectors'
+import { api } from '../../lib/api'
 import type { ActivityRow } from '../../lib/types'
-import { useGet } from '../../lib/useGet'
+import { messageFor, useGet } from '../../lib/useGet'
 import { Period, kindOf, rangeFor } from './filters'
 import '../../styles/workspace.css'
 import './Admin.css'
@@ -19,6 +20,10 @@ export default function Activity() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
+  // The file can be shaped two ways; the table on screen is always the first.
+  const [report, setReport] = useState('events')
+  const [downloading, setDownloading] = useState(false)
+  const [error, setError] = useState('')
 
   function change(apply: () => void) {
     apply()
@@ -36,6 +41,33 @@ export default function Activity() {
         setTo(span.to)
       }
     })
+  }
+
+  async function download() {
+    setError('')
+    setDownloading(true)
+
+    try {
+      const search = new URLSearchParams({ grain: report })
+
+      if (mode !== 'all') search.set('mode', mode)
+      if (sector !== '') search.set('sector', sector)
+      if (from !== '') search.set('from', from)
+      if (to !== '') search.set('to', to)
+
+      const blob = await api.download(`/admin/report.csv?${search.toString()}`)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = `fasha-${report}-${new Date().toISOString().slice(0, 10)}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const words = query.trim().toLowerCase()
@@ -87,7 +119,33 @@ export default function Activity() {
           onFrom={value => change(() => setFrom(value))}
           onTo={value => change(() => setTo(value))}
         />
+
+        {/* The same filters, as a file. The table is always one row per
+            opportunity; one row per person only makes sense as a download. */}
+        <span className="toolbar__field" style={{ marginLeft: 'auto' }}>
+          <label className="toolbar__label" htmlFor="report">Download</label>
+          <select
+            id="report"
+            className="input toolbar__select"
+            value={report}
+            onChange={event => setReport(event.target.value)}
+          >
+            <option value="events">Opportunities</option>
+            <option value="checkins">Attendance</option>
+          </select>
+        </span>
+        <Button variant="primary" className="btn--small" disabled={downloading} onClick={download}>
+          {downloading ? 'Preparing…' : 'Download CSV'}
+        </Button>
       </div>
+
+      {error && <p className="error" role="alert">{error}</p>}
+
+      <p className="muted" style={{ marginBottom: 14 }}>
+        {report === 'events'
+          ? 'The file has one row per opportunity: its dates, sector, and how many applied, were accepted and turned up.'
+          : 'The file has one row per person per event: who, which event, when they checked in and out, and the hours credited.'}
+      </p>
 
       <Loaded state={activity} what="activity">
         {rows => {

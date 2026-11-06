@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ConflictError, ForbiddenError } from '../../core/errors/HttpErrors'
+import { BadRequestError, ConflictError, ForbiddenError } from '../../core/errors/HttpErrors'
 import type { ApplicationRecord, ApplicationStore } from '../applications/ApplicationStore'
 import type { OpportunityRecord, OpportunityStore } from '../opportunities/OpportunityStore'
 import type { Notifier } from '../notifications/Notifier'
@@ -20,6 +20,7 @@ function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRe
     hoursClaimed: 4,
     proofUrl: 'https://example.com/proof.jpg',
     status: 'PENDING',
+    reviewNote: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     volunteer: { id: 'volunteer-1', name: 'Amara Mensah' },
@@ -84,6 +85,14 @@ class FakeOpportunityStore implements OpportunityStore {
     return []
   }
 
+  async findBrief() {
+    return null
+  }
+
+  async findSince() {
+    return []
+  }
+
   async findById() {
     return { id: 'opportunity-1', creatorId: 'organisation-1' } as unknown as OpportunityRecord
   }
@@ -126,6 +135,10 @@ class FakeSubmissionStore implements SubmissionStore {
     return this.records.filter(record => record.opportunityId === opportunityId)
   }
 
+  async findForCreator(creatorId: string) {
+    return this.records.filter(record => record.opportunity.creatorId === creatorId)
+  }
+
   async findOpen(opportunityId: string, volunteerId: string) {
     return (
       this.records.find(
@@ -137,9 +150,10 @@ class FakeSubmissionStore implements SubmissionStore {
     )
   }
 
-  async reject(id: string) {
+  async reject(id: string, reviewNote: string) {
     const record = this.records.find(entry => entry.id === id)!
     record.status = 'REJECTED'
+    record.reviewNote = reviewNote
     return record
   }
 
@@ -213,10 +227,50 @@ describe('listing hours for an opportunity', () => {
   })
 })
 
+describe('listing everything sent to one organiser', () => {
+  it('gathers the claims across their opportunities', async () => {
+    const { service } = build([
+      makeSubmission({ id: 'one' }),
+      makeSubmission({
+        id: 'two',
+        opportunityId: 'opportunity-2',
+        opportunity: {
+          id: 'opportunity-2',
+          title: 'Translate the health leaflets',
+          creatorId: 'organisation-1',
+          requiredSkills: [],
+        },
+      }),
+    ])
+
+    const list = await service.received(organiser)
+
+    expect(list.map(entry => entry.opportunity.title)).toEqual([
+      'Design a reading guide',
+      'Translate the health leaflets',
+    ])
+  })
+
+  it('leaves out other people opportunities', async () => {
+    const { service } = build([
+      makeSubmission({
+        opportunity: {
+          id: 'opportunity-9',
+          title: 'Someone else work',
+          creatorId: 'organisation-2',
+          requiredSkills: [],
+        },
+      }),
+    ])
+
+    expect(await service.received(organiser)).toHaveLength(0)
+  })
+})
+
 describe('reviewing hours', () => {
   it('credits the portfolio on approval', async () => {
     const { service, submissions } = build([makeSubmission()])
-    const view = await service.decide(organiser, 'submission-1', 'APPROVE')
+    const view = await service.decide(organiser, 'submission-1', 'APPROVE', null)
 
     expect(view.status).toBe('APPROVED')
     expect(submissions.credited).toEqual({ hours: 4, skills: ['Graphic design'] })
@@ -224,37 +278,67 @@ describe('reviewing hours', () => {
 
   it('credits nothing on rejection', async () => {
     const { service, submissions } = build([makeSubmission()])
-    const view = await service.decide(organiser, 'submission-1', 'REJECT')
+    const view = await service.decide(
+      organiser,
+      'submission-1',
+      'REJECT',
+      'The photograph does not show the finished wall.',
+    )
 
     expect(view.status).toBe('REJECTED')
+    expect(view.reviewNote).toBe('The photograph does not show the finished wall.')
     expect(submissions.credited).toBeNull()
   })
 
   it('stops anyone but the organiser reviewing', async () => {
     const { service } = build([makeSubmission()])
 
-    await expect(service.decide(outsider, 'submission-1', 'APPROVE')).rejects.toThrow(ForbiddenError)
+    await expect(service.decide(outsider, 'submission-1', 'APPROVE', null)).rejects.toThrow(ForbiddenError)
   })
 
   it('refuses to review the same hours twice', async () => {
     const { service } = build([makeSubmission({ status: 'APPROVED' })])
 
-    await expect(service.decide(organiser, 'submission-1', 'REJECT')).rejects.toThrow(ConflictError)
+    await expect(
+      service.decide(organiser, 'submission-1', 'REJECT', 'Already looked at this one.'),
+    ).rejects.toThrow(ConflictError)
   })
 
   it('tells the volunteer their hours were credited', async () => {
     const { service } = build([makeSubmission()])
     notifier.sent = []
 
-    await service.decide(organiser, 'submission-1', 'APPROVE')
+    await service.decide(organiser, 'submission-1', 'APPROVE', null)
 
     expect(notifier.sent[0].userId).toBe('volunteer-1')
     expect(notifier.sent[0].message).toContain('portfolio')
   })
 
+  it('refuses a rejection with no reason', async () => {
+    const { service, submissions } = build([makeSubmission()])
+
+    await expect(service.decide(organiser, 'submission-1', 'REJECT', null)).rejects.toThrow(
+      'Say why the hours were not approved',
+    )
+    await expect(service.decide(organiser, 'submission-1', 'REJECT', 'no')).rejects.toThrow(
+      BadRequestError,
+    )
+    expect(submissions.credited).toBeNull()
+  })
+
+  it('sends the reason to the volunteer', async () => {
+    const { service } = build([makeSubmission()])
+    notifier.sent = []
+
+    await service.decide(organiser, 'submission-1', 'REJECT', 'The hours are more than the event ran for.')
+
+    expect(notifier.sent[0].userId).toBe('volunteer-1')
+    expect(notifier.sent[0].message).toContain('more than the event ran for')
+  })
+
   it('reports hours that do not exist', async () => {
     const { service } = build()
 
-    await expect(service.decide(organiser, 'nope', 'APPROVE')).rejects.toThrow('do not exist')
+    await expect(service.decide(organiser, 'nope', 'APPROVE', null)).rejects.toThrow('do not exist')
   })
 })

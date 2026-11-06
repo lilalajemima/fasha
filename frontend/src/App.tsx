@@ -7,9 +7,9 @@ import { NotificationsProvider } from './notifications/NotificationsContext'
 import Notifications from './pages/Notifications'
 import AdminActivity from './pages/admin/Activity'
 import Approvals from './pages/admin/Approvals'
-import Export from './pages/admin/Export'
 import AdminOverview from './pages/admin/Overview'
 import Users from './pages/admin/Users'
+import Forgotten from './pages/auth/Forgotten'
 import SignIn from './pages/auth/SignIn'
 import SignUp from './pages/auth/SignUp'
 import Applicants from './pages/manage/Applicants'
@@ -36,6 +36,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/discover" replace />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/signin" element={<SignIn />} />
+          <Route path="/forgotten" element={<Forgotten />} />
           <Route path="/p/:slug" element={<Portfolio />} />
 
           {/* Taking part, plus running your own initiative from inside it. */}
@@ -73,7 +74,6 @@ export default function App() {
               <Route path="/admin/approvals" element={<Approvals />} />
               <Route path="/admin/users" element={<Users />} />
               <Route path="/admin/activity" element={<AdminActivity />} />
-              <Route path="/admin/export" element={<Export />} />
             </Route>
           </Route>
 

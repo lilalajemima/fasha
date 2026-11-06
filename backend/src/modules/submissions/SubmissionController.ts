@@ -1,9 +1,10 @@
 import type { Request, Response } from 'express'
-import { readDecision, readHours, readUrl } from '../../core/validation/readers'
+import { readDecision, readHours, readShortText, readUrl } from '../../core/validation/readers'
 import { routeParam } from '../../core/http/params'
 import type { SubmissionService } from './SubmissionService'
 
 const MAX_HOURS = 24
+const MAX_NOTE_LENGTH = 400
 
 export class SubmissionController {
   constructor(private readonly submissions: SubmissionService) {}
@@ -21,11 +22,22 @@ export class SubmissionController {
     res.json(await this.submissions.mine(req.user!))
   }
 
+  received = async (req: Request, res: Response) => {
+    res.json(await this.submissions.received(req.user!))
+  }
+
   forOpportunity = async (req: Request, res: Response) => {
     res.json(await this.submissions.forOpportunity(req.user!, routeParam(req, 'id')))
   }
 
   decide = async (req: Request, res: Response) => {
-    res.json(await this.submissions.decide(req.user!, routeParam(req, 'id'), readDecision(req.body)))
+    res.json(
+      await this.submissions.decide(
+        req.user!,
+        routeParam(req, 'id'),
+        readDecision(req.body),
+        readShortText(req.body, 'reviewNote', MAX_NOTE_LENGTH),
+      ),
+    )
   }
 }

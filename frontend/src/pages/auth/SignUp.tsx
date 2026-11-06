@@ -14,6 +14,7 @@ export default function SignUp() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -23,6 +24,12 @@ export default function SignUp() {
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       return setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
+    }
+
+    // Caught here rather than at the door of an account nobody can sign in to:
+    // Fasha sends no email, so a mistyped password is a trip to the admin.
+    if (password !== confirm) {
+      return setError('The two passwords are not the same.')
     }
 
     setBusy(true)
@@ -72,6 +79,10 @@ export default function SignUp() {
         <Field id="password" label="Password" type="password" value={password} required
                autoComplete="new-password" hint={`Use at least ${MIN_PASSWORD_LENGTH} characters.`}
                onChange={e => setPassword(e.target.value)} />
+        <Field id="confirm" label="Password again" type="password" value={confirm} required
+               autoComplete="new-password"
+               error={confirm !== '' && confirm !== password ? 'These do not match yet.' : undefined}
+               onChange={e => setConfirm(e.target.value)} />
 
         {error && <p className="error" role="alert">{error}</p>}
 

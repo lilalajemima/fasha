@@ -47,6 +47,7 @@ function makeOpportunity(overrides: Partial<OpportunityRecord> = {}): Opportunit
     createdAt: arrival,
     updatedAt: arrival,
     creator: { id: 'organisation-1', name: 'Green Neighbourhood', role: 'ORGANISATION' },
+    brief: null,
     ...overrides,
   }
 }
@@ -81,6 +82,14 @@ class FakeOpportunityStore implements OpportunityStore {
   }
 
   async findPublished() {
+    return []
+  }
+
+  async findBrief() {
+    return null
+  }
+
+  async findSince() {
     return []
   }
 

@@ -79,7 +79,7 @@ const accounts = {
 type Profile = {
   skills: string[]
   interests: string[]
-  availability: string
+  availabilitySlots: string[]
   location: string
   sector: string
 }
@@ -89,9 +89,9 @@ const neighbours: { name: string; email: string; profile: Profile }[] = [
     name: 'Uwase Chantal',
     email: 'chantal@fasha.demo',
     profile: {
-      skills: ['Teaching', 'Communication'],
-      interests: ['Education', 'Children'],
-      availability: 'Weekday afternoons',
+      skills: ['Teaching and tutoring', 'Public speaking and facilitation'],
+      interests: ['Education', 'Youth and children'],
+      availabilitySlots: ['MON_AFTERNOON', 'TUE_AFTERNOON', 'WED_AFTERNOON', 'THU_AFTERNOON', 'FRI_AFTERNOON'],
       location: 'Kinyinya, Kigali',
       sector: 'Kinyinya',
     },
@@ -100,9 +100,9 @@ const neighbours: { name: string; email: string; profile: Profile }[] = [
     name: 'Habimana Jean-Paul',
     email: 'jeanpaul@fasha.demo',
     profile: {
-      skills: ['Teamwork', 'First aid'],
-      interests: ['Health', 'Environment'],
-      availability: 'Weekends',
+      skills: ['Construction and manual work', 'First aid'],
+      interests: ['Healthcare', 'Climate and environment'],
+      availabilitySlots: ['SAT_MORNING', 'SAT_AFTERNOON', 'SUN_MORNING', 'SUN_AFTERNOON'],
       location: 'Remera, Kigali',
       sector: 'Remera',
     },
@@ -112,8 +112,8 @@ const neighbours: { name: string; email: string; profile: Profile }[] = [
     email: 'alice@fasha.demo',
     profile: {
       skills: ['Graphic design', 'Photography'],
-      interests: ['Education', 'Culture'],
-      availability: 'Evenings',
+      interests: ['Education', 'Arts and culture'],
+      availabilitySlots: ['MON_EVENING', 'TUE_EVENING', 'WED_EVENING', 'THU_EVENING', 'FRI_EVENING'],
       location: 'Gisozi, Kigali',
       sector: 'Gisozi',
     },
@@ -122,9 +122,9 @@ const neighbours: { name: string; email: string; profile: Profile }[] = [
     name: 'Niyonsaba Eric',
     email: 'eric@fasha.demo',
     profile: {
-      skills: ['Gardening', 'Teamwork'],
-      interests: ['Environment', 'Food access'],
-      availability: 'Saturday mornings',
+      skills: ['Gardening and planting', 'Construction and manual work'],
+      interests: ['Climate and environment', 'Food security and agriculture'],
+      availabilitySlots: ['SAT_MORNING'],
       location: 'Kimironko, Kigali',
       sector: 'Kimironko',
     },
@@ -133,9 +133,9 @@ const neighbours: { name: string; email: string; profile: Profile }[] = [
     name: 'Iradukunda Sandrine',
     email: 'sandrine@fasha.demo',
     profile: {
-      skills: ['Translation', 'Writing'],
-      interests: ['Health', 'Education'],
-      availability: 'Flexible',
+      skills: ['Writing and translation'],
+      interests: ['Healthcare', 'Education'],
+      availabilitySlots: ['SAT_MORNING', 'SAT_AFTERNOON', 'SUN_MORNING', 'WED_EVENING'],
       location: 'Kacyiru, Kigali',
       sector: 'Kacyiru',
     },
@@ -165,9 +165,9 @@ async function main() {
         role: UserRole.VOLUNTEER,
         profile: {
           create: {
-            skills: profile?.skills ?? ['Graphic design', 'Teamwork', 'Communication'],
-            interests: profile?.interests ?? ['Environment', 'Education', 'Food access'],
-            availability: profile?.availability ?? 'Weekend mornings',
+            skills: profile?.skills ?? ['Graphic design', 'Construction and manual work', 'Public speaking and facilitation'],
+            interests: profile?.interests ?? ['Climate and environment', 'Education', 'Food security and agriculture'],
+            availabilitySlots: profile?.availabilitySlots ?? ['SAT_MORNING', 'SUN_MORNING'],
             location: profile?.location ?? 'Kimironko, Kigali',
             sector: profile?.sector ?? 'Kimironko',
             portfolioSlug: slugify(name),
@@ -267,8 +267,8 @@ async function main() {
       startsAt: at(9, 8),
       endsAt: at(9, 12),
       status: OpportunityStatus.PUBLISHED,
-      requiredSkills: ['Teamwork', 'Gardening'],
-      categories: ['Environment', 'Outdoors'],
+      requiredSkills: ['Construction and manual work', 'Gardening and planting'],
+      categories: ['Climate and environment', 'Sports and recreation'],
       applications: {
         create: [
           accepted(eric.id, 3, 'I live two streets away and I use that path every morning.'),
@@ -291,8 +291,8 @@ async function main() {
       startsAt: at(14, 9),
       endsAt: at(14, 13),
       status: OpportunityStatus.PUBLISHED,
-      requiredSkills: ['Teamwork'],
-      categories: ['Food access'],
+      requiredSkills: ['Construction and manual work'],
+      categories: ['Food security and agriculture'],
       applications: {
         create: [
           accepted(eric.id, 4, 'I helped last month and the queue moved much faster with more hands.'),
@@ -314,8 +314,8 @@ async function main() {
       startsAt: at(4, 14),
       endsAt: at(4, 16),
       status: OpportunityStatus.PUBLISHED,
-      requiredSkills: ['Teaching', 'Communication'],
-      categories: ['Education', 'Children'],
+      requiredSkills: ['Teaching and tutoring', 'Public speaking and facilitation'],
+      categories: ['Education', 'Youth and children'],
       applications: {
         create: [
           accepted(chantal.id, 6, 'I teach S1 and I would like to help the younger ones.'),
@@ -341,8 +341,8 @@ async function main() {
       startsAt: nextUmuganda(8),
       endsAt: nextUmuganda(11),
       status: OpportunityStatus.PUBLISHED,
-      requiredSkills: ['Teamwork'],
-      categories: ['Environment', 'Umuganda'],
+      requiredSkills: ['Construction and manual work'],
+      categories: ['Climate and environment', 'Community infrastructure'],
       applications: {
         create: [
           accepted(jeanPaul.id, 2, 'It is my own street, so I will be there anyway.'),
@@ -364,8 +364,8 @@ async function main() {
       startsAt: at(2, 8, 30),
       endsAt: at(2, 15),
       status: OpportunityStatus.PUBLISHED,
-      requiredSkills: ['First aid', 'Communication'],
-      categories: ['Health'],
+      requiredSkills: ['First aid', 'Public speaking and facilitation'],
+      categories: ['Healthcare'],
       applications: {
         create: [
           accepted(jeanPaul.id, 2, 'I am a trained first aider at work.'),
@@ -411,8 +411,8 @@ async function main() {
       startsAt: null,
       endsAt: at(25, 21),
       status: OpportunityStatus.PUBLISHED,
-      requiredSkills: ['Translation', 'Writing'],
-      categories: ['Health'],
+      requiredSkills: ['Writing and translation'],
+      categories: ['Healthcare'],
       applications: {
         create: [
           accepted(sandrine.id, 7, 'I translate for the clinic already.'),
@@ -435,7 +435,7 @@ async function main() {
       endsAt: at(12, 21),
       status: OpportunityStatus.PUBLISHED,
       requiredSkills: ['Photography', 'Graphic design'],
-      categories: ['Environment', 'Culture'],
+      categories: ['Climate and environment', 'Arts and culture'],
       applications: { create: [waiting(alice.id, 1, 'I shoot and edit for the camera club.')] },
     },
     {
@@ -451,8 +451,8 @@ async function main() {
       startsAt: at(-14, 8),
       endsAt: at(-14, 11),
       status: OpportunityStatus.PUBLISHED,
-      requiredSkills: ['Teamwork'],
-      categories: ['Environment'],
+      requiredSkills: ['Construction and manual work'],
+      categories: ['Climate and environment'],
       applications: {
         create: [
           accepted(eric.id, 18, 'I come every month.'),
@@ -491,10 +491,10 @@ async function main() {
       },
       portfolioEntries: {
         create: [
-          { volunteerId: eric.id, hoursCredited: 3.2, skillsCredited: ['Teamwork'], dateCredited: at(-14, 11) },
-          { volunteerId: jeanPaul.id, hoursCredited: 2.97, skillsCredited: ['Teamwork'], dateCredited: at(-14, 11) },
-          { volunteerId: chantal.id, hoursCredited: 2.4, skillsCredited: ['Teamwork'], dateCredited: at(-14, 11) },
-          { volunteerId: volunteer.id, hoursCredited: 3.12, skillsCredited: ['Teamwork'], dateCredited: at(-14, 11) },
+          { volunteerId: eric.id, hoursCredited: 3.2, skillsCredited: ['Construction and manual work'], dateCredited: at(-14, 11) },
+          { volunteerId: jeanPaul.id, hoursCredited: 2.97, skillsCredited: ['Construction and manual work'], dateCredited: at(-14, 11) },
+          { volunteerId: chantal.id, hoursCredited: 2.4, skillsCredited: ['Construction and manual work'], dateCredited: at(-14, 11) },
+          { volunteerId: volunteer.id, hoursCredited: 3.12, skillsCredited: ['Construction and manual work'], dateCredited: at(-14, 11) },
         ],
       },
     },
@@ -511,7 +511,7 @@ async function main() {
       endsAt: at(-7, 21),
       status: OpportunityStatus.PUBLISHED,
       requiredSkills: ['Graphic design'],
-      categories: ['Health'],
+      categories: ['Healthcare'],
       applications: {
         create: [
           accepted(alice.id, 14, 'I can do this over a weekend.'),
@@ -561,8 +561,8 @@ async function main() {
       startsAt: at(16, 10),
       endsAt: at(16, 13),
       status: OpportunityStatus.PENDING_APPROVAL,
-      requiredSkills: ['Teamwork', 'Gardening'],
-      categories: ['Environment', 'Food access'],
+      requiredSkills: ['Construction and manual work', 'Gardening and planting'],
+      categories: ['Climate and environment', 'Food security and agriculture'],
     },
     {
       creatorId: eric.id,
@@ -578,8 +578,8 @@ async function main() {
       status: OpportunityStatus.REJECTED,
       reviewNote: 'The pitch has no lighting after seven. Please propose a daytime slot.',
       reviewedAt: at(-2, 11),
-      requiredSkills: ['Teamwork'],
-      categories: ['Sport'],
+      requiredSkills: ['Construction and manual work'],
+      categories: ['Sports and recreation'],
     },
   ]
 

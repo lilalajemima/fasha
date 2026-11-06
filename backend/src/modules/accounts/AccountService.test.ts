@@ -2,6 +2,7 @@ import type { User } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 import type { Hasher } from '../../core/security/PasswordHasher'
 import type { TokenPayload } from '../../core/security/TokenService'
+import type { Notifier } from '../notifications/Notifier'
 import { AccountService } from './AccountService'
 import type { AccountRow, AccountStore, Anonymised, UserFilter } from './AccountStore'
 
@@ -53,12 +54,21 @@ class FakeAccountStore implements AccountStore {
     return null
   }
 
-  async list(_filter: UserFilter): Promise<AccountRow[]> {
-    return []
+  async list(filter: UserFilter): Promise<AccountRow[]> {
+    return this.users
+      .filter(user => !filter.role || user.role === filter.role)
+      .filter(user => !filter.status || user.status === filter.status)
+      .map(toRow)
   }
 
   async countActiveAdmins() {
     return this.activeAdmins
+  }
+
+  async findByEmail(email: string) {
+    const user = this.users.find(entry => entry.email === email)
+
+    return user ? toRow(user) : null
   }
 
   async setPassword(_id: string, passwordHash: string, mustChange: boolean) {
@@ -74,11 +84,55 @@ class FakeAccountStore implements AccountStore {
   }
 }
 
+class RecordingNotifier implements Notifier {
+  sent: { userId: string; message: string }[] = []
+
+  async send(userId: string, _type: string, message: string) {
+    this.sent.push({ userId, message })
+  }
+}
+
+function toRow(user: User): AccountRow {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    mustChangePassword: user.mustChangePassword,
+    createdAt: user.createdAt,
+    deactivatedAt: user.deactivatedAt,
+  }
+}
+
 function build(users: User[] = [makeUser()], activeAdmins = 2) {
   const store = new FakeAccountStore(users, activeAdmins)
+  const notifier = new RecordingNotifier()
 
-  return { store, service: new AccountService(store, hasher) }
+  return { store, notifier, service: new AccountService(store, hasher, notifier) }
 }
+
+describe('a forgotten password', () => {
+  it('tells the admins who is locked out', async () => {
+    const locked = makeUser({ id: 'volunteer-7', email: 'amara@example.com', name: 'Amara Mensah' })
+    const admin = makeUser({ id: 'admin-1', email: 'admin@fasha.demo', role: 'ADMIN' })
+    const { service, notifier } = build([locked, admin])
+
+    await service.forgotten('amara@example.com')
+
+    expect(notifier.sent).toHaveLength(1)
+    expect(notifier.sent[0].userId).toBe('admin-1')
+    expect(notifier.sent[0].message).toContain('amara@example.com')
+  })
+
+  /** An address that is not here must look exactly like one that is. */
+  it('says nothing about an address nobody owns', async () => {
+    const { service, notifier } = build()
+
+    await expect(service.forgotten('stranger@example.com')).resolves.toBeUndefined()
+    expect(notifier.sent).toEqual([])
+  })
+})
 
 describe('changing your own password', () => {
   it('refuses when the current password is wrong', async () => {

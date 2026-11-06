@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { NotFoundError } from '../../core/errors/HttpErrors'
 import type { PortfolioOwner, ProfileChanges, ProfileStore } from '../profile/ProfileStore'
 import { PortfolioService } from './PortfolioService'
-import type { PortfolioRecord, PortfolioStore } from './PortfolioStore'
+import type { OrganisedRecord, PortfolioRecord, PortfolioStore } from './PortfolioStore'
 
 const owner: PortfolioOwner = {
   userId: 'volunteer-1',
@@ -10,6 +10,9 @@ const owner: PortfolioOwner = {
   portfolioSlug: 'amara-mensah',
   avatar: 'data:image/jpeg;base64,AAAA',
   bio: 'I organise clean-ups around Kimironko.',
+  skills: ['First aid', 'Gardening and planting'],
+  interests: ['Climate and environment'],
+  availabilitySlots: ['SAT_MORNING', 'SUN_AFTERNOON'],
 }
 
 function makeEntry(overrides: Partial<PortfolioRecord> = {}): PortfolioRecord {
@@ -18,9 +21,39 @@ function makeEntry(overrides: Partial<PortfolioRecord> = {}): PortfolioRecord {
     volunteerId: 'volunteer-1',
     opportunityId: 'opportunity-1',
     hoursCredited: 2.5,
-    skillsCredited: ['Teamwork'],
+    skillsCredited: ['Gardening and planting'],
     dateCredited: new Date('2026-11-14T12:00:00.000Z'),
-    opportunity: { id: 'opportunity-1', title: 'Restore the wetland path', mode: 'PHYSICAL' },
+    opportunity: {
+      id: 'opportunity-1',
+      title: 'Restore the wetland path',
+      description: 'Plant trees and clear the path with the neighbourhood team.',
+      mode: 'PHYSICAL',
+      creatorId: 'organisation-1',
+      requiredSkills: ['Gardening and planting'],
+      categories: ['Climate and environment'],
+      startsAt: new Date('2026-11-14T06:00:00.000Z'),
+      endsAt: new Date('2026-11-14T09:00:00.000Z'),
+      creator: { name: 'Green Neighbourhood', role: 'ORGANISATION' },
+      brief: null,
+    },
+    ...overrides,
+  }
+}
+
+function makeOrganised(overrides: Partial<OrganisedRecord> = {}): OrganisedRecord {
+  return {
+    id: 'opportunity-9',
+    title: 'Kimironko seed swap',
+    description: 'Neighbours bring seedlings and swap what they have too much of.',
+    mode: 'PHYSICAL',
+    sector: 'Kimironko',
+    location: 'Kimironko market',
+    startsAt: new Date('2026-10-03T06:00:00.000Z'),
+    endsAt: new Date('2026-10-03T09:00:00.000Z'),
+    requiredSkills: [],
+    categories: ['Food security and agriculture'],
+    brief: { name: 'seed-swap.pdf' },
+    people: 12,
     ...overrides,
   }
 }
@@ -40,15 +73,29 @@ class FakeProfileStore implements ProfileStore {
 }
 
 class FakePortfolioStore implements PortfolioStore {
-  constructor(private readonly records: PortfolioRecord[]) {}
+  constructor(
+    private readonly records: PortfolioRecord[],
+    private readonly organised: OrganisedRecord[] = [],
+  ) {}
 
   async findForVolunteer() {
     return this.records
   }
+
+  async findOrganisedBy() {
+    return this.organised
+  }
 }
 
-function build(records: PortfolioRecord[], known: PortfolioOwner | null = owner) {
-  return new PortfolioService(new FakePortfolioStore(records), new FakeProfileStore(known))
+function build(
+  records: PortfolioRecord[],
+  known: PortfolioOwner | null = owner,
+  organised: OrganisedRecord[] = [],
+) {
+  return new PortfolioService(
+    new FakePortfolioStore(records, organised),
+    new FakeProfileStore(known),
+  )
 }
 
 describe('a portfolio', () => {
@@ -73,18 +120,17 @@ describe('a portfolio', () => {
 
   it('gathers the skills without repeating them', async () => {
     const view = await build([
-      makeEntry({ skillsCredited: ['Teamwork', 'Graphic design'] }),
-      makeEntry({ id: 'entry-2', skillsCredited: ['Teamwork'] }),
+      makeEntry({ skillsCredited: ['First aid', 'Graphic design'] }),
+      makeEntry({ id: 'entry-2', skillsCredited: ['First aid'] }),
     ]).bySlug('amara-mensah')
 
-    expect(view.totals.skills).toEqual(['Graphic design', 'Teamwork'])
+    expect(view.totals.skills).toEqual(['First aid', 'Graphic design'])
   })
 
   it('shows an empty portfolio rather than failing', async () => {
     const view = await build([]).bySlug('amara-mensah')
 
-    expect(view.totals).toEqual({ hours: 0, opportunities: 0, skills: [] })
-    expect(view.entries).toEqual([])
+    expect(view.totals).toEqual({ hours: 0, opportunities: 0, organised: 0, skills: [] })
   })
 
   it('names the volunteer on the public page', async () => {
@@ -99,6 +145,34 @@ describe('a portfolio', () => {
 
     expect(view.volunteer.avatar).toBe('data:image/jpeg;base64,AAAA')
     expect(view.volunteer.bio).toBe('I organise clean-ups around Kimironko.')
+  })
+
+  it('carries what they say they can do, not only what was credited', async () => {
+    const view = await build([makeEntry()]).bySlug('amara-mensah')
+
+    expect(view.volunteer.skills).toContain('First aid')
+    expect(view.volunteer.interests).toEqual(['Climate and environment'])
+  })
+
+  it('keeps what they ran apart from what they took part in', async () => {
+    const view = await build([makeEntry()], owner, [makeOrganised()]).bySlug('amara-mensah')
+
+    expect(view.totals.organised).toBe(1)
+    expect(view.entries).toHaveLength(1)
+    expect(view.organised[0].title).toBe('Kimironko seed swap')
+  })
+
+  it('says how many people an initiative reached, and where to read its brief', async () => {
+    const view = await build([], owner, [makeOrganised()]).bySlug('amara-mensah')
+
+    expect(view.organised[0].people).toBe(12)
+    expect(view.organised[0].brief?.url).toBe('/opportunities/opportunity-9/brief')
+  })
+
+  it('names the organisation behind something they joined', async () => {
+    const view = await build([makeEntry()]).bySlug('amara-mensah')
+
+    expect(view.entries[0].opportunity.organiser).toBe('Green Neighbourhood')
   })
 
   it('reports an address nobody owns', async () => {

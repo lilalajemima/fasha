@@ -1,0 +1,111 @@
+/* The calendar's three ranges. The month grid itself is styled in
+   workspace.css; what is here is the toolbar, the week and the single day,
+   plus the few places the grid needed to give back some height. */
+
+.calendar__bar--tools { flex-wrap: wrap; gap: 10px; }
+
+/* Today / This week / Month, as one control rather than three buttons. */
+.segmented { display: inline-flex; border: 1px solid var(--neutral-border);
+             border-radius: var(--radius-sm); overflow: hidden; }
+.segmented__item { font: inherit; font-size: 13px; height: 30px; padding: 0 12px; cursor: pointer;
+                   border: 0; border-right: 1px solid var(--neutral-border);
+                   background: var(--surface-card); color: var(--imigongo-black); }
+.segmented__item:last-child { border-right: 0; }
+.segmented__item:hover { background: var(--surface-muted); }
+.segmented__item--on,
+.segmented__item--on:hover { background: var(--primary); color: #fff; }
+
+.calendar__nav { align-items: center; flex-wrap: wrap; }
+.calendar__picker { height: 30px; padding: 0 8px; font-size: 13px; width: auto; }
+.stepper:disabled { opacity: .45; cursor: default; }
+
+/* The range being shown, under the controls rather than beside them, so it
+   has room to say "28 December to 3 January 2026". */
+.calendar__range { margin: 0; padding: 10px 16px; font-size: 13px; font-weight: 600;
+                   color: var(--charcoal-muted); border-bottom: 1px solid var(--neutral-border); }
+
+/* ---------- one day, and the week ---------- */
+
+.agenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+/* A grid, not a flex row: in a row the "applications close" label kept its
+   width and the name — which is the only part worth reading — was squeezed to
+   nothing on a narrow screen. Here the name owns the second column, and the
+   label drops underneath it when there is no room beside it. */
+.agenda__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+
+.agenda__time { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--charcoal-muted); }
+.agenda__kind { grid-column: 2; font-size: 11.5px; color: var(--charcoal-muted); }
+.agenda .mark { font-size: 13px; }
+
+/* Every title is now a link to its applicants. The dot already carries the
+   kind, so the text stays the ordinary colour and only underlines on hover. */
+.calendar .mark { color: inherit; text-decoration: none; }
+.calendar a.mark:hover .mark__text { text-decoration: underline; }
+.agenda .mark__text { white-space: normal; }
+
+.daysheet { padding: 16px; }
+.daysheet__title { margin: 0 0 10px; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.daysheet__today { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+                   color: #fff; background: var(--primary); padding: 2px 7px; border-radius: 999px; }
+
+.week { display: flex; flex-direction: column; }
+.week__row { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 12px;
+             padding: 10px 16px; border-bottom: 1px solid var(--neutral-border-subtle); }
+.week__row:last-child { border-bottom: 0; }
+.week__row--today { background: var(--surface-muted); }
+.week__day { display: flex; align-items: baseline; gap: 6px; }
+.week__name { font-size: 12px; font-weight: 600; color: var(--charcoal-muted); }
+.week__number { font-size: 15px; font-weight: 700; }
+.week__row--today .week__number { color: var(--primary); }
+.week__body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.week__quiet { font-size: 13px; color: var(--charcoal-muted); }
+
+/* The month was 88px a row, six rows deep, mostly empty. */
+.calendar .calendar__day { min-height: 74px; }
+
+@media (max-width: 640px) {
+  .calendar__bar--tools { flex-direction: column; align-items: stretch; }
+  .segmented { width: 100%; }
+  .segmented__item { flex: 1; }
+  .week__row { grid-template-columns: 54px minmax(0, 1fr); gap: 8px; }
+  .calendar .calendar__day { min-height: 58px; }
+}
+
+/* ---------- what a dot says ----------
+
+   Three things, on seven pixels, with no colour invented for the purpose:
+
+     fill    solid = it happens that day, hollow = applications close
+     shape   round = in person, square = virtual
+     colour  red = an organisation runs it, black = a resident does
+
+   Imigongo is red, black and white, so "who" borrows the two it already has
+   rather than adding a hue that would then mean two things in one product. */
+
+.calendar .mark--virtual .mark__dot { border-radius: 2px; }
+
+.calendar .mark--citizen .mark__dot {
+  border-color: var(--imigongo-black);
+  background: var(--imigongo-black);
+}
+
+.calendar .mark--citizen.mark--deadline .mark__dot { background: transparent; }
+
+/* The legend wraps rather than squeezing its four entries on a phone. */
+.calendar__legend { flex-wrap: wrap; row-gap: 8px; }
+.calendar__legend .mark { cursor: default; }
+
+/* workspace.css hides .mark__text below 860px. That is right for the month
+   grid, where a cell is 62px and only the dots fit — but the week and the day
+   are lists with room for the name, and a list of unnamed times is useless. */
+@media (max-width: 860px) {
+  .calendar .agenda .mark__text,
+  .calendar .daysheet .mark__text { display: inline; }
+}

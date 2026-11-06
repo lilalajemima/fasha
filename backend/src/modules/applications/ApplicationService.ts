@@ -64,7 +64,15 @@ export class ApplicationService {
 
     const records = await this.applications.findForOpportunity(opportunityId)
 
-    return records.map(toApplicationView)
+    // Best fit first, as Discover orders opportunities for a volunteer. Two
+    // equal scores fall back to who applied first, so the order is stable and
+    // nobody is pushed down the list by a later arrival.
+    return records
+      .map(toApplicationView)
+      .sort(
+        (a, b) =>
+          b.match.score - a.match.score || a.createdAt.localeCompare(b.createdAt),
+      )
   }
 
   async decide(

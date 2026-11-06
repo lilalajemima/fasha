@@ -5,6 +5,7 @@ export const NOTIFICATION_TYPES = {
   applicationDecided: 'APPLICATION_DECIDED',
   initiativeDecided: 'INITIATIVE_DECIDED',
   hoursDecided: 'HOURS_DECIDED',
+  passwordHelp: 'PASSWORD_HELP',
 }
 
 export interface Notifier {

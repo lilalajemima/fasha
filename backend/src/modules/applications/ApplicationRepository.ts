@@ -4,7 +4,26 @@ import { prisma } from '../../core/database/prisma'
 import type { ApplicationRecord, ApplicationStore, NewApplication } from './ApplicationStore'
 
 const withBothSides = {
-  volunteer: { select: { id: true, name: true, email: true } },
+  volunteer: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      avatar: true,
+      bio: true,
+      // The tags are here so an organiser can be shown how well someone fits
+      // without a second query for every row in the list.
+      profile: {
+        select: {
+          portfolioSlug: true,
+          skills: true,
+          interests: true,
+          availabilitySlots: true,
+          location: true,
+        },
+      },
+    },
+  },
   opportunity: {
     select: {
       id: true,
@@ -13,6 +32,8 @@ const withBothSides = {
       maxCapacity: true,
       applicationDeadline: true,
       mode: true,
+      requiredSkills: true,
+      categories: true,
     },
   },
 } as const

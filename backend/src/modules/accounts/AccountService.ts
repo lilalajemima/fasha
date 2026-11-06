@@ -8,6 +8,7 @@ import {
 } from '../../core/errors/HttpErrors'
 import type { Hasher } from '../../core/security/PasswordHasher'
 import type { TokenPayload } from '../../core/security/TokenService'
+import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type { AccountStore } from './AccountStore'
 
 /**
@@ -23,7 +24,38 @@ export class AccountService {
   constructor(
     private readonly accounts: AccountStore,
     private readonly passwords: Hasher,
+    private readonly notifier: Notifier,
   ) {}
+
+  /**
+   * Somebody cannot get in. Fasha sends no email, so the only honest thing it
+   * can do is tell the community admins that this person is locked out; they
+   * issue a temporary password from the user table.
+   *
+   * It answers the same way whether or not the address exists. A page that
+   * said "no such account" would be a way to find out who has one.
+   */
+  async forgotten(email: string): Promise<void> {
+    const account = await this.accounts.findByEmail(email.trim())
+
+    if (!account || account.status === UserStatus.DELETED) return
+
+    const admins = await this.accounts.list({
+      search: null,
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+    })
+
+    await Promise.all(
+      admins.map(admin =>
+        this.notifier.send(
+          admin.id,
+          NOTIFICATION_TYPES.passwordHelp,
+          `${account.name} (${account.email}) cannot sign in and has asked for a new password.`,
+        ),
+      ),
+    )
+  }
 
   async changePassword(
     actor: TokenPayload,

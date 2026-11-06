@@ -1,7 +1,7 @@
 export type ProfileChanges = {
   skills?: string[]
   interests?: string[]
-  availability?: string | null
+  availabilitySlots?: string[]
   location?: string | null
   sector?: string | null
 }
@@ -12,6 +12,9 @@ export type PortfolioOwner = {
   portfolioSlug: string
   avatar: string | null
   bio: string | null
+  skills: string[]
+  interests: string[]
+  availabilitySlots: string[]
 }
 
 export interface ProfileStore {

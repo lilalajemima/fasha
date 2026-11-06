@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loaded } from '../../components/Loader'
-import { Button, EmptyState, StatusBadge, Tabs, type Tone } from '../../components/ui'
+import { Button, EmptyState, StatusBadge, type Tone } from '../../components/ui'
 import { api } from '../../lib/api'
 import { hasPassed, longDate, meta, quantity } from '../../lib/format'
 import { PER_PAGE, pageCount, pageNumbers, pageSlice } from '../../lib/paging'
@@ -12,7 +12,7 @@ import './Manage.css'
 type Standing = { id: string; label: string; tone: Tone }
 
 const GROUPS = [
-  { id: 'all', label: 'All' },
+  { id: 'all', label: 'Any kind' },
   { id: 'physical', label: 'In person' },
   { id: 'virtual', label: 'Virtual' },
 ]
@@ -120,8 +120,6 @@ export default function Opportunities() {
         </div>
       </section>
 
-      <Tabs active={group} onChange={next => change(() => setGroup(next))} items={GROUPS} />
-
       {problem && <p className="error" role="alert">{problem}</p>}
 
       <Loaded state={mine} what="your opportunities">
@@ -146,6 +144,16 @@ export default function Opportunities() {
                   value={query}
                   onChange={event => change(() => setQuery(event.target.value))}
                 />
+                <select
+                  className="input toolbar__select"
+                  aria-label="Filter by kind"
+                  value={group}
+                  onChange={event => change(() => setGroup(event.target.value))}
+                >
+                  {GROUPS.map(option => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
                 <select
                   className="input toolbar__select"
                   aria-label="Filter by state"

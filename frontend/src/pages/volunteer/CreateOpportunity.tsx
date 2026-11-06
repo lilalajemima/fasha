@@ -2,9 +2,11 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import PageHeader from '../../components/PageHeader'
-import { Button, Card, Field, RemovableTag, TextField } from '../../components/ui'
+import { TagPicker } from '../../components/Pickers'
+import { Button, Card, Field, TextField } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
+import { useCatalogue } from '../../lib/catalogue'
 import { SECTORS } from '../../lib/sectors'
 import type { OpportunityMode, OpportunityView } from '../../lib/types'
 import { messageFor } from '../../lib/useGet'
@@ -23,43 +25,24 @@ function forInput(iso: string | null): string {
   return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
 }
 
-function TagInput({ label, placeholder, values, onChange }: {
-  label: string
-  placeholder: string
-  values: string[]
-  onChange: (values: string[]) => void
-}) {
-  const [draft, setDraft] = useState('')
 
-  return (
-    <div className="field">
-      <div className="label">{label}</div>
-      <div className="cluster" style={{ marginBottom: 12 }}>
-        {values.map(value => (
-          <RemovableTag key={value} onRemove={() => onChange(values.filter(tag => tag !== value))}>
-            {value}
-          </RemovableTag>
-        ))}
-      </div>
-      <input
-        className="input"
-        placeholder={placeholder}
-        value={draft}
-        aria-label={placeholder}
-        onChange={event => setDraft(event.target.value)}
-        onKeyDown={event => {
-          if (event.key === 'Enter' && draft.trim()) {
-            event.preventDefault()
-            onChange([...values, draft.trim()])
-            setDraft('')
-          }
-        }}
-      />
-    </div>
-  )
+type Brief = { name: string; dataUrl: string }
+
+const MAX_BRIEF_BYTES = 1024 * 1024
+
+/** Reads the chosen PDF into a data URL, which is how it travels to the server. */
+function readPdf(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('That file could not be read'))
+    reader.readAsDataURL(file)
+  })
 }
 
 export default function CreateOpportunity() {
+  const catalogue = useCatalogue()
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams()
@@ -75,11 +58,13 @@ export default function CreateOpportunity() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [place, setPlace] = useState('')
-  const [sector, setSector] = useState('Kimironko')
-  const [capacity, setCapacity] = useState('15')
+  const [sector, setSector] = useState('')
+  const [capacity, setCapacity] = useState('')
   const [deadline, setDeadline] = useState('')
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
+  const [brief, setBrief] = useState<Brief | null | undefined>(undefined)
+  const [briefName, setBriefName] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [reviewNote, setReviewNote] = useState<string | null>(null)
@@ -107,6 +92,7 @@ export default function CreateOpportunity() {
         setDeadline(forInput(item.applicationDeadline))
         setStartsAt(forInput(item.startsAt))
         setEndsAt(forInput(item.endsAt))
+        setBriefName(item.brief?.name ?? '')
         setSkills(item.requiredSkills)
         setCategories(item.categories)
         setReviewNote(item.reviewNote)
@@ -142,6 +128,8 @@ export default function CreateOpportunity() {
       endsAt: new Date(endsAt).toISOString(),
       requiredSkills: skills,
       categories,
+      // undefined leaves a brief alone on an edit; null takes it away.
+      brief: brief === undefined ? undefined : brief,
     }
 
     try {
@@ -205,7 +193,6 @@ export default function CreateOpportunity() {
               value={title}
               required
               minLength={MIN_TITLE}
-              placeholder="Restore the Kimironko wetland path"
               onChange={event => setTitle(event.target.value)}
             />
 
@@ -243,21 +230,73 @@ export default function CreateOpportunity() {
               hint={`At least ${MIN_DESCRIPTION} characters`}
             />
 
-            <TagInput
-              label="Skills you need"
-              placeholder="Add a skill and press Enter..."
-              values={skills}
+            {catalogue.error && <p className="error" role="alert">{catalogue.error}</p>}
+
+            <TagPicker
+              legend="Skills you need"
+              hint="Volunteers choose from this same list, which is what lets Fasha rank them for you."
+              options={catalogue.data?.skills ?? []}
+              value={skills}
               onChange={setSkills}
             />
-            <TagInput
-              label="Areas this falls under"
-              placeholder="Add an area and press Enter..."
-              values={categories}
+            <TagPicker
+              legend="Areas this falls under"
+              hint="The causes this belongs to."
+              options={catalogue.data?.interests ?? []}
+              value={categories}
               onChange={setCategories}
             />
             <p className="muted">
-              These two lists are what the match score is worked out from, so be specific.
+              These two lists are what the match score is worked out from, so choose only
+              what the work really needs: asking for everything matches nobody.
             </p>
+
+            <hr />
+
+            <h2>A brief, if you have one</h2>
+            <p className="muted">
+              A PDF with the detail that does not fit above: what the day looks like, what to
+              bring, who to ask for. Optional, and up to 1MB. Volunteers can open it from the
+              opportunity, and it stays on their portfolio afterwards.
+            </p>
+
+            {briefName && brief !== null ? (
+              <div className="cluster">
+                <span className="chip chip--static">{briefName}</span>
+                <button
+                  type="button"
+                  className="data__action data__action--danger"
+                  onClick={() => {
+                    setBrief(null)
+                    setBriefName('')
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <input
+                className="input"
+                type="file"
+                accept="application/pdf"
+                aria-label="Attach a brief"
+                onChange={async event => {
+                  const file = event.target.files?.[0]
+
+                  if (!file) return
+
+                  if (file.size > MAX_BRIEF_BYTES) {
+                    setError('That PDF is larger than 1MB. Send a smaller one.')
+                    event.target.value = ''
+                    return
+                  }
+
+                  setError('')
+                  setBrief({ name: file.name, dataUrl: await readPdf(file) })
+                  setBriefName(file.name)
+                }}
+              />
+            )}
           </Card>
 
           <Card>
@@ -269,7 +308,7 @@ export default function CreateOpportunity() {
                 label="Location"
                 value={place}
                 required
-                placeholder="Kimironko community garden"
+                placeholder="location, street, town, city"
                 onChange={event => setPlace(event.target.value)}
               />
             )}
@@ -286,9 +325,6 @@ export default function CreateOpportunity() {
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
-              <div className="hint">
-                Used for reporting to the sector committee, and for filtering the feed.
-              </div>
             </div>
 
             {mode === 'PHYSICAL' ? (
@@ -317,7 +353,6 @@ export default function CreateOpportunity() {
                 type="datetime-local"
                 value={endsAt}
                 required
-                hint="Volunteers submit their hours and proof by this date."
                 onChange={event => setEndsAt(event.target.value)}
               />
             )}

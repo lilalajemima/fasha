@@ -65,12 +65,11 @@ export default function Shell() {
         </nav>
 
         <div className="side__foot">
-          {workspace !== 'volunteer' && (
-            <button className="navplate navplate--danger"
-                    onClick={() => { signOut(); navigate('/signin') }}>
-              <Icon name="signout" /> <span>Sign out</span>
-            </button>
-          )}
+          {/* One way out, in the same place for every role. */}
+          <button className="navplate navplate--danger"
+            onClick={() => { signOut(); navigate('/signin') }}>
+            <Icon name="signout" /> <span>Sign out</span>
+          </button>
         </div>
       </aside>
 

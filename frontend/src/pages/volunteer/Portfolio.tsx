@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { Loaded } from '../../components/Loader'
 import Logo from '../../components/Logo'
+import { AvailabilityChips } from '../../components/Pickers'
 import { Button, Card, EmptyState, Tag } from '../../components/ui'
+import { apiUrl } from '../../lib/api'
 import { longDate, sentenceCase } from '../../lib/format'
 import type { PortfolioView } from '../../lib/types'
 import { useGet } from '../../lib/useGet'
@@ -24,6 +26,29 @@ function CopyLink({ link }: { link: string }) {
         <Icon name="share" /> {copied ? 'Link copied' : 'Copy link'}
       </span>
     </Button>
+  )
+}
+
+/** At most three tags on a card; the rest are on the opportunity itself. */
+function Tags({ values }: { values: string[] }) {
+  if (values.length === 0) return null
+
+  return (
+    <div className="cluster pf-card__tags">
+      {values.slice(0, 3).map(value => <Tag key={value}>{value}</Tag>)}
+      {values.length > 3 && <span className="pf-card__more">+{values.length - 3}</span>}
+    </div>
+  )
+}
+
+/** The PDF the organiser attached, opened straight from the page. */
+function Brief({ brief }: { brief: { name: string; url: string } | null }) {
+  if (!brief) return null
+
+  return (
+    <a className="pf-card__brief" href={apiUrl(brief.url)} target="_blank" rel="noreferrer">
+      Brief ↗
+    </a>
   )
 }
 
@@ -67,6 +92,15 @@ export default function Portfolio() {
                 <main className="pf-sheet">
                   {view.volunteer.bio && <p className="pf-bio">{view.volunteer.bio}</p>}
 
+                  {view.volunteer.availabilitySlots.length > 0 && (
+                    <div className="pf-when">
+                      <span className="pf-when__label">Usually free</span>
+                      <AvailabilityChips slots={view.volunteer.availabilitySlots} />
+                    </div>
+                  )}
+
+                  {/* One sheet, not a stack of cards: the numbers, what they
+                      can do, and what they have done read as one person. */}
                   <Card>
                     <div className="stat-row">
                       <div>
@@ -81,52 +115,110 @@ export default function Portfolio() {
                         <div className="stat-label">Initiatives organised</div>
                         <div className="stat-value">{view.totals.organised}</div>
                       </div>
-                      <div>
-                        <div className="stat-label">Skills</div>
-                        <div className="stat-value">{view.totals.skills.length}</div>
-                      </div>
                     </div>
-                  </Card>
 
-                  <h2 className="pf-heading">Skills</h2>
-                  <Card>
-                    <p className="muted" style={{ marginTop: 14, marginBottom: 0 }}>
-                      Credited through approved contributions, not self-reported tags.
-                    </p>
-                    <div className="cluster">
-                      {view.totals.skills.map(skill => <Tag key={skill}>{skill}</Tag>)}
-                    </div>
-                  </Card>
+                    {(view.volunteer.skills.length > 0 ||
+                      view.volunteer.interests.length > 0) && (
+                      <>
+                        <hr />
+                        <h2>Skills and interests</h2>
 
-                  <h2 className="pf-heading">Completed initiatives</h2>
-                  {view.entries.length === 0 ? (
-                    <Card>
+                        {view.volunteer.skills.length > 0 && (
+                          <>
+                            <div className="label">Skills</div>
+                            <div className="cluster">
+                              {view.volunteer.skills.map(skill => <Tag key={skill}>{skill}</Tag>)}
+                            </div>
+                          </>
+                        )}
+
+                        {view.volunteer.interests.length > 0 && (
+                          <>
+                            <div className="label" style={{ marginTop: 16 }}>Interests</div>
+                            <div className="cluster">
+                              {view.volunteer.interests.map(area => <Tag key={area}>{area}</Tag>)}
+                            </div>
+                          </>
+                        )}
+
+                        {view.totals.skills.length > 0 && (
+                          <p className="pf-stat-note">
+                            Verified through completed work: {view.totals.skills.join(', ')}.
+                          </p>
+                        )}
+                      </>
+                    )}
+
+                    <hr />
+                    <h2>Took part in</h2>
+
+                    {view.entries.length === 0 ? (
                       <EmptyState>
                         Nothing verified yet. Hours appear here once an organiser confirms them.
                       </EmptyState>
-                    </Card>
-                  ) : (
-                    <div className="pf-track">
-                      {view.entries.map(entry => (
-                        <article key={entry.id} className="pf-card">
-                          <div>
-                            <h3 className="pf-card__title">{entry.opportunity.title}</h3>
-                            <p className="pf-card__meta">
-                              {sentenceCase(entry.opportunity.mode)} · {longDate(entry.creditedOn)}
-                            </p>
-                          </div>
-                          <div>
-                            {entry.skills.length > 0 && (
-                              <p className="pf-card__skills">
-                                ✓ {entry.skills.join(', ')} credited
+                    ) : (
+                      <div className="pf-track">
+                        {view.entries.map(entry => (
+                          <article key={entry.id} className="pf-card">
+                            <div>
+                              <h3 className="pf-card__title">{entry.opportunity.title}</h3>
+                              <p className="pf-card__meta">
+                                {entry.opportunity.organiser} ·{' '}
+                                {sentenceCase(entry.opportunity.mode)} ·{' '}
+                                {longDate(entry.creditedOn)}
                               </p>
-                            )}
-                            <div className="pf-card__hours">{entry.hours} h</div>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
+                              <p className="pf-card__body">{entry.opportunity.description}</p>
+                              <Tags
+                                values={[
+                                  ...entry.opportunity.requiredSkills,
+                                  ...entry.opportunity.categories,
+                                ]}
+                              />
+                            </div>
+
+                            <div className="pf-card__foot">
+                              <span className="pf-card__hours">{entry.hours} h</span>
+                              <Brief brief={entry.opportunity.brief} />
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+
+                    {view.organised.length > 0 && (
+                      <>
+                        <hr />
+                        <h2>Organised themselves</h2>
+
+                        <div className="pf-track">
+                          {view.organised.map(item => (
+                            <article key={item.id} className="pf-card">
+                              <div>
+                                <h3 className="pf-card__title">{item.title}</h3>
+                                <p className="pf-card__meta">
+                                  {sentenceCase(item.mode)}
+                                  {item.location ? ` · ${item.location}` : ''}
+                                  {item.happenedOn ? ` · ${longDate(item.happenedOn)}` : ''}
+                                </p>
+                                <p className="pf-card__body">{item.description}</p>
+                                <Tags values={[...item.requiredSkills, ...item.categories]} />
+                              </div>
+
+                              <div className="pf-card__foot">
+                                <span className="pf-card__hours">
+                                  {item.people}
+                                  <span className="pf-card__unit">
+                                    {item.people === 1 ? ' person' : ' people'}
+                                  </span>
+                                </span>
+                                <Brief brief={item.brief} />
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </Card>
                 </main>
               </>
             )

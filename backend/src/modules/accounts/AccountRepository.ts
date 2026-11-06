@@ -25,6 +25,10 @@ export class AccountRepository extends BaseRepository implements AccountStore {
     return this.db.user.findUnique({ where: { id } })
   }
 
+  findByEmail(email: string): Promise<AccountRow | null> {
+    return this.db.user.findUnique({ where: { email: email.toLowerCase() }, select: columns })
+  }
+
   findRow(id: string): Promise<AccountRow | null> {
     return this.db.user.findUnique({ where: { id }, select: columns })
   }
@@ -85,7 +89,7 @@ export class AccountRepository extends BaseRepository implements AccountStore {
         data: {
           skills: [],
           interests: [],
-          availability: null,
+          availabilitySlots: [],
           location: null,
           sector: null,
           // The old address stops resolving, so a shared portfolio link dies with the account.

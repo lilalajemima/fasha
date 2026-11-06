@@ -72,6 +72,10 @@ export default function SignIn() {
         <Field id="password" label="Password" type="password" value={password} required
                autoComplete="current-password" onChange={e => setPassword(e.target.value)} />
 
+        <p className="muted" style={{ marginTop: -6, marginBottom: 18 }}>
+          <Link to="/forgotten">Forgotten your password?</Link>
+        </p>
+
         {error && <p className="error" role="alert">{error}</p>}
 
         <Button type="submit" variant="primary" block disabled={busy}>

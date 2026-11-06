@@ -7,6 +7,7 @@ import {
 import { BaseRepository } from '../../core/database/BaseRepository'
 import { prisma } from '../../core/database/prisma'
 import type {
+  ActivityCount,
   FeedFilter,
   NewOpportunity,
   OpportunityRecord,
@@ -16,6 +17,8 @@ import type {
 
 const withCreator = {
   creator: { select: { id: true, name: true, role: true } },
+  // The name, never the megabyte: the file has its own endpoint.
+  brief: { select: { name: true } },
 } as const
 
 const caseInsensitive = 'insensitive' as const
@@ -30,9 +33,43 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
     status: OpportunityStatus,
     input: NewOpportunity,
   ): Promise<OpportunityRecord> {
+    const { brief, ...fields } = input
+
     return this.db.opportunity.create({
-      data: { ...input, creatorId, status },
+      data: {
+        ...fields,
+        creatorId,
+        status,
+        ...(brief ? { brief: { create: { name: brief.name, data: brief.data } } } : {}),
+      },
       include: withCreator,
+    })
+  }
+
+  findBrief(id: string): Promise<{ name: string; data: string } | null> {
+    return this.db.opportunityBrief.findUnique({
+      where: { opportunityId: id },
+      select: { name: true, data: true },
+    })
+  }
+
+  /**
+   * The oversight calendar: every opportunity, in any state, that touches the
+   * window. Something proposed long ago but happening next month still counts,
+   * so the window is tested against the dates that matter rather than against
+   * when the row was written.
+   */
+  findSince(since: Date): Promise<OpportunityRecord[]> {
+    return this.db.opportunity.findMany({
+      where: {
+        OR: [
+          { startsAt: { gte: since } },
+          { endsAt: { gte: since } },
+          { applicationDeadline: { gte: since } },
+        ],
+      },
+      include: withCreator,
+      orderBy: { applicationDeadline: 'asc' },
     })
   }
 
@@ -147,16 +184,31 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
     })
   }
 
-    update(
+  async update(
     id: string,
     input: NewOpportunity,
     status: OpportunityStatus,
   ): Promise<OpportunityRecord> {
-    return this.db.opportunity.update({
-      where: { id },
-      data: { ...input, status },
-      include: withCreator,
-    })
+    const { brief, ...fields } = input
+
+    // `delete: true` on a one-to-one throws when there is nothing to delete,
+    // so taking a brief away is its own statement, in the same transaction.
+    const [, updated] = await this.db.$transaction([
+      this.db.opportunityBrief.deleteMany({
+        where: brief === undefined ? { opportunityId: '' } : { opportunityId: id },
+      }),
+      this.db.opportunity.update({
+        where: { id },
+        data: {
+          ...fields,
+          status,
+          ...(brief ? { brief: { create: { name: brief.name, data: brief.data } } } : {}),
+        },
+        include: withCreator,
+      }),
+    ])
+
+    return updated
   }
 
   closeApplications(id: string, at: Date): Promise<OpportunityRecord> {

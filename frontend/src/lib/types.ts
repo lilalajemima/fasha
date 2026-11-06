@@ -19,6 +19,8 @@ export type OpportunityView = {
   reviewNote: string | null
   requiredSkills: string[]
   categories: string[]
+  /** An optional PDF with more detail; the url is an API path. */
+  brief: { name: string; url: string } | null
   createdAt: string
   creator: { id: string; name: string; role: ServerRole }
   matchScore?: number
@@ -30,7 +32,19 @@ export type ApplicationView = {
   motivationStatement: string
   resumeUrl: string | null
   createdAt: string
-  volunteer: { id: string; name: string; email: string }
+  volunteer: {
+    id: string
+    name: string
+    email: string
+    avatar: string | null
+    portfolioSlug: string | null
+    skills: string[]
+    interests: string[]
+    availabilitySlots: string[]
+    location: string | null
+  }
+  /** How well they fit this opportunity, and which tags they share with it. */
+  match: { score: number; sharedSkills: string[]; sharedInterests: string[] }
   opportunity: {
     id: string
     title: string
@@ -61,6 +75,8 @@ export type SubmissionView = {
   status: SubmissionStatus
   hoursClaimed: number
   proofUrl: string
+  /** Why it was turned down, written by the organiser. Null unless it was. */
+  reviewNote: string | null
   createdAt: string
   volunteer: { id: string; name: string }
   opportunity: { id: string; title: string }
@@ -94,23 +110,59 @@ export type ProfileView = {
   profile: {
     skills: string[]
     interests: string[]
-    availability: string | null
+    availabilitySlots: string[]
     location: string | null
     sector: string | null
     portfolioSlug: string
   } | null
 }
 
-export type PortfolioView = {
-  volunteer: { name: string; portfolioSlug: string; avatar: string | null; bio: string | null }
-  totals: { hours: number; opportunities: number; organised: number; skills: string[] }
-  entries: {
+export type PortfolioBrief = { name: string; url: string }
+
+export type PortfolioEntryView = {
+  id: string
+  hours: number
+  skills: string[]
+  creditedOn: string
+  opportunity: {
     id: string
-    hours: number
+    title: string
+    description: string
+    mode: OpportunityMode
+    organiser: string
+    requiredSkills: string[]
+    categories: string[]
+    brief: PortfolioBrief | null
+  }
+}
+
+export type OrganisedView = {
+  id: string
+  title: string
+  description: string
+  mode: OpportunityMode
+  sector: string | null
+  location: string | null
+  happenedOn: string | null
+  requiredSkills: string[]
+  categories: string[]
+  people: number
+  brief: PortfolioBrief | null
+}
+
+export type PortfolioView = {
+  volunteer: {
+    name: string
+    portfolioSlug: string
+    avatar: string | null
+    bio: string | null
     skills: string[]
-    creditedOn: string
-    opportunity: { id: string; title: string; mode: OpportunityMode }
-  }[]
+    interests: string[]
+    availabilitySlots: string[]
+  }
+  totals: { hours: number; opportunities: number; organised: number; skills: string[] }
+  entries: PortfolioEntryView[]
+  organised: OrganisedView[]
 }
 
 export type NotificationView = {

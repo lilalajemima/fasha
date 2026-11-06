@@ -36,6 +36,9 @@ export class ProfileRepository extends BaseRepository implements ProfileStore {
       portfolioSlug: profile.portfolioSlug,
       avatar: profile.user.avatar,
       bio: profile.user.bio,
+      skills: profile.skills,
+      interests: profile.interests,
+      availabilitySlots: profile.availabilitySlots,
     }
   }
 }

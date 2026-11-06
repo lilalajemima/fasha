@@ -1,9 +1,11 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loaded } from '../components/Loader'
-import { Button, Card, Field, RemovableTag, StatusBadge, TextField } from '../components/ui'
+import { AvailabilityPicker, TagPicker } from '../components/Pickers'
+import { Button, Card, Field, StatusBadge, TextField } from '../components/ui'
 import { useAuth } from '../auth/AuthContext'
 import { api } from '../lib/api'
+import { useCatalogue } from '../lib/catalogue'
 import { toSquareDataUrl } from '../lib/image'
 import { SECTORS } from '../lib/sectors'
 import type { ProfileView } from '../lib/types'
@@ -19,41 +21,6 @@ function initials(name: string): string {
     .slice(0, 2)
     .map(part => part[0]!.toUpperCase())
     .join('')
-}
-
-function TagEditor({ label, values, placeholder, onAdd, onRemove }: {
-  label: string
-  values: string[]
-  placeholder: string
-  onAdd: (value: string) => void
-  onRemove: (value: string) => void
-}) {
-  const [draft, setDraft] = useState('')
-
-  return (
-    <div className="field">
-      <div className="label">{label}</div>
-      <div className="cluster" style={{ marginBottom: 12 }}>
-        {values.map(value => (
-          <RemovableTag key={value} onRemove={() => onRemove(value)}>{value}</RemovableTag>
-        ))}
-      </div>
-      <input
-        className="input"
-        placeholder={placeholder}
-        value={draft}
-        aria-label={placeholder}
-        onChange={event => setDraft(event.target.value)}
-        onKeyDown={event => {
-          if (event.key === 'Enter' && draft.trim()) {
-            event.preventDefault()
-            onAdd(draft.trim())
-            setDraft('')
-          }
-        }}
-      />
-    </div>
-  )
 }
 
 function Picture({ name, avatar, onPick, onRemove, noun }: {
@@ -183,7 +150,7 @@ function ChangePassword() {
       </form>
 
       <p className="muted" style={{ margin: '14px 0 0' }}>
-        Forgotten it? Fasha doesn't send email, so ask the community admin to issue a temporary
+        Forgotten it? Fasha doesn't send an  email, so ask the community admin to issue a temporary
         one. You'll be asked to replace it as soon as you sign in.
       </p>
     </Card>
@@ -273,6 +240,7 @@ function Leaving() {
 
 function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void }) {
   const { user, signOut, refresh } = useAuth()
+  const catalogue = useCatalogue()
   const navigate = useNavigate()
   const isVolunteer = loaded.profile !== null
   // An admin has no volunteer profile either, so a missing profile cannot stand
@@ -285,7 +253,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
   const [avatar, setAvatar] = useState(loaded.user.avatar)
   const [skills, setSkills] = useState(loaded.profile?.skills ?? [])
   const [interests, setInterests] = useState(loaded.profile?.interests ?? [])
-  const [availability, setAvailability] = useState(loaded.profile?.availability ?? '')
+  const [availabilitySlots, setAvailabilitySlots] = useState(loaded.profile?.availabilitySlots ?? [])
   const [location, setLocation] = useState(loaded.profile?.location ?? '')
   const [sector, setSector] = useState(loaded.profile?.sector ?? '')
   const [error, setError] = useState('')
@@ -299,7 +267,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
     setAvatar(loaded.user.avatar)
     setSkills(loaded.profile?.skills ?? [])
     setInterests(loaded.profile?.interests ?? [])
-    setAvailability(loaded.profile?.availability ?? '')
+    setAvailabilitySlots(loaded.profile?.availabilitySlots ?? [])
     setLocation(loaded.profile?.location ?? '')
     setSector(loaded.profile?.sector ?? '')
     setError('')
@@ -331,7 +299,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
           ? {
               skills,
               interests,
-              availability: availability.trim() === '' ? null : availability.trim(),
+              availabilitySlots,
               location: location.trim() === '' ? null : location.trim(),
               sector: sector === '' ? null : sector,
             }
@@ -412,21 +380,26 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
 
                   <h2>Skills and interests</h2>
                   <p className="muted">
-                    These decide what Discover puts in front of you. Press Enter to add one.
+                    These decide what Discover puts in front of you, and how you rank among
+                    the people who apply to the same work. They are chosen from a list so
+                    that an organiser asking for one of them finds you.
                   </p>
-                  <TagEditor
-                    label="Skills"
-                    values={skills}
-                    placeholder="Add a skill..."
-                    onAdd={value => setSkills([...skills, value])}
-                    onRemove={value => setSkills(skills.filter(skill => skill !== value))}
+
+                  {catalogue.error && <p className="error" role="alert">{catalogue.error}</p>}
+
+                  <TagPicker
+                    legend="Skills"
+                    hint="What you can do."
+                    options={catalogue.data?.skills ?? []}
+                    value={skills}
+                    onChange={setSkills}
                   />
-                  <TagEditor
-                    label="Areas of interest"
-                    values={interests}
-                    placeholder="Add an interest..."
-                    onAdd={value => setInterests([...interests, value])}
-                    onRemove={value => setInterests(interests.filter(item => item !== value))}
+                  <TagPicker
+                    legend="Areas of interest"
+                    hint="The causes you want to spend time on."
+                    options={catalogue.data?.interests ?? []}
+                    value={interests}
+                    onChange={setInterests}
                   />
 
                   <div className="profile-rule" />
@@ -449,14 +422,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
 
                   <div className="profile-rule" />
 
-                  <h2>General availability</h2>
-                  <Field
-                    id="availability"
-                    label="When you are usually free"
-                    value={availability}
-                    placeholder="Weekend mornings"
-                    onChange={event => setAvailability(event.target.value)}
-                  />
+                  <AvailabilityPicker value={availabilitySlots} onChange={setAvailabilitySlots} />
                 </>
               )}
             </Card>
@@ -485,22 +451,6 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
               </Link>
             </Card>
           )}
-
-          <Card>
-            <h2>Account</h2>
-            <p className="muted">Signed in as {loaded.user.email}</p>
-            <Button
-              type="button"
-              variant="primary"
-              block
-              onClick={() => {
-                signOut()
-                navigate('/signin')
-              }}
-            >
-              Sign out
-            </Button>
-          </Card>
         </aside>
       </div>
     </>

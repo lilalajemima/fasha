@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Loading, Problem } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
 import { Button, EmptyState } from '../../components/ui'
@@ -279,12 +280,24 @@ export function AttendancePanel({ opportunity }: { opportunity: OpportunityView 
   )
 }
 
-/** The organisation's page: pick one of their events, then take attendance. */
+/** The organisation's page: their events as a table, then one event's door. */
 export default function Attendance() {
   const mine = useGet<OpportunityView[]>('/opportunities/mine')
   const workload = useGet<WorkloadRow[]>('/opportunities/mine/workload')
-  const [chosen, setChosen] = useState('')
+  // ?event=<id> arrives from the calendar, so a tap on an entry lands on that
+  // event's register rather than on a list you then have to search.
+  const [params, setParams] = useSearchParams()
+  const chosen = params.get('event') ?? ''
+
+  function choose(id: string) {
+    if (id) setParams({ event: id })
+    else setParams({})
+  }
+
   const [query, setQuery] = useState('')
+  const [order, setOrder] = useState('newest')
+  const [downloading, setDownloading] = useState('')
+  const [error, setError] = useState('')
 
   const published = (mine.data ?? []).filter(
     item => item.status === 'PUBLISHED' && item.mode === 'PHYSICAL',
@@ -297,11 +310,32 @@ export default function Attendance() {
   const current = published.find(item => item.id === chosen)
   const words = query.trim().toLowerCase()
 
+  /** The register is already a CSV on the server; this only saves it. */
+  async function download(item: OpportunityView) {
+    setError('')
+    setDownloading(item.id)
+
+    try {
+      const blob = await api.download(`/opportunities/${item.id}/attendance.csv`)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = `attendance-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (problem) {
+      setError(messageFor(problem))
+    } finally {
+      setDownloading('')
+    }
+  }
+
   if (current) {
     return (
       <>
         <p className="backlink">
-          <button className="linkbtn" onClick={() => setChosen('')}>← All events</button>
+          <button className="linkbtn" onClick={() => choose('')}>← All events</button>
         </p>
 
         <PageHeader title={current.title} />
@@ -320,9 +354,16 @@ export default function Attendance() {
     )
   }
 
-  const visible = published.filter(item =>
-    `${item.title} ${item.sector ?? ''} ${item.location ?? ''}`.toLowerCase().includes(words),
-  )
+  const visible = published
+    .filter(item =>
+      `${item.title} ${item.sector ?? ''} ${item.location ?? ''}`.toLowerCase().includes(words),
+    )
+    .sort((a, b) => {
+      const left = Date.parse(a.startsAt ?? a.applicationDeadline)
+      const right = Date.parse(b.startsAt ?? b.applicationDeadline)
+
+      return order === 'newest' ? right - left : left - right
+    })
 
   return (
     <>
@@ -331,6 +372,7 @@ export default function Attendance() {
       </section>
 
       {mine.error && <Problem message={mine.error} onRetry={mine.reload} />}
+      {error && <p className="error" role="alert">{error}</p>}
 
       <div className="toolbar">
         <input
@@ -340,6 +382,18 @@ export default function Attendance() {
           value={query}
           onChange={event => setQuery(event.target.value)}
         />
+        <span className="toolbar__field">
+          <label className="toolbar__label" htmlFor="order">Order</label>
+          <select
+            id="order"
+            className="input toolbar__select"
+            value={order}
+            onChange={event => setOrder(event.target.value)}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </span>
         <span className="toolbar__count">{quantity(visible.length, 'event')}</span>
       </div>
 
@@ -356,33 +410,65 @@ export default function Attendance() {
         <EmptyState>Nothing matches that search.</EmptyState>
       )}
 
-      <div className="events">
-        {visible.map(item => {
-          const row = counts.get(item.id)
+      {visible.length > 0 && (
+        <table className="data">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>When</th>
+              <th>Where</th>
+              <th>Accepted</th>
+              <th aria-hidden="true" />
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map(item => {
+              const row = counts.get(item.id)
 
-          return (
-            <article key={item.id} className="event-card">
-              <div>
-                <h3>{item.title}</h3>
-                <p className="data__meta">
-                  {meta(whenLabel(item.startsAt, item.endsAt), item.location, item.sector)}
-                </p>
-                <p className="data__meta">
-                  {row
-                    ? `${row.acceptedApplications} of ${item.maxCapacity} accepted`
-                    : `up to ${quantity(item.maxCapacity, 'volunteer')}`}
-                </p>
-              </div>
-              <Button
-                variant={item.id === nextUp?.id ? 'primary' : 'default'}
-                onClick={() => setChosen(item.id)}
-              >
-                Take attendance
-              </Button>
-            </article>
-          )
-        })}
-      </div>
+              return (
+                <tr key={item.id} className="data__row--plain">
+                  <td>
+                    <span className="data__title">{item.title}</span>
+                    {item.id === nextUp?.id && (
+                      <div className="data__meta">Next up</div>
+                    )}
+                  </td>
+                  <td>
+                    {whenLabel(item.startsAt, item.endsAt)}
+                    {hasPassed(item.endsAt ?? item.applicationDeadline) && (
+                      <div className="data__meta">Finished</div>
+                    )}
+                  </td>
+                  <td>
+                    {item.location ?? '—'}
+                    <div className="data__meta">{item.sector ?? ''}</div>
+                  </td>
+                  <td>
+                    {row ? `${row.acceptedApplications} of ${item.maxCapacity}` : `up to ${item.maxCapacity}`}
+                  </td>
+                  <td className="data__actions">
+                    <button
+                      type="button"
+                      className="data__action"
+                      onClick={() => choose(item.id)}
+                    >
+                      Take attendance
+                    </button>
+                    <button
+                      type="button"
+                      className="data__action"
+                      disabled={downloading === item.id}
+                      onClick={() => download(item)}
+                    >
+                      {downloading === item.id ? 'Preparing…' : 'Export CSV'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
     </>
   )
 }

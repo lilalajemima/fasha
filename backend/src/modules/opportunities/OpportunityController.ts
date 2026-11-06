@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express'
+import { INTERESTS, SKILLS } from '../../core/domain/catalogue'
 import {
   readCount,
   readDecision,
@@ -9,6 +10,7 @@ import {
   readSector,
   readShortText,
   readString,
+  readOptionalPdf,
   readTagList,
 } from '../../core/validation/readers'
 import type { FeedFilter, NewOpportunity } from './OpportunityStore'
@@ -62,6 +64,20 @@ export class OpportunityController {
     res.json(await this.opportunities.awaitingApproval())
   }
 
+  /** The PDF itself, sent as a PDF rather than as JSON. */
+  brief = async (req: Request, res: Response) => {
+    const file = await this.opportunities.brief(req.user, routeParam(req, 'id'))
+
+    res.type('application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="${file.name.replace(/"/g, '')}"`)
+    res.send(Buffer.from(file.data, 'base64'))
+  }
+
+  /** A year of everything, which is as far back as the calendar reaches. */
+  everything = async (req: Request, res: Response) => {
+    res.json(await this.opportunities.everything(req.user!, 12))
+  }
+
   detail = async (req: Request, res: Response) => {
     res.json(await this.opportunities.detail(req.user!, routeParam(req, 'id')))
   }
@@ -88,8 +104,9 @@ export class OpportunityController {
       applicationDeadline: readFutureDate(req.body, 'applicationDeadline'),
       startsAt: readOptionalFutureDate(req.body, 'startsAt'),
       endsAt: readFutureDate(req.body, 'endsAt'),
-      requiredSkills: readTagList(req.body, 'requiredSkills'),
-      categories: readTagList(req.body, 'categories'),
+      requiredSkills: readTagList(req.body, 'requiredSkills', SKILLS),
+      categories: readTagList(req.body, 'categories', INTERESTS),
+      brief: readOptionalPdf(req.body, 'brief'),
     }
   }
 

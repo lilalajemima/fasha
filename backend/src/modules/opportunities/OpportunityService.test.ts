@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ConflictError } from '../../core/errors/HttpErrors'
+import { ConflictError, ForbiddenError } from '../../core/errors/HttpErrors'
 import { MatchingService } from '../matching/MatchingService'
 import type { Notifier } from '../notifications/Notifier'
 import { OpportunityService } from './OpportunityService'
@@ -37,6 +37,7 @@ function makeRecord(overrides: Partial<OpportunityRecord> = {}): OpportunityReco
     createdAt: new Date(),
     updatedAt: new Date(),
     creator: { id: 'organisation-1', name: 'Green Neighbourhood', role: 'ORGANISATION' },
+    brief: null,
     ...overrides,
   }
 }
@@ -64,6 +65,14 @@ class FakeOpportunityStore implements OpportunityStore {
 
   async findPublished(_filter: FeedFilter) {
     return this.records.filter(record => record.status === 'PUBLISHED')
+  }
+
+  async findBrief() {
+    return null
+  }
+
+  async findSince() {
+    return this.records
   }
 
   async findById(id: string) {
@@ -165,6 +174,7 @@ function citizenProposal(overrides: Partial<OpportunityRecord> = {}): Opportunit
     status: 'PENDING_APPROVAL',
     creatorId: 'volunteer-1',
     creator: { id: 'volunteer-1', name: 'Amara Mensah', role: 'VOLUNTEER' },
+    brief: null,
     ...overrides,
   })
 }
@@ -306,6 +316,23 @@ describe('reviewing a volunteer proposal', () => {
     expect(notifier.sent).toHaveLength(1)
     expect(notifier.sent[0].userId).toBe('volunteer-9')
     expect(notifier.sent[0].message).toContain('approved')
+  })
+})
+
+describe('the oversight calendar', () => {
+  it('gives the community admin everything, whatever its state', async () => {
+    const list = await buildService([
+      makeRecord(),
+      makeRecord({ id: 'opportunity-2', status: 'PENDING_APPROVAL' }),
+    ]).everything({ userId: 'admin-1', role: 'ADMIN' }, 12)
+
+    expect(list.map(entry => entry.status)).toEqual(['PUBLISHED', 'PENDING_APPROVAL'])
+  })
+
+  it('is refused to an organiser', async () => {
+    await expect(
+      buildService([makeRecord()]).everything({ userId: 'organisation-1', role: 'ORGANISATION' }, 12),
+    ).rejects.toThrow(ForbiddenError)
   })
 })
 

@@ -5,6 +5,7 @@ import type { UserStore } from '../auth/UserStore'
 import type { MatchingService } from '../matching/MatchingService'
 import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type {
+  BriefFile,
   FeedFilter,
   NewOpportunity,
   OpportunityRecord,
@@ -120,6 +121,44 @@ export class OpportunityService {
     return this.matching
       .rank(tags, published)
       .map(entry => toView(entry.opportunity, entry.score))
+  }
+
+  /**
+   * The brief of published work, readable by anyone — a portfolio is public,
+   * and a brief that needs a token could not open from one. Before it is
+   * published, only the people who may already inspect it.
+   */
+  async brief(viewer: TokenPayload | undefined, id: string): Promise<BriefFile> {
+    const record = await this.findOrFail(id)
+
+    if (record.status !== OpportunityStatus.PUBLISHED) {
+      if (!viewer || !this.mayInspect(viewer, record)) {
+        throw new ForbiddenError('That opportunity is not published yet')
+      }
+    }
+
+    const file = await this.opportunities.findBrief(id)
+
+    if (!file) {
+      throw new NotFoundError('That opportunity has no brief')
+    }
+
+    return file
+  }
+
+  /** Everything the community admin oversees, for the calendar on their overview. */
+  async everything(viewer: TokenPayload, months: number): Promise<OpportunityView[]> {
+    if (!REVIEWER_ROLES.includes(viewer.role)) {
+      throw new ForbiddenError('Only the community admin sees every opportunity')
+    }
+
+    const since = new Date()
+
+    since.setMonth(since.getMonth() - months)
+
+    const records = await this.opportunities.findSince(since)
+
+    return records.map(record => toView(record))
   }
 
   async detail(viewer: TokenPayload, id: string): Promise<OpportunityView> {

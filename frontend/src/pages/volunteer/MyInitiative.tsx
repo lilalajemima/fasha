@@ -49,12 +49,13 @@ function Details({ item }: { item: OpportunityView }) {
   const status = item.status as OpportunityStatus
 
   return (
-    <div className="stack form-column">
+    <div className="form-column">
       <Card>
         <div className="cluster">
           <StatusBadge tone={TONE[status]}>{LABEL[status]}</StatusBadge>
           <span className="muted">Proposed {longDate(item.createdAt)}</span>
         </div>
+
         {status === 'PENDING_APPROVAL' && (
           <p className="muted" style={{ margin: '12px 0 0' }}>
             A reviewer is looking at this. You can still change or delete it until they
@@ -66,14 +67,14 @@ function Details({ item }: { item: OpportunityView }) {
             <strong>Reviewer:</strong> {item.reviewNote} Editing it sends it back for review.
           </p>
         )}
-      </Card>
 
-      <Card>
+        <hr />
+
         <h2>What it involves</h2>
-        <p style={{ marginBottom: 0 }}>{item.description}</p>
-      </Card>
+        <p>{item.description}</p>
 
-      <Card>
+        <hr />
+
         <h2>The details</h2>
         <div className="stat-row">
           <Fact label="Format" value={item.mode === 'PHYSICAL' ? 'In person' : 'Virtual'} />
@@ -115,8 +116,8 @@ function Details({ item }: { item: OpportunityView }) {
 
 /**
  * One initiative, with the organiser's tools for it. A volunteer who proposes
- * something runs it too, so applicants, attendance and deliverables live inside
- * the initiative rather than in a workspace listing everybody's work.
+ * something runs it too, so applicants and the proof of what happened live
+ * inside the initiative rather than in a workspace listing everybody's work.
  */
 export default function MyInitiative({ tab = 'details' }: { tab?: InitiativeTab }) {
   const { id } = useParams()
@@ -207,20 +208,23 @@ export default function MyInitiative({ tab = 'details' }: { tab?: InitiativeTab 
                 >
                   Applicants
                 </Link>
-                {inPerson && (
+                {/* Hours come from the register for work people turn up to and
+                    from what they send in for work done remotely. Never both. */}
+                {inPerson ? (
                   <Link
                     to={`${base}/attendance`}
                     className={tab === 'attendance' ? 'is-current' : undefined}
                   >
                     Attendance
                   </Link>
+                ) : (
+                  <Link
+                    to={`${base}/deliverables`}
+                    className={tab === 'deliverables' ? 'is-current' : undefined}
+                  >
+                    Deliverables
+                  </Link>
                 )}
-                <Link
-                  to={`${base}/deliverables`}
-                  className={tab === 'deliverables' ? 'is-current' : undefined}
-                >
-                  Deliverables
-                </Link>
               </nav>
 
               {problem && <p className="error" role="alert">{problem}</p>}
@@ -249,12 +253,17 @@ export default function MyInitiative({ tab = 'details' }: { tab?: InitiativeTab 
               )}
 
               {tab === 'deliverables' && (
-                published ? (
-                  <DeliverablesPanel opportunityId={item.id} />
-                ) : (
+                !published ? (
                   <EmptyState>
                     Volunteers can send work in once this is approved and published.
                   </EmptyState>
+                ) : inPerson ? (
+                  <EmptyState>
+                    This one happens in person, so its hours come from the register under
+                    Attendance rather than from work sent in.
+                  </EmptyState>
+                ) : (
+                  <DeliverablesPanel opportunityId={item.id} />
                 )
               )}
             </>

@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { Loaded } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
 import { Button, Card, StatusBadge, Tag, TextField } from '../../components/ui'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../lib/api'
+import { availabilityLine } from '../../lib/catalogue'
 import { dateAndTime, hasPassed, meta, quantity, sentenceCase, whenLabel } from '../../lib/format'
 import type { OpportunityView, ProfileView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
@@ -74,7 +75,7 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
           <h3 style={{ marginTop: 8, marginBottom: 2 }}>{me.data.user.name}</h3>
           <p className="muted">
             {me.data.profile.location ?? 'Location not set'} ·{' '}
-            {me.data.profile.availability ?? 'Availability not set'}
+            {availabilityLine(me.data.profile.availabilitySlots)}
           </p>
           <div className="cluster">
             {me.data.profile.skills.map(skill => (
@@ -121,15 +122,25 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
   )
 }
 
+/** Where "back" goes, told by whoever linked here; Discover if nobody said. */
+type From = { to: string; label: string }
+
 export default function OpportunityDetail() {
   const { id = '' } = useParams()
+  const location = useLocation()
   const opportunity = useGet<OpportunityView>(`/opportunities/${id}`)
+  const back = (location.state as { from?: From } | null)?.from ?? {
+    to: '/discover',
+    label: 'Discover',
+  }
 
   return (
     <Loaded state={opportunity} what="this opportunity">
       {item => (
         <>
-          <p style={{ marginBottom: 18 }}><Link to="/discover">← Back to Discover</Link></p>
+          <p style={{ marginBottom: 18 }}>
+            <Link to={back.to}>← Back to {back.label}</Link>
+          </p>
 
           <PageHeader title={item.title} />
 

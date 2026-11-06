@@ -43,6 +43,14 @@ class CountingStore implements OpportunityStore {
     return []
   }
 
+  async findBrief() {
+    return null
+  }
+
+  async findSince() {
+    return []
+  }
+
   async findById(): Promise<OpportunityRecord | null> {
     return null
   }

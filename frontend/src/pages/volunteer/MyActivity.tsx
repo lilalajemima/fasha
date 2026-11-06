@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { Loaded } from '../../components/Loader'
 import { Button, Card, EmptyState, Field, StatusBadge, Tabs } from '../../components/ui'
@@ -14,6 +14,7 @@ import type {
   SubmissionView,
 } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
+import '../../components/pickers.css'
 import '../../styles/workspace.css'
 
 const APPLICATION_TONE: Record<ApplicationStatus, 'ok' | 'warn' | 'bad' | 'neutral'> = {
@@ -42,12 +43,19 @@ const SUBMISSION_LABEL: Record<SubmissionStatus, string> = {
   REJECTED: 'Rejected',
 }
 
-/** One set of words for both tabs, mapped to whatever each one calls its states. */
+/** One set of words for applications and deliverables, which share a shape. */
 const STATES = [
   { id: 'all', label: 'Any state' },
   { id: 'review', label: 'Under review' },
   { id: 'accepted', label: 'Accepted' },
   { id: 'rejected', label: 'Rejected' },
+]
+
+/** Attendance has its own, because an event is either finished or happening. */
+const ATTENDANCE_STATES = [
+  { id: 'all', label: 'Any state' },
+  { id: 'open', label: 'Checked in now' },
+  { id: 'credited', label: 'Credited' },
 ]
 
 const APPLICATION_STATE: Record<string, ApplicationStatus> = {
@@ -62,23 +70,76 @@ const SUBMISSION_STATE: Record<string, SubmissionStatus> = {
   rejected: 'REJECTED',
 }
 
+/** An opportunity this volunteer may send work in for, right now. */
+type Sendable = { id: string; title: string }
+
+type AttendanceRow = {
+  id: string
+  opportunityId: string
+  title: string
+  on: string
+  hours: number | null
+  open: boolean
+}
+
+/** Opening an opportunity from here should come back to here, not to Discover. */
+const HERE = { to: '/activity', label: 'My activity' }
+
 function hits(haystack: string, query: string): boolean {
   return haystack.toLowerCase().includes(query.trim().toLowerCase())
 }
 
-function SendDeliverable({ accepted, onSent }: {
-  accepted: ApplicationView[]
+/**
+ * Which attempt each claim is, per opportunity. A rejection is not the end of
+ * the road — the work can be fixed and sent again — so the table says
+ * "Attempt 2 of 2" rather than showing rows that look like duplicates.
+ */
+function attemptsOf(items: SubmissionView[]): Map<string, { index: number; total: number }> {
+  const byOpportunity = new Map<string, SubmissionView[]>()
+
+  for (const item of items) {
+    const bucket = byOpportunity.get(item.opportunity.id)
+
+    if (bucket) bucket.push(item)
+    else byOpportunity.set(item.opportunity.id, [item])
+  }
+
+  const attempts = new Map<string, { index: number; total: number }>()
+
+  for (const bucket of byOpportunity.values()) {
+    const ordered = [...bucket].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+
+    ordered.forEach((item, index) => {
+      attempts.set(item.id, { index: index + 1, total: ordered.length })
+    })
+  }
+
+  return attempts
+}
+
+function SendDeliverable({ options, chosen, onChoose, onSent }: {
+  options: Sendable[]
+  chosen: string
+  onChoose: (id: string) => void
   onSent: () => void
 }) {
-  const [opportunityId, setOpportunityId] = useState(accepted[0]?.opportunity.id ?? '')
+  const [find, setFind] = useState('')
   const [hours, setHours] = useState('3')
   const [proofUrl, setProofUrl] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  if (accepted.length === 0) {
-    return <EmptyState>Once an organiser accepts you, you can send in your work here.</EmptyState>
+  if (options.length === 0) {
+    return (
+      <EmptyState>
+        Nothing is waiting on you. Work sent in here is remote work you were accepted for and
+        have not already claimed; an event you turned up to is credited from the register.
+      </EmptyState>
+    )
   }
+
+  const opportunityId = options.some(option => option.id === chosen) ? chosen : options[0]!.id
+  const matching = options.filter(option => hits(option.title, find))
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -102,19 +163,32 @@ function SendDeliverable({ accepted, onSent }: {
   return (
     <form onSubmit={submit}>
       <div className="field">
-        <label className="label" htmlFor="deliverable-opportunity">Opportunity</label>
-        <select
-          id="deliverable-opportunity"
-          className="input"
-          value={opportunityId}
-          onChange={event => setOpportunityId(event.target.value)}
-        >
-          {accepted.map(application => (
-            <option key={application.id} value={application.opportunity.id}>
-              {application.opportunity.title}
-            </option>
+        <label className="label" htmlFor="deliverable-find">Which piece of work</label>
+        {options.length > 4 && (
+          <input
+            id="deliverable-find"
+            className="input"
+            placeholder="Start typing to narrow the list"
+            value={find}
+            onChange={event => setFind(event.target.value)}
+          />
+        )}
+
+        <div className="chipset" style={{ marginTop: options.length > 4 ? 10 : 0 }}>
+          {matching.map(option => (
+            <button
+              key={option.id}
+              type="button"
+              className={option.id === opportunityId ? 'chip chip--on' : 'chip'}
+              aria-pressed={option.id === opportunityId}
+              onClick={() => onChoose(option.id)}
+            >
+              {option.title}
+            </button>
           ))}
-        </select>
+        </div>
+
+        {matching.length === 0 && <p className="muted">Nothing of yours matches that.</p>}
       </div>
 
       <div className="two-col">
@@ -154,11 +228,20 @@ export default function MyActivity() {
   const deliverables = useGet<SubmissionView[]>('/submissions/mine')
   const openCheckins = useGet<CheckinView[]>('/checkins/mine')
   const portfolio = useGet<PortfolioView>('/portfolio/mine')
+  const navigate = useNavigate()
 
   const [tab, setTab] = useState('applications')
   const [query, setQuery] = useState('')
   const [state, setState] = useState('all')
+  const [sending, setSending] = useState(false)
+  const [chosen, setChosen] = useState('')
   const [error, setError] = useState('')
+
+  /** A state chosen on one tab means nothing on the next. */
+  function choose(next: string) {
+    setTab(next)
+    setState('all')
+  }
 
   async function withdraw(id: string) {
     setError('')
@@ -171,11 +254,55 @@ export default function MyActivity() {
     }
   }
 
+  /** Fix it and send it again, with that opportunity already chosen. */
+  function tryAgain(opportunityId: string) {
+    setChosen(opportunityId)
+    setSending(true)
+  }
+
   const accepted = (applications.data ?? []).filter(item => item.status === 'ACCEPTED')
+
+  // Only remote work can be sent in — an event is credited from its register —
+  // and only once: a claim that is waiting or already accepted closes it. A
+  // rejected one does not, which is what makes a second attempt possible.
+  const settled = new Set(
+    (deliverables.data ?? [])
+      .filter(item => item.status !== 'REJECTED')
+      .map(item => item.opportunity.id),
+  )
+  const sendable: Sendable[] = accepted
+    .filter(item => item.opportunity.mode === 'VIRTUAL')
+    .filter(item => !settled.has(item.opportunity.id))
+    .map(item => ({ id: item.opportunity.id, title: item.opportunity.title }))
   const open = (openCheckins.data ?? [])[0]
   const attended = (portfolio.data?.entries ?? []).filter(
     entry => entry.opportunity.mode === 'PHYSICAL',
   )
+
+  // An event you are standing at belongs in the same table as the ones you
+  // have finished, rather than in a card above saying something different.
+  const attendance: AttendanceRow[] = [
+    ...(open
+      ? [
+          {
+            id: open.id,
+            opportunityId: open.opportunity.id,
+            title: open.opportunity.title,
+            on: open.checkedInAt,
+            hours: null,
+            open: true,
+          },
+        ]
+      : []),
+    ...attended.map(entry => ({
+      id: entry.id,
+      opportunityId: entry.opportunity.id,
+      title: entry.opportunity.title,
+      on: entry.creditedOn,
+      hours: entry.hours,
+      open: false,
+    })),
+  ]
 
   return (
     <>
@@ -185,7 +312,7 @@ export default function MyActivity() {
 
       <Tabs
         active={tab}
-        onChange={setTab}
+        onChange={choose}
         items={[
           { id: 'applications', label: `Applications · ${(applications.data ?? []).length}` },
           { id: 'attendance', label: 'Attendance' },
@@ -193,27 +320,56 @@ export default function MyActivity() {
         ]}
       />
 
-      <input
-        className="input searchbar"
-        placeholder="Search by opportunity"
-        aria-label="Search your activity"
-        value={query}
-        onChange={event => setQuery(event.target.value)}
-      />
+      <div className="toolbar">
+        <input
+          className="input toolbar__search"
+          placeholder="Search by opportunity"
+          aria-label="Search your activity"
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+        />
+        <select
+          className="input toolbar__select"
+          aria-label="Filter by state"
+          value={state}
+          onChange={event => setState(event.target.value)}
+        >
+          {(tab === 'attendance' ? ATTENDANCE_STATES : STATES).map(option => (
+            <option key={option.id} value={option.id}>{option.label}</option>
+          ))}
+        </select>
 
-      {tab !== 'attendance' && (
-        <div className="filterbar">
-          <select value={state} aria-label="State" onChange={event => setState(event.target.value)}>
-            {STATES.map(option => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-      )}
+        {tab === 'attendance' && (
+          <Link to="/check-in" style={{ marginLeft: 'auto' }}>
+            <Button variant="primary" className="btn--small">
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="scan" /> {open ? 'Check out' : 'Open check in'}
+              </span>
+            </Button>
+          </Link>
+        )}
+
+        {tab === 'deliverables' && (
+          <Button
+            variant="primary"
+            className="btn--small"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => setSending(value => !value)}
+          >
+            {sending ? 'Close' : 'Send for review'}
+          </Button>
+        )}
+      </div>
 
       {error && <p className="error" role="alert">{error}</p>}
 
-      <div className="stack" style={{ marginTop: 16 }}>
+      {tab === 'attendance' && open && (
+        <p className="muted" style={{ marginBottom: 12 }}>
+          You are checked in to {open.opportunity.title}, since {timeOfDay(open.checkedInAt)}.
+        </p>
+      )}
+
+      <div className="stack" style={{ marginTop: 4 }}>
         {tab === 'applications' && (
           <Loaded state={applications} what="your applications">
             {items => {
@@ -248,7 +404,14 @@ export default function MyActivity() {
                   </thead>
                   <tbody>
                     {visible.map(application => (
-                      <tr key={application.id} className="data__row--plain">
+                      <tr
+                        key={application.id}
+                        onClick={() =>
+                          navigate(`/opportunities/${application.opportunity.id}`, {
+                            state: { from: HERE },
+                          })
+                        }
+                      >
                         <td className="data__title">{application.opportunity.title}</td>
                         <td>{longDate(application.createdAt)}</td>
                         <td>
@@ -256,19 +419,17 @@ export default function MyActivity() {
                             {APPLICATION_LABEL[application.status]}
                           </StatusBadge>
                         </td>
-                        <td className="data__actions">
-                          <span className="cluster">
-                            <Link to={`/opportunities/${application.opportunity.id}`}>View ↗</Link>
-                            {(application.status === 'PENDING' ||
-                              application.status === 'ACCEPTED') && (
-                              <button
-                                className="linkbtn"
-                                onClick={() => withdraw(application.id)}
-                              >
-                                Withdraw
-                              </button>
-                            )}
-                          </span>
+                        <td className="data__actions" onClick={event => event.stopPropagation()}>
+                          {(application.status === 'PENDING' ||
+                            application.status === 'ACCEPTED') && (
+                            <button
+                              type="button"
+                              className="data__action data__action--danger"
+                              onClick={() => withdraw(application.id)}
+                            >
+                              Withdraw
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -279,76 +440,77 @@ export default function MyActivity() {
           </Loaded>
         )}
 
-        {tab === 'attendance' && (
-          <>
-            <Card>
-              <h2>Event check in</h2>
-              <p className="muted">
-                {open
-                  ? `You are checked in to ${open.opportunity.title}, since ${timeOfDay(
-                      open.checkedInAt,
-                    )}.`
-                  : 'Scan the code the organiser is showing when you arrive.'}
-              </p>
-              <Link to="/check-in">
-                <Button block variant={open ? 'primary' : 'default'}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    <Icon name="scan" /> {open ? 'Check out' : 'Open check in'}
-                  </span>
-                </Button>
-              </Link>
-            </Card>
+        {tab === 'attendance' &&
+          (() => {
+            const visible = attendance
+              .filter(row => state === 'all' || (state === 'open' ? row.open : !row.open))
+              .filter(row => hits(row.title, query))
 
-            {(() => {
-              const visible = attended.filter(entry => hits(entry.opportunity.title, query))
-
-              if (visible.length === 0) {
-                return (
-                  <EmptyState>
-                    {attended.length === 0
-                      ? 'Nothing yet. An event lands here once the organiser closes your check out.'
-                      : 'Nothing matches that.'}
-                  </EmptyState>
-                )
-              }
-
+            if (visible.length === 0) {
               return (
-                <table className="data">
-                  <thead>
-                    <tr>
-                      <th>Event</th>
-                      <th>Date</th>
-                      <th>Hours</th>
-                      <th aria-hidden="true" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visible.map(entry => (
-                      <tr key={entry.id} className="data__row--plain">
-                        <td className="data__title">{entry.opportunity.title}</td>
-                        <td>{longDate(entry.creditedOn)}</td>
-                        <td>{entry.hours} h</td>
-                        <td className="data__actions">
-                          <StatusBadge tone="ok">Credited</StatusBadge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <EmptyState>
+                  {attendance.length === 0
+                    ? 'Nothing yet. An event lands here once the organiser closes your check out.'
+                    : 'Nothing matches that.'}
+                </EmptyState>
               )
-            })()}
-          </>
-        )}
+            }
+
+            return (
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>Date</th>
+                    <th>Hours</th>
+                    <th>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map(row => (
+                    <tr
+                      key={row.id}
+                      onClick={() =>
+                        navigate(`/opportunities/${row.opportunityId}`, {
+                          state: { from: HERE },
+                        })
+                      }
+                    >
+                      <td className="data__title">{row.title}</td>
+                      <td>{longDate(row.on)}</td>
+                      <td>{row.hours === null ? '—' : `${row.hours} h`}</td>
+                      <td>
+                        <StatusBadge tone={row.open ? 'warn' : 'ok'}>
+                          {row.open ? 'Checked in' : 'Credited'}
+                        </StatusBadge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          })()}
 
         {tab === 'deliverables' && (
           <>
-            <Card>
-              <h2>Send in what you did</h2>
-              <SendDeliverable accepted={accepted} onSent={deliverables.reload} />
-            </Card>
+            {sending && (
+              <Card>
+                <h2>Send in what you did</h2>
+                <SendDeliverable
+                  options={sendable}
+                  chosen={chosen}
+                  onChoose={setChosen}
+                  onSent={() => {
+                    setSending(false)
+                    deliverables.reload()
+                  }}
+                />
+              </Card>
+            )}
 
             <Loaded state={deliverables} what="your deliverables">
               {items => {
+                const attempts = attemptsOf(items)
                 const visible = items
                   .filter(item => state === 'all' || item.status === SUBMISSION_STATE[state])
                   .filter(item => hits(item.opportunity.title, query))
@@ -372,20 +534,65 @@ export default function MyActivity() {
                       </tr>
                     </thead>
                     <tbody>
-                      {visible.map(item => (
-                        <tr key={item.id} className="data__row--plain">
-                          <td className="data__title">{item.opportunity.title}</td>
-                          <td>{longDate(item.createdAt)}</td>
-                          <td>
-                            <StatusBadge tone={SUBMISSION_TONE[item.status]}>
-                              {SUBMISSION_LABEL[item.status]}
-                            </StatusBadge>
-                          </td>
-                          <td className="data__actions">
-                            <a href={item.proofUrl} target="_blank" rel="noreferrer">Open ↗</a>
-                          </td>
-                        </tr>
-                      ))}
+                      {visible.map(item => {
+                        const attempt = attempts.get(item.id)
+                        const latest = attempt !== undefined && attempt.index === attempt.total
+                        const canTryAgain =
+                          item.status === 'REJECTED' &&
+                          latest &&
+                          sendable.some(option => option.id === item.opportunity.id)
+
+                        return (
+                          <tr
+                            key={item.id}
+                            onClick={() =>
+                              navigate(`/opportunities/${item.opportunity.id}`, {
+                                state: { from: HERE },
+                              })
+                            }
+                          >
+                            <td>
+                              <span className="data__title">{item.opportunity.title}</span>
+                              {attempt && attempt.total > 1 && (
+                                <div className="data__meta">
+                                  Attempt {attempt.index} of {attempt.total}
+                                </div>
+                              )}
+                              {item.reviewNote && (
+                                <div className="data__meta">Not approved: {item.reviewNote}</div>
+                              )}
+                            </td>
+                            <td>
+                              {longDate(item.createdAt)}
+                              <div className="data__meta">{item.hoursClaimed} h claimed</div>
+                            </td>
+                            <td>
+                              <StatusBadge tone={SUBMISSION_TONE[item.status]}>
+                                {SUBMISSION_LABEL[item.status]}
+                              </StatusBadge>
+                            </td>
+                            <td className="data__actions" onClick={event => event.stopPropagation()}>
+                              <a
+                                className="data__action"
+                                href={item.proofUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Proof ↗
+                              </a>
+                              {canTryAgain && (
+                                <button
+                                  type="button"
+                                  className="data__action"
+                                  onClick={() => tryAgain(item.opportunity.id)}
+                                >
+                                  Try again
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 )

@@ -4,7 +4,7 @@ import { Button } from '../../components/ui'
 import { hasPassed } from '../../lib/format'
 import type { OpportunityView, WorkloadRow } from '../../lib/types'
 import { useGet } from '../../lib/useGet'
-import CalendarMonth from './CalendarMonth'
+import Calendar from './Calendar'
 import './Manage.css'
 
 /** Published, and not yet over. */
@@ -49,7 +49,7 @@ export default function Overview() {
         </Link>
       </div>
 
-      <CalendarMonth items={items} />
+      <Calendar items={items} />
     </>
   )
 }

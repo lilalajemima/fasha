@@ -26,7 +26,6 @@ export const OVERSIGHT_NAV: NavItem[] = [
   { to: '/admin', label: 'Overview', short: 'Overview', icon: 'overview', end: true },
   { to: '/admin/approvals', label: 'Approvals', short: 'Approvals', icon: 'review' },
   { to: '/admin/activity', label: 'Activity', short: 'Activity', icon: 'activity' },
-  { to: '/admin/export', label: 'Export', short: 'Export', icon: 'export' },
   { to: '/admin/users', label: 'Users', short: 'Users', icon: 'users' },
   { to: '/profile', label: 'Profile', short: 'Profile', icon: 'profile' },
 ]

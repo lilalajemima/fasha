@@ -46,6 +46,14 @@ export class SubmissionRepository extends BaseRepository implements SubmissionSt
     })
   }
 
+  findForCreator(creatorId: string): Promise<SubmissionRecord[]> {
+    return this.db.taskSubmission.findMany({
+      where: { opportunity: { creatorId } },
+      include: withBothSides,
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
   findOpen(opportunityId: string, volunteerId: string): Promise<SubmissionRecord | null> {
     return this.db.taskSubmission.findFirst({
       where: { opportunityId, volunteerId, status: { in: OPEN_STATUSES } },
@@ -53,10 +61,10 @@ export class SubmissionRepository extends BaseRepository implements SubmissionSt
     })
   }
 
-  reject(id: string): Promise<SubmissionRecord> {
+  reject(id: string, reviewNote: string): Promise<SubmissionRecord> {
     return this.db.taskSubmission.update({
       where: { id },
-      data: { status: SubmissionStatus.REJECTED },
+      data: { status: SubmissionStatus.REJECTED, reviewNote },
       include: withBothSides,
     })
   }

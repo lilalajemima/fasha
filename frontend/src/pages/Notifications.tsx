@@ -99,11 +99,6 @@ export default function Notifications() {
           </Card>
         )}
       </Loaded>
-
-      <p className="muted" style={{ marginTop: 20 }}>
-        Fasha sends notifications inside the app only. There is no email or SMS, which keeps the
-        platform usable without extra cost to volunteers.
-      </p>
     </>
   )
 }

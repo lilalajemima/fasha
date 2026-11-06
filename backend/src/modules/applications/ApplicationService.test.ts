@@ -48,6 +48,7 @@ function makeOpportunity(overrides: Partial<OpportunityRecord> = {}): Opportunit
     createdAt: new Date(),
     updatedAt: new Date(),
     creator: { id: 'organisation-1', name: 'Green Neighbourhood', role: 'ORGANISATION' },
+    brief: null,
     ...overrides,
   }
 }
@@ -62,7 +63,20 @@ function makeApplication(overrides: Partial<ApplicationRecord> = {}): Applicatio
     status: 'PENDING',
     createdAt: new Date(),
     updatedAt: new Date(),
-    volunteer: { id: 'volunteer-1', name: 'Amara Mensah', email: 'amara@example.com' },
+    volunteer: {
+      id: 'volunteer-1',
+      name: 'Amara Mensah',
+      email: 'amara@example.com',
+      avatar: null,
+      bio: null,
+      profile: {
+        portfolioSlug: 'amara-mensah',
+        skills: [],
+        interests: [],
+        availabilitySlots: [],
+        location: null,
+      },
+    },
     opportunity: {
       id: 'opportunity-1',
       title: 'Restore the wetland path',
@@ -70,6 +84,8 @@ function makeApplication(overrides: Partial<ApplicationRecord> = {}): Applicatio
       maxCapacity: 2,
       applicationDeadline: tomorrow,
       mode: 'PHYSICAL',
+      requiredSkills: [],
+      categories: [],
     },
     ...overrides,
   }
@@ -94,6 +110,14 @@ class FakeOpportunityStore implements OpportunityStore {
     return []
   }
 
+  async findBrief() {
+    return null
+  }
+
+  async findSince() {
+    return []
+  }
+
   async findById() {
     return this.opportunity
   }
@@ -106,7 +130,27 @@ class FakeOpportunityStore implements OpportunityStore {
     return []
   }
 
+  async countWorkload() {
+    return []
+  }
+
+  async countActivity() {
+    return { applications: 0, deliverables: 0, credited: 0 }
+  }
+
+  async update(): Promise<never> {
+    throw new Error('not needed in this test')
+  }
+
   async updateStatus(): Promise<never> {
+    throw new Error('not needed in this test')
+  }
+
+  async closeApplications(): Promise<never> {
+    throw new Error('not needed in this test')
+  }
+
+  async remove(): Promise<void> {
     throw new Error('not needed in this test')
   }
 
@@ -316,6 +360,83 @@ describe('listing', () => {
 
     expect(list).toHaveLength(1)
     expect(list[0].volunteer.name).toBe('Amara Mensah')
+  })
+
+  it('scores each applicant against what the opportunity asks for', async () => {
+    const opportunity = makeOpportunity({
+      requiredSkills: ['Graphic design'],
+      categories: ['Education'],
+    })
+    const store = new FakeApplicationStore([
+      makeApplication({
+        volunteer: {
+          id: 'volunteer-1',
+          name: 'Amara Mensah',
+          email: 'amara@example.com',
+          avatar: null,
+          bio: null,
+          profile: {
+            portfolioSlug: 'amara-mensah',
+            skills: ['Graphic design'],
+            interests: ['Education'],
+            availabilitySlots: [],
+            location: null,
+          },
+        },
+        opportunity: {
+          id: 'opportunity-1',
+          title: 'Restore the wetland path',
+          creatorId: 'organisation-1',
+          maxCapacity: 2,
+          applicationDeadline: tomorrow,
+          mode: 'PHYSICAL',
+          requiredSkills: ['Graphic design'],
+          categories: ['Education'],
+        },
+      }),
+    ])
+
+    const list = await buildService(store, opportunity).forOpportunity(organiser, 'opportunity-1')
+
+    expect(list[0].match.score).toBe(100)
+    expect(list[0].match.sharedSkills).toEqual(['Graphic design'])
+  })
+
+  it('puts the best fit first', async () => {
+    const tags = (skills: string[]) => ({
+      id: 'volunteer-1',
+      name: skills.length > 0 ? 'Fits well' : 'Fits badly',
+      email: 'someone@example.com',
+      avatar: null,
+      bio: null,
+      profile: {
+        portfolioSlug: 'someone',
+        skills,
+        interests: [],
+        availabilitySlots: [],
+        location: null,
+      },
+    })
+
+    const asked = {
+      id: 'opportunity-1',
+      title: 'Restore the wetland path',
+      creatorId: 'organisation-1',
+      maxCapacity: 2,
+      applicationDeadline: tomorrow,
+      mode: 'PHYSICAL' as const,
+      requiredSkills: ['First aid'],
+      categories: [],
+    }
+
+    const store = new FakeApplicationStore([
+      makeApplication({ id: 'weak', volunteer: tags([]), opportunity: asked }),
+      makeApplication({ id: 'strong', volunteer: tags(['First aid']), opportunity: asked }),
+    ])
+
+    const list = await buildService(store).forOpportunity(organiser, 'opportunity-1')
+
+    expect(list.map(entry => entry.id)).toEqual(['strong', 'weak'])
   })
 
   it('hides the list from another volunteer', async () => {

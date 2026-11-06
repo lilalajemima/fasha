@@ -86,16 +86,16 @@ model User {
 }
 
 model VolunteerProfile {
-  id            String   @id @default(uuid())
-  userId        String   @unique @map("user_id")
-  skills        String[] @default([])
-  interests     String[] @default([])
-  availability  String?
-  location      String?
-  sector        String?
-  portfolioSlug String   @unique @map("portfolio_slug")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  skills            String[] @default([])
+  interests         String[] @default([])
+  availabilitySlots String[] @default([]) @map("availability_slots")
+  location          String?
+  sector            String?
+  portfolioSlug     String   @unique @map("portfolio_slug")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -123,7 +123,8 @@ model Opportunity {
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
 
-  creator          User             @relation("OpportunityCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  creator          User              @relation("OpportunityCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  brief            OpportunityBrief?
   collaborators    Collaborator[]
   applications     Application[]
   checkins         Checkin[]
@@ -131,6 +132,23 @@ model Opportunity {
   portfolioEntries PortfolioEntry[]
 
   @@map("opportunities")
+}
+
+/**
+ * An optional PDF describing the work in more detail. It lives in its own
+ * table rather than on the opportunity, because a megabyte of base64 on the
+ * row would be read by every feed query that never needs it.
+ */
+model OpportunityBrief {
+  id            String   @id @default(uuid())
+  opportunityId String   @unique @map("opportunity_id")
+  name          String
+  data          String   @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@map("opportunity_briefs")
 }
 
 model Collaborator {
@@ -186,6 +204,7 @@ model TaskSubmission {
   hoursClaimed  Float            @map("hours_claimed")
   proofUrl      String           @map("proof_url")
   status        SubmissionStatus @default(PENDING)
+  reviewNote    String?          @map("review_note")
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
 

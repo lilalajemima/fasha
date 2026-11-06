@@ -1,3 +1,4 @@
+import { AVAILABILITY_SLOTS, isAvailabilitySlot } from '../domain/catalogue'
 import { SECTORS, isSector } from '../domain/sectors'
 import { BadRequestError } from '../errors/HttpErrors'
 
@@ -99,7 +100,12 @@ export function readOptionalString(body: Body, field: string): string | null {
   return readString(body, field)
 }
 
-export function readTagList(body: Body, field: string): string[] {
+/**
+ * Tags are matched against each other, so they have to come from the one
+ * catalogue. Pass `allowed` and anything else is refused here: a typo cannot
+ * reach the database and quietly score zero against everything for ever.
+ */
+export function readTagList(body: Body, field: string, allowed?: readonly string[]): string[] {
   const value = body[field]
 
   if (value === undefined) return []
@@ -117,7 +123,84 @@ export function readTagList(body: Body, field: string): string[] {
     throw new BadRequestError(`${field} may hold at most ${MAX_TAGS} entries`)
   }
 
-  return [...new Set(tags)]
+  const unique = [...new Set(tags)]
+
+  if (allowed) {
+    const stranger = unique.find(tag => !allowed.includes(tag))
+
+    if (stranger) {
+      throw new BadRequestError(`"${stranger}" is not on the list Fasha matches on`)
+    }
+  }
+
+  return unique
+}
+
+/** A PDF arrives as a data URL. One megabyte of file is about 1.4M characters. */
+const MAX_PDF_CHARS = 1_400_000
+const PDF_PREFIX = 'data:application/pdf;base64,'
+
+export type Brief = { name: string; data: string }
+
+/**
+ * An optional PDF brief. Returns undefined when the field was not sent at all
+ * (leave what is stored alone), null when it was sent empty (remove it), and
+ * the file when there is one.
+ */
+export function readOptionalPdf(body: Body, field: string): Brief | null | undefined {
+  const value = body[field]
+
+  if (value === undefined) return undefined
+  if (value === null) return null
+
+  if (typeof value !== 'object') {
+    throw new BadRequestError(`${field} must be a file`)
+  }
+
+  const { name, dataUrl } = value as { name?: unknown; dataUrl?: unknown }
+
+  if (typeof name !== 'string' || typeof dataUrl !== 'string') {
+    throw new BadRequestError(`${field} must carry a name and the file`)
+  }
+
+  if (!dataUrl.startsWith(PDF_PREFIX)) {
+    throw new BadRequestError('The brief has to be a PDF')
+  }
+
+  if (dataUrl.length > MAX_PDF_CHARS) {
+    throw new BadRequestError('That PDF is larger than 1MB. Send a smaller one.')
+  }
+
+  return { name: name.trim().slice(0, 120) || 'brief.pdf', data: dataUrl.slice(PDF_PREFIX.length) }
+}
+
+/** The day and time boxes a volunteer has ticked, as SAT_MORNING tokens. */
+export function readAvailability(body: Body, field: string): string[] {
+  const value = body[field]
+
+  if (value === undefined || value === null) return []
+
+  if (!Array.isArray(value)) {
+    throw new BadRequestError(`${field} must be a list`)
+  }
+
+  const slots = [
+    ...new Set(
+      value
+        .filter((slot): slot is string => typeof slot === 'string')
+        .map(slot => slot.trim().toUpperCase())
+        .filter(slot => slot.length > 0),
+    ),
+  ]
+
+  const stranger = slots.find(slot => !isAvailabilitySlot(slot))
+
+  if (stranger) {
+    throw new BadRequestError(`${field} must hold times of the week, not "${stranger}"`)
+  }
+
+  // Stored in the order of the week, so every reader sees the same shape.
+  return AVAILABILITY_SLOTS.filter(slot => slots.includes(slot))
 }
 
 export function readCount(body: Body, field: string): number {

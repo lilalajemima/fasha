@@ -1,8 +1,12 @@
-import type { Opportunity, OpportunityMode, OpportunityStatus, UserRole, ActivityCount } from '@prisma/client'
+import type { Opportunity, OpportunityMode, OpportunityStatus, UserRole } from '@prisma/client'
 
 export type OpportunityRecord = Opportunity & {
   creator: { id: string; name: string; role: UserRole }
+  /** The name only: the file itself is fetched from its own endpoint. */
+  brief: { name: string } | null
 }
+
+export type BriefFile = { name: string; data: string }
 
 export type NewOpportunity = {
   title: string
@@ -16,6 +20,8 @@ export type NewOpportunity = {
   endsAt: Date
   requiredSkills: string[]
   categories: string[]
+  /** undefined leaves it as it is, null removes it. */
+  brief?: BriefFile | null
 }
 
 export type FeedFilter = {
@@ -44,6 +50,10 @@ export type ActivityCount = {
 }
 
 export interface OpportunityStore {
+  /** The PDF itself, read only when somebody asks to open it. */
+  findBrief(id: string): Promise<BriefFile | null>
+  /** Everything in the district, whatever its state, from `since` onwards. */
+  findSince(since: Date): Promise<OpportunityRecord[]>
   create(
     creatorId: string,
     status: OpportunityStatus,

@@ -1,0 +1,29 @@
+/* The show/hide control inside a password field. It sits on top of the input
+   rather than beside it, so a password field is the same width as every
+   other field and nothing shifts when it appears. */
+
+.reveal { position: relative; display: block; }
+
+/* Room for the button, so a long password never runs underneath it. */
+.reveal .input { padding-right: 44px; }
+
+.reveal__toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--charcoal-muted);
+  cursor: pointer;
+}
+
+.reveal__toggle:hover { background: var(--surface-muted); color: var(--imigongo-black); }
+.reveal__toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }

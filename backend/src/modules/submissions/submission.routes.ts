@@ -19,6 +19,7 @@ const controller = new SubmissionController(service)
 export const submissionRoutes = Router()
 
 submissionRoutes.get('/submissions/mine', authenticate, controller.mine)
+submissionRoutes.get('/submissions/received', authenticate, controller.received)
 submissionRoutes.patch('/submissions/:id/status', authenticate, controller.decide)
 submissionRoutes.post('/opportunities/:id/submissions', authenticate, controller.submit)
 submissionRoutes.get('/opportunities/:id/submissions', authenticate, controller.forOpportunity)

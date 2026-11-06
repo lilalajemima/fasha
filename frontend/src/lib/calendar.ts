@@ -14,6 +14,11 @@ export type CalendarMark = {
   title: string
   kind: MarkKind
   at: Date
+  /** Where this entry is worth going: the page that has the next thing to do. */
+  to: string
+  /** Drawn into the dot: its shape says the mode, its colour says who runs it. */
+  mode: OpportunityView['mode']
+  citizen: boolean
 }
 
 export type CalendarDay = {
@@ -37,6 +42,10 @@ export function monthLabel(month: Date): string {
   return monthTitle.format(month)
 }
 
+function dayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
 export function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
@@ -45,8 +54,108 @@ export function addMonths(month: Date, step: number): Date {
   return new Date(month.getFullYear(), month.getMonth() + step, 1)
 }
 
-function dayKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+export function addDays(date: Date, step: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + step)
+}
+
+/** Monday, because the week is read Monday first here. */
+export function startOfWeek(date: Date): Date {
+  return addDays(date, -((date.getDay() + 6) % 7))
+}
+
+/** "12 to 18 January 2026", or "28 December to 3 January 2026" across a turn. */
+export function weekLabel(start: Date): string {
+  const end = addDays(start, 6)
+  const sameMonth = start.getMonth() === end.getMonth()
+  const first = new Intl.DateTimeFormat('en-GB', sameMonth ? { day: 'numeric' } : { day: 'numeric', month: 'long' })
+
+  return `${first.format(start)} to ${dayTitle.format(end)}`
+}
+
+const dayTitle = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+const dayNameTitle = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+
+export function dayLabel(date: Date): string {
+  return dayTitle.format(date)
+}
+
+export function dayWithName(date: Date): string {
+  return dayNameTitle.format(date)
+}
+
+/** The value a <input type="date"> wants, in local time rather than UTC. */
+export function inputValue(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+export function fromInputValue(value: string): Date | null {
+  const [year, month, day] = value.split('-').map(Number)
+
+  if (!year || !month || !day) return null
+
+  return new Date(year, month - 1, day)
+}
+
+export function isSameDay(a: Date, b: Date): boolean {
+  return dayKey(a) === dayKey(b)
+}
+
+/** Everything on one day, earliest first. */
+export function marksOn(marks: CalendarMark[], date: Date): CalendarMark[] {
+  return marks
+    .filter(mark => isSameDay(mark.at, date))
+    .sort((a, b) => a.at.getTime() - b.at.getTime())
+}
+
+/** The seven days of the week `date` falls in, each with what is on it. */
+export function weekDays(date: Date, marks: CalendarMark[]): CalendarDay[] {
+  const start = startOfWeek(date)
+  const today = new Date()
+
+  return Array.from({ length: DAYS_IN_WEEK }, (_, index) => {
+    const day = addDays(start, index)
+
+    return {
+      key: dayKey(day),
+      date: day,
+      dayOfMonth: day.getDate(),
+      inMonth: true,
+      isToday: isSameDay(day, today),
+      marks: marksOn(marks, day),
+    }
+  })
+}
+
+/**
+ * Where a calendar entry should take you: whatever is left to do on it.
+ *
+ * While applications are open, that is the applicants. Once the work is over
+ * it is the proof — the register for work people turned up to, the deliverables
+ * for work done remotely. Between the two, when nobody else can apply but the
+ * day has not come, an event is waiting on its register and remote work is
+ * still waiting on its people.
+ */
+export function destinationFor(item: OpportunityView, now = new Date()): string {
+  const ends = item.endsAt ?? item.startsAt
+  const over = ends !== null && Date.parse(ends) < now.getTime()
+  const open = Date.parse(item.applicationDeadline) >= now.getTime()
+  const applicants = `/manage/opportunities/${item.id}/applications`
+
+  // Being over wins over the deadline: a date set oddly late cannot send you
+  // back to the applicants of work that has already been done.
+  if (over) {
+    return item.mode === 'VIRTUAL'
+      ? `/manage/review?opportunity=${item.id}`
+      : `/manage/attendance?event=${item.id}`
+  }
+
+  if (open || item.mode === 'VIRTUAL') return applicants
+
+  // In person, nobody else can apply, and the day has not come: the register.
+  return `/manage/attendance?event=${item.id}`
 }
 
 /**
@@ -54,11 +163,17 @@ function dayKey(date: Date): string {
  * day applications close. Virtual work has no start time, so its deliverable
  * deadline is what gets drawn as the happening.
  */
-export function marksFrom(items: OpportunityView[]): CalendarMark[] {
+export function marksFrom(
+  items: OpportunityView[],
+  now = new Date(),
+  linkFor: (item: OpportunityView, now: Date) => string = destinationFor,
+): CalendarMark[] {
   const marks: CalendarMark[] = []
 
   for (const item of items) {
     const happensAt = item.startsAt ?? item.endsAt
+    const to = linkFor(item, now)
+    const shape = { mode: item.mode, citizen: item.creator.role === 'VOLUNTEER' }
 
     if (happensAt) {
       marks.push({
@@ -67,6 +182,8 @@ export function marksFrom(items: OpportunityView[]): CalendarMark[] {
         title: item.title,
         kind: 'HAPPENING',
         at: new Date(happensAt),
+        to,
+        ...shape,
       })
     }
 
@@ -76,6 +193,8 @@ export function marksFrom(items: OpportunityView[]): CalendarMark[] {
       title: item.title,
       kind: 'DEADLINE',
       at: new Date(item.applicationDeadline),
+      to,
+      ...shape,
     })
   }
 

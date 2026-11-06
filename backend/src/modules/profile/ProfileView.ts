@@ -14,7 +14,7 @@ export type ProfileView = {
   profile: {
     skills: string[]
     interests: string[]
-    availability: string | null
+    availabilitySlots: string[]
     location: string | null
     sector: string | null
     portfolioSlug: string
@@ -37,7 +37,7 @@ export function toProfileView(user: UserWithProfile): ProfileView {
       ? {
           skills: user.profile.skills,
           interests: user.profile.interests,
-          availability: user.profile.availability,
+          availabilitySlots: user.profile.availabilitySlots,
           location: user.profile.location,
           sector: user.profile.sector,
           portfolioSlug: user.profile.portfolioSlug,

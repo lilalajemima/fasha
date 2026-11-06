@@ -32,6 +32,8 @@ export type Anonymised = {
 
 export interface AccountStore {
   findById(id: string): Promise<User | null>
+  /** Used by the forgotten-password request, which must not say who exists. */
+  findByEmail(email: string): Promise<AccountRow | null>
   findRow(id: string): Promise<AccountRow | null>
   list(filter: UserFilter): Promise<AccountRow[]>
   /** Used to refuse the change that would leave the platform unadministered. */

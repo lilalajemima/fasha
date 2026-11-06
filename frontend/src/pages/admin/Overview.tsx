@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Problem } from '../../components/Loader'
 import { Button, Card, EmptyState } from '../../components/ui'
+import Calendar from '../manage/Calendar'
 import { longDate, meta, quantity } from '../../lib/format'
 import type { ActivityRow, OpportunityView, UserView } from '../../lib/types'
 import { useGet } from '../../lib/useGet'
@@ -11,12 +12,25 @@ import './Admin.css'
 /** The five oldest waits, because a queue is read from the front. */
 const PREVIEW = 5
 
+/**
+ * Where a calendar entry takes the community admin. The organiser's tools are
+ * not theirs: what they can do with something waiting is decide it, and with
+ * anything else, read it.
+ */
+function linkFor(item: OpportunityView): string {
+  return item.status === 'PENDING_APPROVAL'
+    ? '/admin/approvals'
+    : `/opportunities/${item.id}`
+}
+
 function countRole(people: UserView[], role: string): number {
   return people.filter(person => person.role === role && person.status === 'ACTIVE').length
 }
 
 export default function Overview() {
   const queue = useGet<OpportunityView[]>('/opportunities/pending')
+  // Everything in the district for the last twelve months, whatever its state.
+  const everything = useGet<OpportunityView[]>('/opportunities/all')
   const people = useGet<UserView[]>('/admin/users')
   const activity = useGet<ActivityRow[]>('/admin/activity')
 
@@ -100,6 +114,13 @@ export default function Overview() {
           </>
         )}
       </Card>
+
+      <h2 style={{ margin: '28px 0 12px' }}>What is happening</h2>
+      {everything.error ? (
+        <Problem message={everything.error} onRetry={everything.reload} />
+      ) : (
+        <Calendar items={everything.data ?? []} linkFor={linkFor} />
+      )}
     </>
   )
 }

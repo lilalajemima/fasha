@@ -1,6 +1,6 @@
 import { NotFoundError } from '../../core/errors/HttpErrors'
 import type { TokenPayload } from '../../core/security/TokenService'
-import type { ProfileStore } from '../profile/ProfileStore'
+import type { PortfolioOwner, ProfileStore } from '../profile/ProfileStore'
 import type { PortfolioStore } from './PortfolioStore'
 import { toPortfolioView, type PortfolioView } from './PortfolioView'
 
@@ -30,10 +30,10 @@ export class PortfolioService {
     return this.buildFor(owner)
   }
 
-  private async buildFor(owner: { userId: string; name: string; portfolioSlug: string }) {
+  private async buildFor(owner: PortfolioOwner) {
     const [records, organised] = await Promise.all([
       this.entries.findForVolunteer(owner.userId),
-      this.entries.countOrganised(owner.userId),
+      this.entries.findOrganisedBy(owner.userId),
     ])
 
     return toPortfolioView(
@@ -42,6 +42,9 @@ export class PortfolioService {
         portfolioSlug: owner.portfolioSlug,
         avatar: owner.avatar,
         bio: owner.bio,
+        skills: owner.skills,
+        interests: owner.interests,
+        availabilitySlots: owner.availabilitySlots,
       },
       records,
       organised,

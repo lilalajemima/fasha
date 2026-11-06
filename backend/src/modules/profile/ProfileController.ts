@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express'
+import { INTERESTS, SKILLS } from '../../core/domain/catalogue'
 import {
+  readAvailability,
   hasField,
   readOptionalImage,
   readOptionalSector,
@@ -25,11 +27,11 @@ export class ProfileController {
     if (hasField(body, 'name')) update.name = readString(body, 'name', 2)
     if (hasField(body, 'bio')) update.bio = readShortText(body, 'bio', MAX_BIO_LENGTH)
     if (hasField(body, 'avatar')) update.avatar = readOptionalImage(body, 'avatar')
-    if (hasField(body, 'skills')) update.skills = readTagList(body, 'skills')
-    if (hasField(body, 'interests')) update.interests = readTagList(body, 'interests')
+    if (hasField(body, 'skills')) update.skills = readTagList(body, 'skills', SKILLS)
+    if (hasField(body, 'interests')) update.interests = readTagList(body, 'interests', INTERESTS)
 
-    if (hasField(body, 'availability')) {
-      update.availability = readShortText(body, 'availability', MAX_TEXT_LENGTH)
+    if (hasField(body, 'availabilitySlots')) {
+      update.availabilitySlots = readAvailability(body, 'availabilitySlots')
     }
 
     if (hasField(body, 'location')) {

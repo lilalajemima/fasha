@@ -1,7 +1,21 @@
 import type { Application, ApplicationStatus, OpportunityMode } from '@prisma/client'
 
 export type ApplicationRecord = Application & {
-  volunteer: { id: string; name: string; email: string }
+  volunteer: {
+    id: string
+    name: string
+    email: string
+    avatar: string | null
+    bio: string | null
+    /** Null for an account with no volunteer profile, which cannot apply. */
+    profile: {
+      portfolioSlug: string
+      skills: string[]
+      interests: string[]
+      availabilitySlots: string[]
+      location: string | null
+    } | null
+  }
   opportunity: {
     id: string
     title: string
@@ -9,6 +23,8 @@ export type ApplicationRecord = Application & {
     maxCapacity: number
     applicationDeadline: Date
     mode: OpportunityMode
+    requiredSkills: string[]
+    categories: string[]
   }
 }
 

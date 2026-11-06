@@ -1,0 +1,78 @@
+/* Choosing from a list: tags as chips, availability as the week in a grid.
+   Both are plain buttons with aria-pressed, so a keyboard and a screen reader
+   get the same thing the thumb does. */
+
+/* A fieldset defaults to min-width: min-content, so without this the week
+   grid refuses to shrink and pushes out of the card on a phone. */
+.picker { border: 0; padding: 0; margin: 0 0 4px; min-width: 0; }
+.picker__legend { padding: 0; font-family: var(--font-display); font-size: 17px; }
+.picker__hint { margin: 4px 0 10px; font-size: 13px; color: var(--charcoal-muted); }
+.picker__count { margin: 10px 0 0; font-size: 13px; color: var(--charcoal-muted); }
+
+.chipset { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 13px;
+  border: 1px solid var(--neutral-border);
+  border-radius: 999px;
+  background: var(--surface-card);
+  color: var(--imigongo-black);
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+
+.chip:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.chip:disabled { opacity: .45; cursor: not-allowed; }
+
+.chip--on,
+.chip--on:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+/* A chip that is only being read, not chosen. */
+.chip--static { cursor: default; background: var(--surface-muted); }
+.chipset--static .chip--static:hover { border-color: var(--neutral-border); color: var(--imigongo-black); }
+
+/* Seven days never fit a phone, so the grid scrolls rather than squashing. */
+.slots { overflow-x: auto; min-width: 0; padding-bottom: 4px; }
+.slots__grid {
+  display: grid;
+  grid-template-columns: auto repeat(7, minmax(44px, 1fr));
+  gap: 6px;
+  min-width: 460px;
+}
+
+.slots__day {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--charcoal-muted);
+  cursor: pointer;
+}
+
+.slots__day:hover { color: var(--primary); }
+
+.slots__part {
+  align-self: center;
+  padding-right: 10px;
+  font-size: 13px;
+  color: var(--charcoal-muted);
+  white-space: nowrap;
+}
+
+.slots__cell {
+  height: 38px;
+  border: 1px solid var(--neutral-border);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: transparent;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+
+.slots__cell:hover { border-color: var(--primary); }
+.slots__cell--on { background: var(--primary); border-color: var(--primary); color: #fff; }

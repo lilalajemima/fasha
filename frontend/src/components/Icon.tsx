@@ -1,7 +1,7 @@
 export type IconName =
   | 'discover' | 'activity' | 'portfolio' | 'profile' | 'initiatives'
   | 'overview' | 'opportunities' | 'review' | 'attendance' | 'bell' | 'scan' | 'link' | 'share'
-  | 'users' | 'export'
+  | 'users' | 'export' | 'eye' | 'eyeOff'
   | 'menu' | 'close' | 'signout' | 'caret'
 
 const PATHS: Record<IconName, string> = {
@@ -20,6 +20,8 @@ const PATHS: Record<IconName, string> = {
   share:         'M17 7a2 2 0 100-4 2 2 0 000 4zM7 14a2 2 0 100-4 2 2 0 000 4zM17 21a2 2 0 100-4 2 2 0 000 4zM9 11l6-3M9 13l6 3',
   users:         'M9 4a3.2 3.2 0 100 6.4A3.2 3.2 0 009 4zM3 20a6 6 0 0112 0M16 4.6a3.2 3.2 0 010 5.8M18 14.4a6 6 0 013 5.6',
   export:        'M12 4v10M8.5 10.5L12 14l3.5-3.5M5 18h14',
+  eye:           'M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6zM12 9.4a2.6 2.6 0 100 5.2 2.6 2.6 0 000-5.2z',
+  eyeOff:        'M4 4l16 16M9.9 5.3A9.6 9.6 0 0112 5c6.4 0 10 6 10 6a16 16 0 01-3.3 3.9M6.4 7.6A16 16 0 002 11s3.6 6 10 6c1.3 0 2.5-.2 3.5-.6M10.2 10.2a2.6 2.6 0 003.6 3.6',
   menu:          'M4 7h16M4 12h16M4 17h16',
   close:         'M6 6l12 12M18 6L6 18',
   signout:       'M10 5H6a1 1 0 00-1 1v12a1 1 0 001 1h4M15 8l4 4-4 4M19 12H9',

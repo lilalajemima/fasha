@@ -59,18 +59,13 @@ export default function MobileNav() {
               ))}
             </div>
 
-            {workspace === 'volunteer' ? (
-              <p className="muted" style={{ padding: '0 4px' }}>
-                Sign out from the bottom of My profile.
-              </p>
-            ) : (
-              <div className="drawer__group">
-                <button className="navplate navplate--danger"
-                        onClick={() => { signOut(); navigate('/signin') }}>
-                  <Icon name="signout" /> <span>Sign out</span>
-                </button>
-              </div>
-            )}
+            {/* One way out, in the same place for every role. */}
+            <div className="drawer__group">
+              <button className="navplate navplate--danger"
+                      onClick={() => { signOut(); navigate('/signin') }}>
+                <Icon name="signout" /> <span>Sign out</span>
+              </button>
+            </div>
           </nav>
         </>
       )}

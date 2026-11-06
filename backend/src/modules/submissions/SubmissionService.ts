@@ -1,11 +1,19 @@
 import { SubmissionStatus, UserRole } from '@prisma/client'
-import { ConflictError, ForbiddenError, NotFoundError } from '../../core/errors/HttpErrors'
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../core/errors/HttpErrors'
 import type { TokenPayload } from '../../core/security/TokenService'
 import type { ApplicationStore } from '../applications/ApplicationStore'
 import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type { OpportunityStore } from '../opportunities/OpportunityStore'
 import type { NewSubmission, SubmissionRecord, SubmissionStore } from './SubmissionStore'
 import { toSubmissionView, type SubmissionView } from './SubmissionView'
+
+/** Enough to be a sentence rather than "no". */
+const MIN_NOTE_LENGTH = 10
 
 export class SubmissionService {
   constructor(
@@ -63,10 +71,28 @@ export class SubmissionService {
     return records.map(toSubmissionView)
   }
 
+  /**
+   * Everything sent in to this person's own opportunities, newest first. The
+   * organiser's page is one list across all of them rather than one list per
+   * opportunity, so nothing waits unseen behind a dropdown.
+   */
+  async received(actor: TokenPayload): Promise<SubmissionView[]> {
+    const records = await this.submissions.findForCreator(actor.userId)
+
+    return records.map(toSubmissionView)
+  }
+
+  /**
+   * Rejecting takes a reason. A volunteer whose hours come back refused with
+   * nothing said cannot tell whether the proof was unreadable, the hours were
+   * wrong, or they were simply not believed — and the next thing they do is
+   * stop submitting. Approving needs no note: the hours speak for themselves.
+   */
   async decide(
     actor: TokenPayload,
     submissionId: string,
     decision: 'APPROVE' | 'REJECT',
+    reviewNote: string | null,
   ): Promise<SubmissionView> {
     const submission = await this.load(submissionId)
 
@@ -79,12 +105,18 @@ export class SubmissionService {
     }
 
     if (decision === 'REJECT') {
-      const rejected = await this.submissions.reject(submissionId)
+      const reason = reviewNote?.trim() ?? ''
+
+      if (reason.length < MIN_NOTE_LENGTH) {
+        throw new BadRequestError('Say why the hours were not approved, so they can fix it')
+      }
+
+      const rejected = await this.submissions.reject(submissionId, reason)
 
       await this.notifier.send(
         rejected.volunteerId,
         NOTIFICATION_TYPES.hoursDecided,
-        `Your hours for "${rejected.opportunity.title}" were not approved.`,
+        `Your hours for "${rejected.opportunity.title}" were not approved: ${reason}`,
       )
 
       return toSubmissionView(rejected)
