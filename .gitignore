@@ -26,4 +26,9 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.sw
+e2e-report/
+playwright-report/
+test-results/
+lighthouse-results/
+load-results/

@@ -25,11 +25,13 @@ export default function ImageSlider({ slides, interval = 6000 }: {
   return (
     <div className="slider">
       {slides.map((slide, index) => (
-        <img
+                <img
           key={slide.src}
           src={slide.src}
           alt=""
           aria-hidden="true"
+          loading={index === 0 ? 'eager' : 'lazy'}
+          fetchPriority={index === 0 ? 'high' : 'low'}
           className={index === current ? 'slider__frame is-current' : 'slider__frame'}
         />
       ))}

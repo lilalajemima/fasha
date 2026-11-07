@@ -315,6 +315,7 @@ export default function CreateOpportunity() {
                 value={sector}
                 onChange={event => setSector(event.target.value)}
               >
+                <option value="">Choose a sector</option>
                 {SECTORS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
