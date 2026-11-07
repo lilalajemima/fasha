@@ -18,6 +18,7 @@
     "smoke": "node scripts/smoke.mjs",
     "load": "node scripts/load.mjs",
     "db:seed": "ts-node-dev --transpile-only prisma/seed.ts",
+    "db:seed:video": "ts-node-dev --transpile-only prisma/seed-video.ts",
     "db:cleanup": "ts-node-dev --transpile-only prisma/cleanup.ts",
     "postinstall": "prisma generate"
   },
