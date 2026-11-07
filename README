@@ -4,31 +4,78 @@ Fasha is a web platform for finding volunteering opportunities in Rwanda, propos
 community initiatives, and building a record of service that someone else can verify.
 
 I built it for my capstone project, which looks at why volunteering in Rwanda is harder to
-access, join and report than it needs to be. The research found three problems, and the
-platform is organised around them.
+access, join and report than it needs to be. The research found three problems, and the platform
+is organised around them.
 
 The first is discovery. Opportunities are shared across social media pages, word of mouth and
 individual NGO websites, so there is no single place to look. If you are not already inside
 someone's network, you tend not to hear about anything. Fasha puts everything in one feed and
 ranks it by how well it fits the skills and interests you have listed.
 
-The second is who gets to start things. Umuganda and most organised volunteering are planned
-from the top down, which leaves people with few structured ways to act on needs they have
-noticed themselves. On Fasha any volunteer can propose an initiative. It is reviewed before it
-goes public, but the idea can come from anyone.
+The second is who gets to start things. Umuganda and most organised volunteering are planned from
+the top down, which leaves people with few structured ways to act on needs they have noticed
+themselves. On Fasha any volunteer can propose an initiative. It is reviewed before it goes
+public, but the idea can come from anyone.
 
-The third is proof. Attendance is usually recorded on paper registers that are slow to
-consolidate and easy to lose, so volunteers end up with no reliable record of what they have
-done. Fasha records check in and check out against a code that changes every 30 seconds, lets
-organisers review virtual work, and credits approved hours to a portfolio page the volunteer
-can share with an employer or a scholarship panel.
+The third is proof. Attendance is usually recorded on paper registers that are slow to consolidate
+and easy to lose, so volunteers end up with no reliable record of what they have done. Fasha
+records check in and check out against a code that changes every 30 seconds, lets organisers
+review virtual work, and credits approved hours to a portfolio page the volunteer can share with
+an employer or a scholarship panel.
 
+**Live app:** https://fasha-frontend.vercel.app
+**API:** https://fashas-backend-eight.vercel.app
 **Repository:** https://github.com/lilalajemima/fasha
-**Author:** Lilala Runiga Jemima, BSc Software Engineering, African Leadership University
-**Supervisor:** Pelin Mutanguha
+**Walkthrough video:**:https://drive.google.com/drive/u/0/folders/1gsJXpxpPxZ-ZbGQMlDezs7ed79X_vXbH 
+**Technical report:** https://docs.google.com/document/d/1uxHBEK3BN9rj2KWV9RmNXGZ_2gaEFdyxco14cu7Q2FM/edit?usp=sharing 
 
-At this stage the frontend is complete and runs on a local mock data layer, and the database
-schema is written. The API endpoints are the next sprint.
+**Both Video and Report:** https://drive.google.com/drive/u/0/folders/1gsJXpxpPxZ-ZbGQMlDezs7ed79X_vXbH 
+
+**Author:** Lilala Runiga Jemima, BSc Software Engineering, African Leadership University
+
+The platform is now complete and deployed. The frontend, the API and the database are all live,
+and the mock data layer the earlier sprint ran on has been removed. What is left before the pilot
+is the field testing itself.
+
+---
+
+## What it does
+
+### For a volunteer
+
+You sign up, fill in the skills and interests you have from a fixed list, and say which parts of
+the week you are usually free. Discover then shows you everything published in the district with
+a match score against your profile, and you can filter by format, sector, skill or how soon
+applications close. You apply with a short statement.
+
+If the work happens somewhere, you turn up and check in with the code the organiser is showing,
+then check out when you leave. If it is remote, you send in what you produced and the organiser
+reviews it. Either way the hours land on your portfolio once somebody else has confirmed them.
+
+You can also propose your own initiative. It goes to the community admin for approval, and once
+published you run it yourself, with the same tools an organisation gets, from inside the
+initiative page.
+
+### For an organisation
+
+You post opportunities, in person or remote, and can attach a PDF brief if there is more to say.
+Applicants arrive with a match score and the specific skills and interests you have in common, so
+the number means something rather than just ranking people. You accept or reject.
+
+On the day you open check in, and the screen shows a QR code and a six digit code that both
+change every thirty seconds. The register fills as people arrive, and you can mark somebody
+present by hand if their phone will not cooperate. Afterwards you close the register and the
+hours are credited. For remote work you review what was sent in, and rejecting it requires a
+reason, because hours refused with nothing said are the fastest way to make somebody stop
+volunteering.
+
+### For the community admin
+
+The overview carries a calendar of everything in the district for the last twelve months, with
+each entry marked for whether it is virtual or in person and whether an organisation or a
+resident is running it. The approvals queue holds initiatives proposed by residents. The activity
+page exports events and attendance as CSV. The user table is where accounts are deactivated,
+reinstated, given a temporary password or removed.
 
 ---
 
@@ -37,14 +84,17 @@ schema is written. The API endpoints are the next sprint.
 | Layer | Choice | Reason |
 | --- | --- | --- |
 | Frontend | React 19, TypeScript, Vite | Volunteers test this on their own phones, so it had to be a browser app with no install step |
-| Routing | React Router 7 | Nested layout routes let both workspaces share one shell |
+| Routing | React Router 7 | Nested layout routes let all three workspaces share one shell |
 | Styling | Plain CSS with custom properties | No framework weight, and one file maps the Figma design to the code |
-| Backend | Node.js, Express, TypeScript | A single modular monolith, as set out in the proposal |
-| ORM | Prisma | Typed queries, and migrations I can version and replay |
+| Backend | Node.js, Express 5, TypeScript | A single modular monolith, as set out in the proposal |
+| ORM | Prisma 7 | Typed queries, and migrations I can version and replay |
 | Database | PostgreSQL via Supabase | Native array columns, which is how matching compares skill and interest tags |
 | Auth | bcrypt, JSON Web Tokens | Hashed passwords and stateless protected routes |
-| Verification | otplib, qrcode | The event code is a time based one time password, so a photographed code expires |
-| Fonts | Fugaz One, Work Sans | Display and body faces from the design system |
+| Verification | Node crypto HMAC, qrcode | The event code is a one time password derived from the clock, so a photographed code expires |
+| Unit tests | Vitest | Fast enough to run on every save, on both halves |
+| End to end tests | Playwright | Drives three real browser engines and two phone profiles |
+| Containers | Docker Compose | So the whole thing runs from one command on a machine that is not mine |
+| Fonts | Fugaz One, Plus Jakarta Sans | Display and body faces from the design system |
 
 ---
 
@@ -52,41 +102,51 @@ schema is written. The API endpoints are the next sprint.
 
 ```
 fasha/
+├── docker-compose.yml          runs both halves together
+├── docs/testing/               load test and Lighthouse results, kept as evidence
 ├── frontend/
-│   ├── public/                 favicon and icon sprite
-│   ├── index.html
-│   ├── vite.config.ts
+│   ├── e2e/                    Playwright specs
+│   ├── scripts/                the Lighthouse runner and its summariser
+│   ├── nginx.conf              serves the built app in the container
+│   ├── playwright.config.ts    five browser projects
+│   ├── vitest.config.ts
 │   └── src/
 │       ├── styles/
 │       │   ├── tokens.css      every colour, space and radius, taken from Figma
-│       │   └── global.css      layout, buttons, forms, cards, tables, breakpoints
-│       ├── components/
-│       │   ├── ui.tsx          Button, Card, Tag, StatusBadge, StatTile, Field, Tabs, FileDrop
-│       │   └── ImigongoBand.tsx
-│       ├── auth/
-│       │   ├── AuthContext.tsx session state, on localStorage until JWT lands
-│       │   └── RequireAuth.tsx the role guard that keeps the two account types apart
-│       ├── layouts/
-│       │   ├── Shell.tsx       sidebar on desktop, tab bar on phone
-│       │   ├── VolunteerShell.tsx
-│       │   └── OrgShell.tsx
-│       ├── mocks/              types.ts, data.ts, api.ts
-│       ├── pages/
-│       │   ├── auth/           SignUp, SignIn, AuthPanel
-│       │   ├── volunteer/      Discover, OpportunityDetail, MyActivity, Profile,
-│       │   │                   Portfolio, MyInitiatives, CreateOpportunity, CheckIn
-│       │   └── org/            Overview, Opportunities, ReviewWorkspace, Attendance,
-│       │                       OpportunityTable
-│       ├── App.tsx             all routes, grouped by role guard
-│       └── main.tsx
+│       │   └── workspace.css   tables, toolbars, banners, cards, the calendar grid
+│       ├── components/         Button, Card, Field, pickers, the QR scanner
+│       ├── auth/               session state and the four route guards
+│       ├── layouts/            one shell, and the navigation table all three roles read
+│       ├── lib/                the logic that is not React, and its unit tests
+│       ├── notifications/      the unread count in the top bar
+│       └── pages/
+│           ├── auth/           SignIn, SignUp, Forgotten
+│           ├── volunteer/      Discover, MyActivity, MyInitiatives, Portfolio, CheckIn
+│           ├── manage/         Overview, Opportunities, Applicants, Attendance, Deliverables
+│           ├── admin/          Overview, Approvals, Activity, Users
+│           ├── Profile.tsx     shared by all three roles
+│           └── Privacy.tsx     public, reachable without an account
 └── backend/
-    ├── prisma/schema.prisma    the data model: 8 models and 7 enums
-    └── prisma.config.ts        Prisma configuration
+    ├── api/index.ts            the Vercel entry point
+    ├── scripts/                the smoke test and the load test
+    ├── prisma/
+    │   ├── schema.prisma       the data model: 10 models and 8 enums
+    │   └── migrations/         applied in order, never by hand
+    └── src/
+        ├── core/               things that are not about any one feature
+        ├── middleware/         authenticate and authorise
+        ├── modules/            one folder per feature, six files each
+        └── app.ts
 ```
 
-Every screen reads its data through `frontend/src/mocks/api.ts`. That was deliberate. Each
-function in that file becomes a `fetch` call to the API later, and no screen component has to
-change when that happens.
+Each half has its own README with the detail:
+
+- [backend/README.md](backend/README.md) — the module pattern, the API, the schema, how to add a feature
+- [frontend/README.md](frontend/README.md) — the shell, the guards, the data hook, the test suites
+
+In the earlier sprint every screen read its data through `frontend/src/mocks/api.ts`. That was
+deliberate: each function in that file became a `fetch` call to the API, and no screen component
+had to change when it did. The mock layer has since been deleted.
 
 ---
 
@@ -98,6 +158,7 @@ change when that happens.
 - Git.
 - A PostgreSQL database. A free Supabase project is quickest, but a local Postgres 16 install
   works just as well.
+- Docker Desktop, only if you want to run it in containers.
 
 ### Clone it
 
@@ -105,32 +166,6 @@ change when that happens.
 git clone https://github.com/lilalajemima/fasha.git
 cd fasha
 ```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Vite prints a local address, usually `http://localhost:5173`.
-
-The backend is not connected yet, so any email and password will sign you in. Pick Volunteer or
-Organisation on the sign in card and you will land in that workspace. To switch, go back to
-`/signin` and choose the other one, or run `localStorage.clear()` in the browser console and
-reload.
-
-The other commands:
-
-```bash
-npm run build     # type checks and builds into dist/
-npm run lint      # ESLint
-npm run preview   # serves the built bundle
-```
-
-Run `npm run build` before you commit. The dev server is forgiving about things like a missing
-export, and the build is not, which is useful.
 
 ### Backend
 
@@ -145,67 +180,208 @@ Create `backend/.env`:
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/postgres"
 JWT_SECRET="a long random string"
-TOTP_WINDOW_SECONDS=30
+JWT_EXPIRES_IN="7d"
 PORT=4000
 CLIENT_ORIGIN="http://localhost:5173"
 ```
 
-There are two database URLs because Prisma needs a direct connection to run migrations, while
-the running server uses the pooled one. `prisma.config.ts` reads `DIRECT_URL` for that reason.
+There are two database URLs because Prisma needs a direct connection to run migrations, while the
+running server uses the pooled one. `prisma.config.ts` reads `DIRECT_URL` for that reason.
 
-Then set up the database:
+Then set up the database and start it:
 
 ```bash
-npx prisma generate
-npx prisma migrate dev --name init
-npx prisma studio      # optional, opens a browser view of the tables
+npm run db:migrate
+npm run db:seed      # optional, makes a volunteer, an organisation and an admin
+npm run dev          # http://localhost:4000
 ```
+
+`npm run db:seed` needs the `SEED_*` variables in `.env` as well: a name and an email for each of
+the three roles, and a password of at least eight characters.
 
 `.env` is in `.gitignore` and should stay out of the repository.
 
+### Frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
+```
+
+It expects the API at `http://localhost:4000`. To point it elsewhere, set `VITE_API_URL` in
+`frontend/.env`.
+
+Setting `VITE_DEMO_VOLUNTEER_EMAIL`, `VITE_DEMO_ORGANISATION_EMAIL` and `VITE_DEMO_PASSWORD` makes
+a demo panel appear on the sign in page, so somebody can look around without making an account.
+Leave them unset and the panel does not exist.
+
+The other commands:
+
+```bash
+npm run build     # type checks and builds into dist/
+npm run lint      # ESLint
+npm run preview   # serves the built bundle
+```
+
+Run `npm run build` before you commit. The dev server is forgiving about things like an unused
+import, and the build is not, which is useful.
+
 ---
 
-## Deployment plan
+## Running it with Docker
 
-### Where it will run
+```bash
+docker compose up -d
+```
+
+The API is on 4000 and the web app on 8081. The API container applies migrations before it
+starts, so `backend/.env` has to exist and `DATABASE_URL` has to be reachable from inside the
+container.
+
+```bash
+curl http://localhost:4000/health     # should return {"status":"ok"}
+docker compose down                    # when you are finished
+```
+
+Both services have `restart: unless-stopped`, so if you leave them running they come back the
+next time Docker starts and take port 4000 with them, which stops `npm run dev` working.
+
+If you move either port, move both. The browser is told where the API is when the frontend image
+is built, and the API only accepts the origin named in `CLIENT_ORIGIN`. Change one and the page
+loads but every request fails.
+
+---
+
+## Testing
+
+| What | Command | Covers |
+| --- | --- | --- |
+| Backend units | `npm --prefix backend test` | 169 tests over the services, where the rules are |
+| Frontend units | `npm --prefix frontend test` | 58 tests over the pure functions in `lib` |
+| End to end | `npm --prefix frontend run e2e` | 102 tests across three browser engines and two phones |
+| API smoke | `npm --prefix backend run smoke` | A whole scenario against a running API |
+| Load | `npm --prefix backend run load` | Three endpoints at 10, 25 and 50 concurrent users |
+| Lighthouse | `npm --prefix frontend run lighthouse` | Performance and accessibility on the public pages |
+
+Both unit suites use in-memory fakes and pure functions, so they need nothing running and finish
+in about a second each.
+
+The end to end suite needs the app running. It drives real browsers against the real API, so it
+creates real accounts and events. Do not point it at production. The journey test runs two
+browser contexts at once, because the code on the organiser's screen is what the volunteer has to
+type, which is not something one session can fake.
+
+The load test measures three endpoints chosen so the gaps mean something: `/catalogue` touches no
+database, `/health` is one `SELECT 1`, and `/opportunities` is a real query. The difference
+between the first two is what reaching the database costs, and the difference between the second
+and third is what Fasha costs.
+
+Results kept as evidence are in [docs/testing](docs/testing).
+
+---
+
+## Deployment
+
+### Where it runs
 
 | Part | Platform | Note |
 | --- | --- | --- |
 | Web client | Vercel | Static build from `frontend/`, served from a CDN |
-| API | Render | Node service built from `backend/` |
-| Database | Supabase | Managed PostgreSQL, pooled for the app and direct for migrations |
-| File storage | Supabase Storage | Resumes, event photos, deliverables |
+| API | Vercel | Serverless function built from `backend/`, pinned to the `fra1` region |
+| Database | Supabase | Managed PostgreSQL in `eu-central-1`, pooled for the app and direct for migrations |
+| Files | Postgres | Pictures and briefs are stored as base64 on the row, not in object storage |
 
-I went with managed services rather than hosting anything myself. The pilot runs for a month
-with 25 to 40 users, which the free tiers cover comfortably, and neither I nor the people
-testing it should depend on a machine that has to stay switched on.
+I went with managed services rather than hosting anything myself. The pilot runs for a month with
+25 to 40 users, which the free tiers cover comfortably, and neither I nor the people testing it
+should depend on a machine that has to stay switched on.
 
-### Environments
-
-| Environment | For | Database |
-| --- | --- | --- |
-| Local | Development | Local Postgres, or a separate Supabase project |
-| Production | The Kimironko pilot | Supabase production project |
+The API and the database are in the same region deliberately. Load testing from my own machine in
+Kigali showed around 185ms for a single database round trip, almost all of it distance. In
+production the two sit in the same city, so that cost very nearly disappears.
 
 ### Releasing
 
-1. Merge the feature branch into `main` after review.
-2. Run `npx prisma migrate deploy` against the production database. Migrations live in
+1. Merge into `main` after review.
+2. Vercel rebuilds both projects automatically. There is nothing to run by hand.
+3. The API container applies `prisma migrate deploy` on start. Migrations live in
    `backend/prisma/migrations/` and are applied in order, never by hand.
-3. Render rebuilds and restarts the API. Vercel rebuilds and publishes the client.
 4. Check it: `GET /health` returns 200, then sign in, load the feed and do one check in.
-5. If something is wrong, roll back to the previous deployment on each platform. Migrations are
-   written to be additive, so rolling back does not lose data.
+5. If something is wrong, roll back to the previous deployment in the Vercel dashboard.
+   Migrations are written to be additive, so rolling back does not lose data.
 
 ### Configuration
 
-No secret is committed. Each platform holds its own environment variables: `DATABASE_URL`,
-`DIRECT_URL`, `JWT_SECRET`, `TOTP_WINDOW_SECONDS` and `CLIENT_ORIGIN` on Render, and
-`VITE_API_URL` on Vercel.
+No secret is committed. Vercel holds `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET` and
+`CLIENT_ORIGIN` for the API, and `VITE_API_URL` plus the three demo variables for the client.
 
-### Thinking about the pilot
+---
 
-People will use this on their own phones, on mobile data, outdoors. That shaped a few
-decisions: it is a browser app so there is nothing to install, the production bundle is kept
-small, the colours are high contrast rather than pale, and the QR check in has a manual
-fallback for the moments when the network drops.
+## What changed from the plan
+
+A few things are different from the original proposal, and they were all decisions rather than
+omissions.
+
+**The API moved from Render to Vercel.** Keeping both halves on one platform meant one dashboard,
+one set of environment variables and one deployment to check. The cost is cold starts: the first
+request after a quiet period takes about two seconds while the function wakes up, which a pilot
+used mostly around Umuganda will feel.
+
+**Files are stored in the database rather than in Supabase Storage.** Profile pictures are resized
+to 256px in the browser and stored as base64, and briefs are capped at a megabyte. It avoids a
+second set of credentials and a bucket to manage. At a few hundred accounts it should move.
+
+**Skills and interests are chosen from a fixed list rather than typed.** Matching compares tags
+word for word, and when either side could invent its own, "Graphic design", "graphics" and
+"designing posters" were three different tags and the score meant nothing.
+
+**There is no email.** A forgotten password is handled by a community admin issuing a temporary
+one, which the person replaces at their next sign in. That works in a sector office where people
+can walk in, and does not scale beyond it.
+
+---
+
+## Thinking about the pilot
+
+People will use this on their own phones, on mobile data, outdoors. That shaped a few decisions:
+it is a browser app so there is nothing to install, the production bundle is kept small, the
+colours are high contrast rather than pale, and the QR check in has a manual fallback for the
+moments when the network drops.
+
+It also shaped the testing. The end to end suite runs on a Pixel and an iPhone profile as well as
+on desktop, and Lighthouse measures the public pages on a simulated mid-range phone over
+throttled 4G rather than on a laptop, because that is closer to the person the platform is for.
+
+---
+
+## Common issues
+
+**Issue: the frontend loads but every request fails**
+
+- `CLIENT_ORIGIN` on the API has to match exactly where the page is served from:
+  `http://localhost:5173` for the dev server, `http://localhost:8081` for Docker, the Vercel URL
+  in production
+- the browser cannot tell JavaScript the difference between a rejected origin and a dead server,
+  so the app reports both as "cannot reach the server"
+- check with `curl -i -H "Origin: http://localhost:5173" http://localhost:4000/health`
+
+**Issue: `npm run dev` on the backend exits straight away**
+
+- a Docker container is probably still holding port 4000
+- `docker compose down`, then try again
+- `netstat -ano | grep :4000` shows what has it
+
+**Issue: TypeScript says a field does not exist on a Prisma model that is in the schema**
+
+- the generated client is behind: `npm --prefix backend run db:generate`
+- if that does not help, delete `backend/node_modules/.prisma`. It is a leftover from an older
+  Prisma version and gets picked up first
+- `prisma migrate dev` skips generating when there is nothing to apply, so a migration that ran
+  earlier can leave the client stale with no sign anything is wrong
+
+**Issue: changes are not showing on the live site**
+
+- Vercel builds what is on GitHub, not what is on your machine
+- `git status -sb` says whether you have commits you have not pushed
