@@ -1,6 +1,5 @@
 import type { OrganisedRecord, PortfolioRecord } from './PortfolioStore'
 
-/** Something they took part in, run by somebody else. */
 export type PortfolioEntryView = {
   id: string
   hours: number
@@ -18,7 +17,6 @@ export type PortfolioEntryView = {
   }
 }
 
-/** Something they proposed and ran themselves. */
 export type OrganisedView = {
   id: string
   title: string
@@ -38,10 +36,8 @@ export type PortfolioVolunteer = {
   portfolioSlug: string
   avatar: string | null
   bio: string | null
-  /** What they say they can do and care about, from the one catalogue. */
   skills: string[]
   interests: string[]
-  /** When they are free, as SAT_MORNING tokens; the page draws them as chips. */
   availabilitySlots: string[]
 }
 

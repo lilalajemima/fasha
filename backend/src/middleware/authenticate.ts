@@ -8,9 +8,9 @@ const BEARER_PREFIX = 'Bearer '
 const accounts = new AccountRepository()
 
 /**
- * A token lasts seven days and a decision about an account should not wait that
- * long, so the account is read on every request rather than trusted from the
- * token alone. Deactivating somebody takes effect on their next request.
+ * A token lasts seven days and a decision about an account should not wait
+ * that long, so the account is read on every request rather than trusted from
+ * the token alone. Deactivating somebody takes effect on their next request.
  */
 export async function authenticate(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization
@@ -28,6 +28,13 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
 
   if (user.status === UserStatus.DEACTIVATED) {
     throw new ForbiddenError('This account is deactivated')
+  }
+
+  // Changing a password moves the account's version on, which leaves every
+  // token handed out before it behind. The device that made the change is
+  // given a replacement; the others are not.
+  if ((payload.tokenVersion ?? 0) !== user.tokenVersion) {
+    throw new UnauthorisedError('Your password was changed. Sign in again.')
   }
 
   req.user = payload

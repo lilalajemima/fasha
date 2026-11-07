@@ -1,5 +1,17 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 
+/**
+ * The rotating code behind check in.
+ *
+ * A fixed code gets photographed once and sent to people who never turned up,
+ * so the code is worked out from the clock and changes every thirty seconds.
+ * Nothing is stored per code: the same secret and the same step produce the
+ * same six digits on the organiser's screen and on the server.
+ *
+ * Phones and laptops disagree about the time, so a code from one step either
+ * side is accepted too. That is a minute of leeway, which covers a queue at
+ * the gate without giving a shared screenshot a useful life.
+ */
 export class TotpService {
   private readonly stepSeconds = 30
   private readonly digits = 6
@@ -44,6 +56,10 @@ export class TotpService {
     return String(truncated % 10 ** this.digits).padStart(this.digits, '0')
   }
 
+  // The lengths are compared first because timingSafeEqual throws on buffers
+  // of different sizes rather than returning false. The comparison itself is
+  // constant time, so a wrong code cannot be narrowed down by how long the
+  // answer takes to come back.
   private matches(given: string, expected: string): boolean {
     if (given.length !== expected.length) {
       return false

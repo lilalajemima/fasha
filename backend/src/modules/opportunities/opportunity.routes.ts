@@ -28,7 +28,6 @@ opportunityRoutes.get('/opportunities/mine/workload', authenticate, controller.w
 opportunityRoutes.get('/opportunities/pending', authenticate, reviewers, controller.awaitingApproval)
 opportunityRoutes.get('/opportunities/all', authenticate, reviewers, controller.everything)
 opportunityRoutes.get('/opportunities/:id', authenticate, controller.detail)
-// Public: a portfolio is public, and the briefs on it have to open from it.
 opportunityRoutes.get('/opportunities/:id/brief', controller.brief)
 opportunityRoutes.patch('/opportunities/:id/status', authenticate, reviewers, controller.decide)
 opportunityRoutes.patch('/opportunities/:id', authenticate, controller.update)

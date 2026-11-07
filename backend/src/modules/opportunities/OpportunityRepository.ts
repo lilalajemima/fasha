@@ -17,7 +17,6 @@ import type {
 
 const withCreator = {
   creator: { select: { id: true, name: true, role: true } },
-  // The name, never the megabyte: the file has its own endpoint.
   brief: { select: { name: true } },
 } as const
 
@@ -53,12 +52,6 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
     })
   }
 
-  /**
-   * The oversight calendar: every opportunity, in any state, that touches the
-   * window. Something proposed long ago but happening next month still counts,
-   * so the window is tested against the dates that matter rather than against
-   * when the row was written.
-   */
   findSince(since: Date): Promise<OpportunityRecord[]> {
     return this.db.opportunity.findMany({
       where: {
@@ -106,10 +99,6 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
     })
   }
 
-  /**
-   * Two grouped counts rather than one query per opportunity, so the workspace
-   * header costs the same whether an organiser runs two events or two hundred.
-   */
   async countWorkload(creatorId: string): Promise<WorkloadRow[]> {
     const [applications, deliverables] = await Promise.all([
       this.db.application.groupBy({
@@ -191,8 +180,6 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
   ): Promise<OpportunityRecord> {
     const { brief, ...fields } = input
 
-    // `delete: true` on a one-to-one throws when there is nothing to delete,
-    // so taking a brief away is its own statement, in the same transaction.
     const [, updated] = await this.db.$transaction([
       this.db.opportunityBrief.deleteMany({
         where: brief === undefined ? { opportunityId: '' } : { opportunityId: id },
@@ -223,10 +210,6 @@ export class OpportunityRepository extends BaseRepository implements Opportunity
     await this.db.opportunity.delete({ where: { id } })
   }
 
-  /**
-   * Nobody checked in without applying first, so applications stand in for
-   * attendance here and the guard stays three counts rather than four.
-   */
   async countActivity(id: string): Promise<ActivityCount> {
     const [applications, deliverables, credited] = await Promise.all([
       this.db.application.count({ where: { opportunityId: id } }),

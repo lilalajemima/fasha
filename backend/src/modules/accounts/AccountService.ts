@@ -7,7 +7,7 @@ import {
   UnauthorisedError,
 } from '../../core/errors/HttpErrors'
 import type { Hasher } from '../../core/security/PasswordHasher'
-import type { TokenPayload } from '../../core/security/TokenService'
+import type { TokenPayload, TokenService } from '../../core/security/TokenService'
 import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type { AccountStore } from './AccountStore'
 
@@ -17,14 +17,15 @@ import type { AccountStore } from './AccountStore'
  *
  * Leaving does not erase the row. Other volunteers' registers, the hours an
  * organiser verified and the applications made to an initiative all point at
- * this account, and deleting it outright would rewrite other people's records.
- * What goes is the identity and the way back in.
+ * this account, and deleting it outright would rewrite other people's
+ * records. What goes is the identity and the way back in.
  */
 export class AccountService {
   constructor(
     private readonly accounts: AccountStore,
     private readonly passwords: Hasher,
     private readonly notifier: Notifier,
+    private readonly tokens: TokenService,
   ) {}
 
   /**
@@ -57,11 +58,19 @@ export class AccountService {
     )
   }
 
+  /**
+   * Changing the password ends every other session: the version on the account
+   * moves on, so tokens handed out before now fail at the door.
+   *
+   * It returns a replacement token because the person doing this is holding
+   * one of those stale tokens themselves, and being thrown out of the app the
+   * moment you secure it would be a strange way to reward the habit.
+   */
   async changePassword(
     actor: TokenPayload,
     currentPassword: string,
     newPassword: string,
-  ): Promise<void> {
+  ): Promise<string> {
     const user = await this.findOrFail(actor.userId)
 
     if (!(await this.passwords.matches(currentPassword, user.passwordHash))) {
@@ -72,7 +81,13 @@ export class AccountService {
       throw new BadRequestError('The new password has to be different from the current one')
     }
 
-    await this.accounts.setPassword(user.id, await this.passwords.hash(newPassword), false)
+    const tokenVersion = await this.accounts.setPassword(
+      user.id,
+      await this.passwords.hash(newPassword),
+      false,
+    )
+
+    return this.tokens.issue({ userId: user.id, role: user.role, tokenVersion })
   }
 
   async deactivate(actor: TokenPayload, password: string): Promise<void> {
@@ -89,13 +104,13 @@ export class AccountService {
     await this.accounts.anonymise(user.id, {
       name: 'Removed account',
       email: `deleted-${user.id}@fasha.invalid`,
-      // Not a password anybody holds: the account can no longer be signed into.
       passwordHash: await this.passwords.hash(randomBytes(24).toString('hex')),
       portfolioSlug: `removed-${randomBytes(6).toString('hex')}`,
     })
   }
 
-  /** Both leaving actions ask for the password again, because neither is reversible by the user. */
+  // Both leaving actions ask for the password again, because neither is
+  // reversible by the user.
   private async confirm(userId: string, password: string) {
     const user = await this.findOrFail(userId)
 

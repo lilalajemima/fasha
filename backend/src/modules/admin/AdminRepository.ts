@@ -72,12 +72,6 @@ export class AdminRepository extends BaseRepository implements AdminStore {
       .sort((a, b) => b.opportunities - a.opportunities)
   }
 
-  /**
-   * The day something happened is its start time, falling back to its deadline
-   * and then to the day it was posted. That fallback cannot be expressed as a
-   * column filter, so the kind and the place are narrowed in the query and the
-   * period is applied to the rows that come back.
-   */
   async listEvents(filter: ReportFilter): Promise<ActivityRow[]> {
     const opportunities = await this.db.opportunity.findMany({
       where: {

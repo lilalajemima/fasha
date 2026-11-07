@@ -30,7 +30,6 @@ export class UserAdminController {
     res.status(204).send()
   }
 
-  /** Anything the query string does not recognise is simply not a filter. */
   private filterFrom(req: Request): UserFilter {
     const search = typeof req.query.q === 'string' ? req.query.q.trim() : ''
     const role = typeof req.query.role === 'string' ? req.query.role.toUpperCase() : ''

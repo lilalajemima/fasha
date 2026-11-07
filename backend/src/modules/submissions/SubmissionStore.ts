@@ -19,7 +19,6 @@ export interface SubmissionStore {
   findById(id: string): Promise<SubmissionRecord | null>
   findByVolunteer(volunteerId: string): Promise<SubmissionRecord[]>
   findForOpportunity(opportunityId: string): Promise<SubmissionRecord[]>
-  /** Everything sent in to any opportunity this person runs. */
   findForCreator(creatorId: string): Promise<SubmissionRecord[]>
   findOpen(opportunityId: string, volunteerId: string): Promise<SubmissionRecord | null>
   reject(id: string, reviewNote: string): Promise<SubmissionRecord>

@@ -64,7 +64,6 @@ export class OpportunityController {
     res.json(await this.opportunities.awaitingApproval())
   }
 
-  /** The PDF itself, sent as a PDF rather than as JSON. */
   brief = async (req: Request, res: Response) => {
     const file = await this.opportunities.brief(req.user, routeParam(req, 'id'))
 
@@ -73,7 +72,6 @@ export class OpportunityController {
     res.send(Buffer.from(file.data, 'base64'))
   }
 
-  /** A year of everything, which is as far back as the calendar reaches. */
   everything = async (req: Request, res: Response) => {
     res.json(await this.opportunities.everything(req.user!, 12))
   }
@@ -92,7 +90,6 @@ export class OpportunityController {
     res.json(view)
   }
 
-  /** Create and update take the same body, so they read it the same way. */
   private draftFrom(req: Request): NewOpportunity {
     return {
       title: readString(req.body, 'title', 6),

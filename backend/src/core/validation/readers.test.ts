@@ -14,7 +14,6 @@ describe('readTagList against the catalogue', () => {
     expect(() => readTagList({ skills: ['Juggling'] }, 'skills', SKILLS)).toThrow(BadRequestError)
   })
 
-  /** Matching is exact, so a near miss has to be caught at the door. */
   it('refuses a near miss rather than storing it', () => {
     expect(() => readTagList({ skills: ['graphic designs'] }, 'skills', SKILLS)).toThrow(
       'is not on the list Fasha matches on',

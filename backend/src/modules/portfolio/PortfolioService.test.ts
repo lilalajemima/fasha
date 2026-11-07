@@ -139,7 +139,6 @@ describe('a portfolio', () => {
     expect(view.volunteer.name).toBe('Amara Mensah')
   })
 
-  /** The public page is the one an employer sees, so it carries the face and the introduction. */
   it('carries the picture and the introduction', async () => {
     const view = await build([makeEntry()]).bySlug('amara-mensah')
 

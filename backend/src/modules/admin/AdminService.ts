@@ -27,11 +27,6 @@ function nothing(): PeriodTally {
 export class AdminService {
   constructor(private readonly reports: AdminStore) {}
 
-  /**
-   * The numbers for a period, next to the same length of time immediately
-   * before it, so the page can say whether something is going up or down.
-   * Asking for all time has nothing to compare against, and says so.
-   */
   async summary(days: number | null): Promise<AdminSummary> {
     const length = days === null ? DEFAULT_DAYS : Math.max(days, 0)
     const to = new Date()
@@ -65,12 +60,10 @@ export class AdminService {
     }
   }
 
-  /** Everything ever posted, for the table the district reads. */
   async activity(): Promise<ActivityView[]> {
     return toActivity(await this.reports.listEvents(this.everything()))
   }
 
-  /** A report the district asked for: a period, optionally one kind or one place. */
   async report(grain: ReportGrain, filter: Partial<ReportFilter>): Promise<string> {
     const whole: ReportFilter = {
       from: filter.from ?? ALL_TIME,

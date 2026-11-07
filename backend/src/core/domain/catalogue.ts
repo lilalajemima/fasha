@@ -4,10 +4,9 @@
  * Matching compares a volunteer's tags with an opportunity's tags, so both
  * sides have to use the same words. When either side could type its own,
  * "Graphic design", "graphics" and "designing posters" were three different
- * tags and the score meant nothing. Everything in the app now picks from here,
- * and the server refuses anything that is not in these lists.
+ * tags and the score meant nothing. Everything picks from here now, and the
+ * server refuses anything that is not on these lists.
  */
-
 export const INTERESTS = [
   'Healthcare',
   'Climate and environment',
@@ -49,11 +48,6 @@ export const SKILLS = [
 export const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const
 export const PARTS = ['MORNING', 'AFTERNOON', 'EVENING'] as const
 
-/**
- * Availability is stored as tokens such as SAT_MORNING rather than as a
- * sentence, so it can be read by the app as well as by a person. The order is
- * the order of the week, which is the order the grid draws.
- */
 export const AVAILABILITY_SLOTS: string[] = DAYS.flatMap(day =>
   PARTS.map(part => `${day}_${part}`),
 )

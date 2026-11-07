@@ -8,7 +8,6 @@ export type NewAccount = {
 
 export type UserWithProfile = User & { profile: VolunteerProfile | null }
 
-/** What anybody, whichever role, can change about their own account. */
 export type AccountChanges = {
   name?: string
   bio?: string | null

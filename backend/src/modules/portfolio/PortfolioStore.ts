@@ -16,7 +16,6 @@ export type PortfolioRecord = PortfolioEntry & {
   }
 }
 
-/** An initiative this person proposed and ran, with how many people it reached. */
 export type OrganisedRecord = {
   id: string
   title: string
@@ -34,6 +33,5 @@ export type OrganisedRecord = {
 
 export interface PortfolioStore {
   findForVolunteer(volunteerId: string): Promise<PortfolioRecord[]>
-  /** Initiatives this person proposed that were published and have since run. */
   findOrganisedBy(volunteerId: string): Promise<OrganisedRecord[]>
 }

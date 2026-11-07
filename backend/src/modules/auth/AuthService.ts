@@ -64,8 +64,8 @@ export class AuthService {
       ? await this.passwords.matches(password, user.passwordHash)
       : false
 
-    // A deleted account keeps its row, so the generic answer covers it: nobody
-    // learns from this endpoint whether an address was ever registered.
+    // A deleted account keeps its row, so the generic answer covers it too:
+    // nobody learns from this endpoint whether an address was ever registered.
     if (!user || !passwordMatches || user.status === UserStatus.DELETED) {
       throw new UnauthorisedError('Email or password is incorrect')
     }
@@ -91,7 +91,11 @@ export class AuthService {
 
   private authResultFor(user: User): AuthResult {
     return {
-      token: this.tokens.issue({ userId: user.id, role: user.role }),
+      token: this.tokens.issue({
+        userId: user.id,
+        role: user.role,
+        tokenVersion: user.tokenVersion,
+      }),
       user: this.toPublicUser(user),
     }
   }

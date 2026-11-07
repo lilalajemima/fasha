@@ -14,19 +14,16 @@ export type ApplicationView = {
     name: string
     email: string
     avatar: string | null
-    /** Null when the applicant has since deleted their account. */
     portfolioSlug: string | null
     skills: string[]
     interests: string[]
     availabilitySlots: string[]
     location: string | null
   }
-  /**
-   * How well this applicant fits this opportunity, 0 to 100, by the same
-   * weighting Discover uses in the other direction. The shared tags travel
-   * with it because a percentage on its own tells an organiser nothing about
-   * why one applicant is above another.
-   */
+  // How well this applicant fits this opportunity, 0 to 100, by the same
+  // weighting Discover uses in the other direction. The shared tags travel
+  // with it because a percentage on its own tells an organiser nothing about
+  // why one applicant is above another.
   match: {
     score: number
     sharedSkills: string[]
@@ -35,7 +32,6 @@ export type ApplicationView = {
   opportunity: { id: string; title: string; applicationDeadline: string; mode: string }
 }
 
-/** Case-insensitive, to agree with how the score is counted. */
 function shared(mine: string[], theirs: string[]): string[] {
   const wanted = new Set(theirs.map(tag => tag.trim().toLowerCase()))
 

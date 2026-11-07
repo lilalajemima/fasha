@@ -1,13 +1,15 @@
 import type { User } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 import type { Hasher } from '../../core/security/PasswordHasher'
-import type { TokenPayload } from '../../core/security/TokenService'
+import { TokenService, type TokenPayload } from '../../core/security/TokenService'
 import type { Notifier } from '../notifications/Notifier'
 import { AccountService } from './AccountService'
 import type { AccountRow, AccountStore, Anonymised, UserFilter } from './AccountStore'
 
 const volunteer: TokenPayload = { userId: 'volunteer-1', role: 'VOLUNTEER' }
 const admin: TokenPayload = { userId: 'admin-1', role: 'ADMIN' }
+
+const tokens = new TokenService('test-secret-value', '1h')
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -22,11 +24,11 @@ function makeUser(overrides: Partial<User> = {}): User {
     deletedAt: null,
     createdAt: new Date('2026-10-01T08:00:00.000Z'),
     updatedAt: new Date('2026-10-01T08:00:00.000Z'),
+    tokenVersion: 0,
     ...overrides,
   } as User
 }
 
-/** Hashing is `hash:` plus the text, which is enough to assert against and costs nothing. */
 const hasher: Hasher = {
   async hash(plainText: string) {
     return `hash:${plainText}`
@@ -37,6 +39,7 @@ const hasher: Hasher = {
 }
 
 class FakeAccountStore implements AccountStore {
+  tokenVersion = 0
   passwordSetTo: { hash: string; mustChange: boolean } | null = null
   statusSetTo: { status: string; deactivatedAt: Date | null } | null = null
   anonymisedWith: Anonymised | null = null
@@ -73,6 +76,9 @@ class FakeAccountStore implements AccountStore {
 
   async setPassword(_id: string, passwordHash: string, mustChange: boolean) {
     this.passwordSetTo = { hash: passwordHash, mustChange }
+    this.tokenVersion += 1
+
+    return this.tokenVersion
   }
 
   async setStatus(_id: string, status: string, deactivatedAt: Date | null) {
@@ -109,7 +115,11 @@ function build(users: User[] = [makeUser()], activeAdmins = 2) {
   const store = new FakeAccountStore(users, activeAdmins)
   const notifier = new RecordingNotifier()
 
-  return { store, notifier, service: new AccountService(store, hasher, notifier) }
+  return {
+    store,
+    notifier,
+    service: new AccountService(store, hasher, notifier, tokens),
+  }
 }
 
 describe('a forgotten password', () => {
@@ -125,7 +135,6 @@ describe('a forgotten password', () => {
     expect(notifier.sent[0].message).toContain('amara@example.com')
   })
 
-  /** An address that is not here must look exactly like one that is. */
   it('says nothing about an address nobody owns', async () => {
     const { service, notifier } = build()
 
@@ -158,6 +167,26 @@ describe('changing your own password', () => {
 
     expect(store.passwordSetTo).toEqual({ hash: 'hash:a-brand-new-password', mustChange: false })
   })
+
+  it('moves the account on to a new token version', async () => {
+    const { service, store } = build()
+
+    await service.changePassword(volunteer, 'correct-horse', 'a-brand-new-password')
+
+    expect(store.tokenVersion).toBe(1)
+  })
+
+  it('hands back a token carrying the new version', async () => {
+    const { service } = build()
+
+    const token = await service.changePassword(volunteer, 'correct-horse', 'a-brand-new-password')
+
+    expect(tokens.verify(token)).toEqual({
+      userId: 'volunteer-1',
+      role: 'VOLUNTEER',
+      tokenVersion: 1,
+    })
+  })
 })
 
 describe('deactivating your own account', () => {
@@ -184,10 +213,6 @@ describe('deactivating your own account', () => {
 })
 
 describe('deleting your own account', () => {
-  /**
-   * The row stays so that other people's registers and credited hours keep
-   * their shape. What has to go is everything that identifies the person.
-   */
   it('replaces the identity rather than erasing the record', async () => {
     const { service, store } = build()
 

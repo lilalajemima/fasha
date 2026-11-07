@@ -5,7 +5,6 @@ export type SubmissionView = {
   status: string
   hoursClaimed: number
   proofUrl: string
-  /** Why it was turned down. Null unless it was. */
   reviewNote: string | null
   createdAt: string
   volunteer: { id: string; name: string }

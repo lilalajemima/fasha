@@ -66,7 +66,6 @@ function kind(mode: string): string {
   return mode === 'VIRTUAL' ? 'Virtual' : 'In person'
 }
 
-/** One row per opportunity: what happened, where, and how many people were in it. */
 export function toEventsCsv(rows: ActivityRow[]): string {
   return writeCsv(
     [
@@ -100,7 +99,6 @@ export function toEventsCsv(rows: ActivityRow[]): string {
   )
 }
 
-/** One row per person per check in, for a district office that wants the detail. */
 export function toCheckinsCsv(rows: AttendanceRow[]): string {
   return writeCsv(
     ['Date', 'Sector', 'Opportunity', 'Type', 'Volunteer', 'Checked in', 'Checked out', 'Hours', 'Method'],

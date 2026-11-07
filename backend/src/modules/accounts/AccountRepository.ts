@@ -56,21 +56,29 @@ export class AccountRepository extends BaseRepository implements AccountStore {
     return this.db.user.count({ where: { role: UserRole.ADMIN, status: UserStatus.ACTIVE } })
   }
 
-  async setPassword(id: string, passwordHash: string, mustChange: boolean): Promise<void> {
-    await this.db.user.update({
+  // Every route that sets a password comes through here, so the increment
+  // that ends the old sessions cannot be forgotten by one of them: an admin's
+  // reset revokes tokens for free.
+  async setPassword(id: string, passwordHash: string, mustChange: boolean): Promise<number> {
+    const user = await this.db.user.update({
       where: { id },
-      data: { passwordHash, mustChangePassword: mustChange },
+      data: {
+        passwordHash,
+        mustChangePassword: mustChange,
+        tokenVersion: { increment: 1 },
+      },
+      select: { tokenVersion: true },
     })
+
+    return user.tokenVersion
   }
 
   async setStatus(id: string, status: UserStatus, deactivatedAt: Date | null): Promise<void> {
     await this.db.user.update({ where: { id }, data: { status, deactivatedAt } })
   }
 
-  /**
-   * One transaction: the account and the profile have to lose their identity
-   * together, or a half-deleted person is left behind.
-   */
+  // One transaction: the account and the profile have to lose their identity
+  // together, or a half-deleted person is left behind.
   async anonymise(id: string, replacement: Anonymised): Promise<void> {
     await this.db.$transaction([
       this.db.user.update({
@@ -92,7 +100,6 @@ export class AccountRepository extends BaseRepository implements AccountStore {
           availabilitySlots: [],
           location: null,
           sector: null,
-          // The old address stops resolving, so a shared portfolio link dies with the account.
           portfolioSlug: replacement.portfolioSlug,
         },
       }),

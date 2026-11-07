@@ -39,14 +39,9 @@ export function readPassword(body: Body, field = 'password'): string {
 }
 
 const IMAGE_PATTERN = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/
-/** Roughly 150KB once decoded. The browser resizes to about 256px before sending. */
+// Roughly 150KB once decoded. The browser resizes to about 256px first.
 const MAX_IMAGE_CHARS = 200_000
 
-/**
- * A picture arrives as a data URL the browser has already resized. Anything
- * else, or anything oversized, is refused here rather than stored and dealt
- * with later.
- */
 export function readOptionalImage(body: Body, field: string): string | null {
   const value = body[field]
 
@@ -103,7 +98,7 @@ export function readOptionalString(body: Body, field: string): string | null {
 /**
  * Tags are matched against each other, so they have to come from the one
  * catalogue. Pass `allowed` and anything else is refused here: a typo cannot
- * reach the database and quietly score zero against everything for ever.
+ * reach the database and then quietly score zero against everything for ever.
  */
 export function readTagList(body: Body, field: string, allowed?: readonly string[]): string[] {
   const value = body[field]
@@ -136,7 +131,7 @@ export function readTagList(body: Body, field: string, allowed?: readonly string
   return unique
 }
 
-/** A PDF arrives as a data URL. One megabyte of file is about 1.4M characters. */
+// A PDF arrives as a data URL. One megabyte of file is about 1.4M characters.
 const MAX_PDF_CHARS = 1_400_000
 const PDF_PREFIX = 'data:application/pdf;base64,'
 
@@ -174,7 +169,6 @@ export function readOptionalPdf(body: Body, field: string): Brief | null | undef
   return { name: name.trim().slice(0, 120) || 'brief.pdf', data: dataUrl.slice(PDF_PREFIX.length) }
 }
 
-/** The day and time boxes a volunteer has ticked, as SAT_MORNING tokens. */
 export function readAvailability(body: Body, field: string): string[] {
   const value = body[field]
 
@@ -199,7 +193,6 @@ export function readAvailability(body: Body, field: string): string[] {
     throw new BadRequestError(`${field} must hold times of the week, not "${stranger}"`)
   }
 
-  // Stored in the order of the week, so every reader sees the same shape.
   return AVAILABILITY_SLOTS.filter(slot => slots.includes(slot))
 }
 

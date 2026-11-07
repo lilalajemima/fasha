@@ -12,7 +12,6 @@ import type { OpportunityStore } from '../opportunities/OpportunityStore'
 import type { NewSubmission, SubmissionRecord, SubmissionStore } from './SubmissionStore'
 import { toSubmissionView, type SubmissionView } from './SubmissionView'
 
-/** Enough to be a sentence rather than "no". */
 const MIN_NOTE_LENGTH = 10
 
 export class SubmissionService {
@@ -71,11 +70,6 @@ export class SubmissionService {
     return records.map(toSubmissionView)
   }
 
-  /**
-   * Everything sent in to this person's own opportunities, newest first. The
-   * organiser's page is one list across all of them rather than one list per
-   * opportunity, so nothing waits unseen behind a dropdown.
-   */
   async received(actor: TokenPayload): Promise<SubmissionView[]> {
     const records = await this.submissions.findForCreator(actor.userId)
 
@@ -85,7 +79,7 @@ export class SubmissionService {
   /**
    * Rejecting takes a reason. A volunteer whose hours come back refused with
    * nothing said cannot tell whether the proof was unreadable, the hours were
-   * wrong, or they were simply not believed — and the next thing they do is
+   * wrong, or they were simply not believed, and the next thing they do is
    * stop submitting. Approving needs no note: the hours speak for themselves.
    */
   async decide(

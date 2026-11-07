@@ -14,6 +14,22 @@ export type CheckinCode = {
   payload: string
 }
 
+/**
+ * Attendance for work that happens somewhere.
+ *
+ * The organiser's screen shows a code that changes every thirty seconds. What
+ * is kept is the secret it comes from, minted once per opportunity and stored
+ * on the row, so there is no list of codes to keep and nothing to tidy up
+ * afterwards.
+ *
+ * Checking out asks the volunteer for the current code as well, because the
+ * hours are credited at that moment. Without it somebody who left at midday
+ * could close their own register from home in the evening and be paid for the
+ * afternoon.
+ *
+ * Virtual work has no door to stand at, so it is measured by what gets
+ * submitted instead and every method here refuses it.
+ */
 export class CheckinService {
   constructor(
     private readonly checkins: CheckinStore,

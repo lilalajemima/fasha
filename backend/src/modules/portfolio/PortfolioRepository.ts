@@ -32,12 +32,6 @@ export class PortfolioRepository extends BaseRepository implements PortfolioStor
     })
   }
 
-  /**
-   * Organising is a fact the system can prove on its own: approved, published,
-   * and it has happened. Hours still require somebody else to verify them.
-   * The count is of people whose time was credited, so it is the number that
-   * actually turned up rather than the number who said they would.
-   */
   async findOrganisedBy(volunteerId: string): Promise<OrganisedRecord[]> {
     const rows = await this.db.opportunity.findMany({
       where: {

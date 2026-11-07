@@ -90,7 +90,6 @@ export class UserAdminService {
     })
   }
 
-  /** An admin manages their own account from their own settings, where a password is asked for. */
   private assertNotSelf(actor: TokenPayload, userId: string, action: string): void {
     if (actor.userId === userId) {
       throw new ForbiddenError(`You cannot ${action}`)

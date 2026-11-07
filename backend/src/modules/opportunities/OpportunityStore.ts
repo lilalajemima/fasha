@@ -2,7 +2,6 @@ import type { Opportunity, OpportunityMode, OpportunityStatus, UserRole } from '
 
 export type OpportunityRecord = Opportunity & {
   creator: { id: string; name: string; role: UserRole }
-  /** The name only: the file itself is fetched from its own endpoint. */
   brief: { name: string } | null
 }
 
@@ -20,7 +19,6 @@ export type NewOpportunity = {
   endsAt: Date
   requiredSkills: string[]
   categories: string[]
-  /** undefined leaves it as it is, null removes it. */
   brief?: BriefFile | null
 }
 
@@ -30,10 +28,6 @@ export type FeedFilter = {
   sector: string | null
 }
 
-/**
- * How much is waiting on the organiser for one opportunity. Counted in the
- * database rather than by loading every application into memory.
- */
 export type WorkloadRow = {
   opportunityId: string
   pendingApplications: number
@@ -41,8 +35,6 @@ export type WorkloadRow = {
   pendingDeliverables: number
 }
 
-/** What other people have attached to an opportunity, which is what decides
- *  whether it can still be deleted. */
 export type ActivityCount = {
   applications: number
   deliverables: number
@@ -50,9 +42,7 @@ export type ActivityCount = {
 }
 
 export interface OpportunityStore {
-  /** The PDF itself, read only when somebody asks to open it. */
   findBrief(id: string): Promise<BriefFile | null>
-  /** Everything in the district, whatever its state, from `since` onwards. */
   findSince(since: Date): Promise<OpportunityRecord[]>
   create(
     creatorId: string,

@@ -7,7 +7,6 @@ export type ApplicationRecord = Application & {
     email: string
     avatar: string | null
     bio: string | null
-    /** Null for an account with no volunteer profile, which cannot apply. */
     profile: {
       portfolioSlug: string
       skills: string[]

@@ -124,7 +124,6 @@ describe('updating a profile', () => {
     ).rejects.toThrow(ForbiddenError)
   })
 
-  /** Name, picture and bio belong to the account, so both roles may set them. */
   it('lets an organisation set a logo and a bio without a volunteer profile', async () => {
     const user = buildOrganisation()
     const view = await serviceFor(user).update(organisationToken, {

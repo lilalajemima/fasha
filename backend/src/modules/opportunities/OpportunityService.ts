@@ -66,7 +66,6 @@ export class OpportunityService {
     return toView(await this.opportunities.update(id, input, status))
   }
 
-  /** Stops new applications and keeps everyone's record intact. */
   async closeEarly(actor: TokenPayload, id: string): Promise<OpportunityView> {
     const record = await this.findOrFail(id)
 
@@ -83,11 +82,9 @@ export class OpportunityService {
     return toView(await this.opportunities.closeApplications(id, new Date()))
   }
 
-  /**
-   * Deleting is only honest while the opportunity is still nobody else's: one
-   * application, deliverable or credited hour and the row belongs to that
-   * person too.
-   */
+  // Deleting is only honest while the opportunity is still nobody else's: one
+  // application, deliverable or credited hour and the row belongs to that
+  // person too.
   async remove(actor: TokenPayload, id: string): Promise<void> {
     const record = await this.findOrFail(id)
 
@@ -123,11 +120,9 @@ export class OpportunityService {
       .map(entry => toView(entry.opportunity, entry.score))
   }
 
-  /**
-   * The brief of published work, readable by anyone — a portfolio is public,
-   * and a brief that needs a token could not open from one. Before it is
-   * published, only the people who may already inspect it.
-   */
+  // The brief of published work is readable by anyone, because a portfolio is
+  // public and a brief that needed a token could not open from one. Before it
+  // is published, only the people who may already inspect it.
   async brief(viewer: TokenPayload | undefined, id: string): Promise<BriefFile> {
     const record = await this.findOrFail(id)
 
@@ -146,7 +141,6 @@ export class OpportunityService {
     return file
   }
 
-  /** Everything the community admin oversees, for the calendar on their overview. */
   async everything(viewer: TokenPayload, months: number): Promise<OpportunityView[]> {
     if (!REVIEWER_ROLES.includes(viewer.role)) {
       throw new ForbiddenError('Only the community admin sees every opportunity')
@@ -177,7 +171,6 @@ export class OpportunityService {
     return records.map(record => toView(record))
   }
 
-  /** What is waiting on this organiser, one row per opportunity they posted. */
   async workload(creator: TokenPayload): Promise<WorkloadRow[]> {
     return this.opportunities.countWorkload(creator.userId)
   }

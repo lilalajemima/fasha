@@ -5,10 +5,6 @@ import type { Notifier } from '../notifications/Notifier'
 import { OpportunityService } from './OpportunityService'
 import type { OpportunityRecord, OpportunityStore, WorkloadRow } from './OpportunityStore'
 
-/**
- * The counting is the database's job, so what is worth testing here is that the
- * service asks for the signed-in organiser and nobody else.
- */
 class CountingStore implements OpportunityStore {
   readonly asked: string[] = []
   private readonly rows: WorkloadRow[]

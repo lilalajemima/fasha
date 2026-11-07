@@ -11,8 +11,6 @@ const withBothSides = {
       email: true,
       avatar: true,
       bio: true,
-      // The tags are here so an organiser can be shown how well someone fits
-      // without a second query for every row in the list.
       profile: {
         select: {
           portfolioSlug: true,

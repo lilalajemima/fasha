@@ -97,7 +97,6 @@ describe('the oversight summary', () => {
 
     expect(lengthOf(current!)).toBe(30)
     expect(lengthOf(previous!)).toBe(30)
-    // The two periods meet, so nothing is counted twice and nothing is missed.
     expect(previous!.to.getTime()).toBe(current!.from.getTime())
   })
 

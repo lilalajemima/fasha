@@ -12,11 +12,9 @@ export class ProfileService {
     private readonly profiles: ProfileStore,
   ) {}
 
-  /**
-   * Name, picture and bio belong to every account. Skills, availability and the
-   * rest describe a volunteer, so an organisation sending them is refused
-   * rather than quietly ignored.
-   */
+  // Name, picture and bio belong to every account. Skills, availability and
+  // the rest describe a volunteer, so an organisation sending them is refused
+  // rather than quietly ignored.
   async update(actor: TokenPayload, update: ProfileUpdate): Promise<ProfileView> {
     const { name, bio, avatar, ...profileChanges } = update
     const accountChanges: AccountChanges = {

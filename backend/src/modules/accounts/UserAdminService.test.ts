@@ -20,6 +20,7 @@ function makeUser(overrides: Partial<User> = {}): User {
     deletedAt: null,
     createdAt: new Date('2026-10-01T08:00:00.000Z'),
     updatedAt: new Date('2026-10-01T08:00:00.000Z'),
+    tokenVersion: 0,
     ...overrides,
   } as User
 }
@@ -48,6 +49,7 @@ const hasher: Hasher = {
 
 class FakeAccountStore implements AccountStore {
   askedFor: UserFilter | null = null
+  tokenVersion = 0
   passwordSetTo: { hash: string; mustChange: boolean } | null = null
   statusSetTo: { status: string; deactivatedAt: Date | null } | null = null
   anonymisedWith: Anonymised | null = null
@@ -79,6 +81,10 @@ class FakeAccountStore implements AccountStore {
 
   async setPassword(_id: string, passwordHash: string, mustChange: boolean) {
     this.passwordSetTo = { hash: passwordHash, mustChange }
+
+    this.tokenVersion += 1
+
+    return this.tokenVersion
   }
 
   async setStatus(id: string, status: string, deactivatedAt: Date | null) {
@@ -174,11 +180,6 @@ describe('suspending and restoring an account', () => {
 })
 
 describe('issuing a temporary password', () => {
-  /**
-   * Fasha has no email, so recovery is done in person. The admin reads the
-   * password out once and the account must change it at the next sign-in, so
-   * the admin is not left holding somebody else's credentials.
-   */
   it('returns the password once and forces a change', async () => {
     const { service, store } = build()
 
