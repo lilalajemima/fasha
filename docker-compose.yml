@@ -6,7 +6,7 @@ services:
       - ./backend/.env
     environment:
       PORT: 4000
-      CLIENT_ORIGIN: http://localhost:8080
+      CLIENT_ORIGIN: http://localhost:8081
     ports:
       - "4000:4000"
     restart: unless-stopped
@@ -17,7 +17,7 @@ services:
       args:
         VITE_API_URL: http://localhost:4000
     ports:
-      - "8080:80"
+      - "8081:80"
     depends_on:
       - api
     restart: unless-stopped

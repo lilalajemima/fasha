@@ -239,9 +239,8 @@ function Leaving() {
 }
 
 function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void }) {
-  const { user, signOut, refresh } = useAuth()
+  const { user, refresh } = useAuth()
   const catalogue = useCatalogue()
-  const navigate = useNavigate()
   const isVolunteer = loaded.profile !== null
   // An admin has no volunteer profile either, so a missing profile cannot stand
   // in for "organisation": a person is asked for a name and a picture, an

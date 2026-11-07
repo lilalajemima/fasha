@@ -7,12 +7,10 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 RUN npm ci
 
-COPY prisma ./prisma
 COPY prisma.config.ts ./
-RUN npx prisma generate
-
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
