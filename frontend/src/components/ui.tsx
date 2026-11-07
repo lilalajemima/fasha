@@ -19,27 +19,8 @@ export function Tag({ children }: { children: ReactNode }) {
   return <span className="tag">{children}</span>
 }
 
-export function RemovableTag({ children, onRemove }: { children: ReactNode; onRemove: () => void }) {
-  return (
-    <span className="tag">
-      {children}{' '}
-      <button className="chip-x" onClick={onRemove} aria-label={`Remove ${children}`}>×</button>
-    </span>
-  )
-}
-
 export function StatusBadge({ tone = 'neutral', children }: { tone?: Tone; children: ReactNode }) {
   return <span className={`badge badge--${tone}`}>{children}</span>
-}
-
-export function StatTile({ label, value, note }: { label: string; value: ReactNode; note?: string }) {
-  return (
-    <div>
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-      {note && <div className="stat-note">{note}</div>}
-    </div>
-  )
 }
 
 /**
@@ -91,17 +72,6 @@ export function TextField({ label, id, hint, ...rest }:
       <textarea id={id} className="input" {...rest} />
       {hint && <div className="hint">{hint}</div>}
     </div>
-  )
-}
-
-export function FileDrop({ label, hint }: { label: string; hint: string }) {
-  return (
-    <label className="dropzone">
-      <input type="file" style={{ display: 'none' }} />
-      <div style={{ fontSize: 18, lineHeight: 1 }}>↑</div>
-      <div style={{ marginTop: 6 }}>{label}</div>
-      <div className="muted" style={{ marginTop: 4 }}>{hint}</div>
-    </label>
   )
 }
 

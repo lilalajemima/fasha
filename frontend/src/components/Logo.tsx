@@ -1,7 +1,3 @@
-/**
- * The wordmark, and nothing else. One mark, one weight, one place on a page.
- * The dot is the only ornament, and it carries the brand red.
- */
 export default function Logo({ size = 28, showWord = true }: {
   size?: number
   showWord?: boolean

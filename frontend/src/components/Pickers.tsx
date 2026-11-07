@@ -11,8 +11,8 @@ import './pickers.css'
 
 /**
  * Tags are chosen from a list rather than typed, because matching compares
- * them word for word. Each tag is a toggle button, not a checkbox, so the
- * whole chip is the target on a phone.
+ * them word for word. Each tag is a toggle button rather than a checkbox, so
+ * the whole chip is the target on a phone.
  */
 export function TagPicker({ legend, hint, options, value, max = 10, onChange }: {
   legend: string
@@ -59,7 +59,6 @@ export function TagPicker({ legend, hint, options, value, max = 10, onChange }: 
   )
 }
 
-/** The week as a grid: tap the times you are usually free. */
 export function AvailabilityPicker({ value, onChange }: {
   value: string[]
   onChange: (next: string[]) => void
@@ -148,7 +147,6 @@ function summary(slots: string[]): string {
   return `${slots.length} ${slots.length === 1 ? 'time' : 'times'} a week`
 }
 
-/** The same week, read-only: what a portfolio or an applicant row shows. */
 export function AvailabilityChips({ slots }: { slots: string[] }) {
   const days = availabilityByDay(slots)
 

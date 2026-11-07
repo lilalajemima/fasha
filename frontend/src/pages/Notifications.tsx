@@ -8,7 +8,6 @@ import type { NotificationFeed, NotificationView } from '../lib/types'
 import { messageFor, useGet } from '../lib/useGet'
 import { useNotifications } from '../notifications/NotificationsContext'
 
-/** The server sends a type; the page decides what to call it and how loud it is. */
 const KINDS: Record<string, { label: string; tone: Tone }> = {
   APPLICATION_RECEIVED: { label: 'Application', tone: 'info' },
   APPLICATION_DECIDED: { label: 'Application', tone: 'ok' },
@@ -22,7 +21,6 @@ function kindOf(type: string): { label: string; tone: Tone } {
 
 export default function Notifications() {
   const feed = useGet<NotificationFeed>('/notifications')
-  // The bell in the top bar counts the same unread items, so it reloads too.
   const { refresh } = useNotifications()
   const [problem, setProblem] = useState('')
   const [busy, setBusy] = useState('')

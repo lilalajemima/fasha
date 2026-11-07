@@ -17,7 +17,6 @@ const GROUPS = [
   { id: 'virtual', label: 'Virtual' },
 ]
 
-/** One opportunity, one plain-language state. */
 function standingOf(item: OpportunityView): Standing {
   if (item.status === 'PENDING_APPROVAL') return { id: 'review', label: 'In review', tone: 'warn' }
   if (item.status === 'REJECTED') return { id: 'rejected', label: 'Not approved', tone: 'bad' }
@@ -31,7 +30,6 @@ function standingOf(item: OpportunityView): Standing {
   return { id: 'open', label: 'Open', tone: 'ok' }
 }
 
-/** Editable until applications close. */
 function editable(item: OpportunityView): boolean {
   return item.status !== 'PUBLISHED' || !hasPassed(item.applicationDeadline)
 }
@@ -103,7 +101,6 @@ export default function Opportunities() {
   }
 
   function remove(item: OpportunityView) {
-    // The server refuses once anyone has applied; this is for the slip of the hand.
     if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return
 
     run(item.id, () => api.delete(`/opportunities/${item.id}`))

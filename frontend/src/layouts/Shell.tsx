@@ -23,8 +23,6 @@ import './Shell.css'
 export { MANAGE_NAV, OVERSIGHT_NAV, PARTICIPATE_NAV }
 export type { NavItem }
 
-/** One guide per workspace, chosen by the role rather than by the path, so no
- *  page can forget to offer help and none can offer the wrong help. */
 const GUIDES: Record<Role, { title: string; notes: HelpNote[] }> = {
   volunteer: { title: 'Using Fasha', notes: VOLUNTEER_GUIDE },
   organisation: { title: 'Running opportunities', notes: ORGANISER_GUIDE },
@@ -65,6 +63,7 @@ export default function Shell() {
         </nav>
 
         <div className="side__foot">
+          <Link className="side__link" to="/privacy">Privacy</Link>
           {/* One way out, in the same place for every role. */}
           <button className="navplate navplate--danger"
             onClick={() => { signOut(); navigate('/signin') }}>

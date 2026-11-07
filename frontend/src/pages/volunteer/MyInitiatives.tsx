@@ -20,8 +20,6 @@ const TONE: Record<OpportunityStatus, 'ok' | 'warn' | 'bad'> = {
   REJECTED: 'bad',
 }
 
-/** Editable until applications close; one awaiting review or turned down stays
- *  open so the reviewer's note can be acted on. */
 function editable(item: OpportunityView): boolean {
   return item.status !== 'PUBLISHED' || !hasPassed(item.applicationDeadline)
 }
@@ -59,7 +57,6 @@ export default function MyInitiatives() {
   }
 
   function remove(item: OpportunityView) {
-    // The server refuses once anyone has applied; this is for the slip of the hand.
     if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return
 
     run(item.id, () => api.delete(`/opportunities/${item.id}`))

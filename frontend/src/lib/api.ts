@@ -6,7 +6,6 @@ const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:4000').replac
 export const tokenStore = new TokenStore('fasha.token')
 export const api = new ApiClient(baseUrl, tokenStore)
 
-/** An absolute URL for the few things opened as links rather than fetched. */
 export function apiUrl(path: string): string {
   return `${baseUrl}${path}`
 }

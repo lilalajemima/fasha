@@ -20,7 +20,6 @@ export default function Activity() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
-  // The file can be shaped two ways; the table on screen is always the first.
   const [report, setReport] = useState('events')
   const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState('')

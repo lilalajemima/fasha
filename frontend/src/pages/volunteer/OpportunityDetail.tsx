@@ -122,7 +122,6 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
   )
 }
 
-/** Where "back" goes, told by whoever linked here; Discover if nobody said. */
 type From = { to: string; label: string }
 
 export default function OpportunityDetail() {

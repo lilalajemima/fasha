@@ -1,8 +1,3 @@
-/**
- * The controls the oversight pages share. Activity and Export both offer the
- * same period, so it lives here rather than being written twice and drifting.
- */
-
 const PRESETS = [
   { id: 'month', label: 'This month' },
   { id: '30', label: 'Last 30 days' },
@@ -11,7 +6,7 @@ const PRESETS = [
   { id: 'custom', label: 'Custom' },
 ]
 
-/** Local date, not UTC: in Kigali an ISO conversion lands on the day before. */
+// Local date, not UTC: in Kigali an ISO conversion lands on the day before.
 function isoDay(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -41,7 +36,6 @@ export function kindOf(mode: string): string {
   return mode === 'VIRTUAL' ? 'Virtual' : 'In person'
 }
 
-/** One control for the period, with the two date fields only when they are needed. */
 export function Period({ preset, from, to, onPreset, onFrom, onTo }: {
   preset: string
   from: string

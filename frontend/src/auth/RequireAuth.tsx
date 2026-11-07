@@ -29,11 +29,9 @@ export default guard(null)
 
 export const RequireVolunteer = guard('volunteer')
 
-/**
- * The manage workspace is for organisations. A volunteer running their own
- * initiative gets the same tools inside that initiative, not a second
- * workspace listing everybody's work.
- */
+// The manage workspace is for organisations. A volunteer running their own
+// initiative gets the same tools inside that initiative, not a second
+// workspace listing everybody's work.
 export const RequireOrganisation = guard('organisation')
 
 export const RequireAdmin = guard('admin')

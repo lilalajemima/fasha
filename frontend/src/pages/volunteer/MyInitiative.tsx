@@ -26,8 +26,6 @@ const TONE: Record<OpportunityStatus, 'ok' | 'warn' | 'bad'> = {
   REJECTED: 'bad',
 }
 
-/** Editable until applications close; one awaiting review or turned down stays
- *  open so the reviewer's note can be acted on. */
 function editable(item: OpportunityView): boolean {
   return item.status !== 'PUBLISHED' || !hasPassed(item.applicationDeadline)
 }

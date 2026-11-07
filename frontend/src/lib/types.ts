@@ -19,7 +19,6 @@ export type OpportunityView = {
   reviewNote: string | null
   requiredSkills: string[]
   categories: string[]
-  /** An optional PDF with more detail; the url is an API path. */
   brief: { name: string; url: string } | null
   createdAt: string
   creator: { id: string; name: string; role: ServerRole }
@@ -43,7 +42,6 @@ export type ApplicationView = {
     availabilitySlots: string[]
     location: string | null
   }
-  /** How well they fit this opportunity, and which tags they share with it. */
   match: { score: number; sharedSkills: string[]; sharedInterests: string[] }
   opportunity: {
     id: string
@@ -75,7 +73,6 @@ export type SubmissionView = {
   status: SubmissionStatus
   hoursClaimed: number
   proofUrl: string
-  /** Why it was turned down, written by the organiser. Null unless it was. */
   reviewNote: string | null
   createdAt: string
   volunteer: { id: string; name: string }
@@ -84,7 +81,6 @@ export type SubmissionView = {
 
 export type UserStatus = 'ACTIVE' | 'DEACTIVATED' | 'DELETED'
 
-/** One account as the community admin's user management table shows it. */
 export type UserView = {
   id: string
   name: string

@@ -19,7 +19,6 @@ import './Manage.css'
 const CODE_SECONDS = 30
 const LAST_SECONDS = 5
 
-/** 429439 is read back as 429 439, which is how somebody says it out loud. */
 function grouped(code: string): string {
   return `${code.slice(0, 3)} ${code.slice(3)}`
 }
@@ -267,10 +266,8 @@ function Register({ opportunity }: { opportunity: OpportunityView }) {
   )
 }
 
-/**
- * Taking attendance at one event: the rolling code, then the register. Exported
- * so a volunteer runs their own initiative's door from inside that initiative.
- */
+// Taking attendance at one event: the rolling code, then the register.
+// Exported so a volunteer runs their own initiative's door from inside it.
 export function AttendancePanel({ opportunity }: { opportunity: OpportunityView }) {
   return (
     <div className="stack">
@@ -280,12 +277,9 @@ export function AttendancePanel({ opportunity }: { opportunity: OpportunityView 
   )
 }
 
-/** The organisation's page: their events as a table, then one event's door. */
 export default function Attendance() {
   const mine = useGet<OpportunityView[]>('/opportunities/mine')
   const workload = useGet<WorkloadRow[]>('/opportunities/mine/workload')
-  // ?event=<id> arrives from the calendar, so a tap on an entry lands on that
-  // event's register rather than on a list you then have to search.
   const [params, setParams] = useSearchParams()
   const chosen = params.get('event') ?? ''
 
@@ -303,14 +297,12 @@ export default function Attendance() {
     item => item.status === 'PUBLISHED' && item.mode === 'PHYSICAL',
   )
   const counts = new Map((workload.data ?? []).map(row => [row.opportunityId, row] as const))
-  // Only the next event gets the loud button; the rest are things you could do.
   const nextUp = published
     .filter(item => item.startsAt !== null && !hasPassed(item.startsAt))
     .sort((a, b) => Date.parse(a.startsAt ?? '') - Date.parse(b.startsAt ?? ''))[0]
   const current = published.find(item => item.id === chosen)
   const words = query.trim().toLowerCase()
 
-  /** The register is already a CSV on the server; this only saves it. */
   async function download(item: OpportunityView) {
     setError('')
     setDownloading(item.id)

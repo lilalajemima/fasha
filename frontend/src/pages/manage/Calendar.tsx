@@ -35,7 +35,6 @@ const VIEWS: { id: View; label: string }[] = [
 
 const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 
-/** The three things a dot says, in words, for its tooltip and for a reader. */
 function describe(mark: CalendarMark): string {
   return [
     mark.kind === 'HAPPENING' ? 'Happening' : 'Applications close',
@@ -62,10 +61,6 @@ function Mark({ mark }: { mark: CalendarMark }) {
   )
 }
 
-/**
- * The legend only names what is actually on screen. An organiser whose work is
- * all their own has no use for a line about citizen initiatives.
- */
 function Legend({ marks }: { marks: CalendarMark[] }) {
   const has = (test: (mark: CalendarMark) => boolean) => marks.some(test)
 
@@ -98,7 +93,6 @@ function Legend({ marks }: { marks: CalendarMark[] }) {
   )
 }
 
-/** One line per thing on, for the day and week views. */
 function Agenda({ marks }: { marks: CalendarMark[] }) {
   return (
     <ul className="agenda">
@@ -201,12 +195,10 @@ function Month({ days }: { days: CalendarDay[] }) {
 /**
  * What is coming, at whatever range you need. The week opens by default: a
  * month of mostly empty cells took half the page to say what the next seven
- * days say in a few lines. Read only — nothing is created here.
+ * days say in a few lines. Read only, nothing is created here.
  */
 export default function Calendar({ items, linkFor }: {
   items: OpportunityView[]
-  /** Where an entry leads. The organiser's tools are not an admin's, so the
-   *  page that owns the calendar decides. */
   linkFor?: (item: OpportunityView, now: Date) => string
 }) {
   const [view, setView] = useState<View>('week')

@@ -1,10 +1,5 @@
 import type { HelpNote } from '../../components/HelpButton'
 
-/**
- * What somebody running opportunities needs to know, in one place, the way the
- * volunteer guide is. The pages used to explain themselves in paragraphs
- * between the controls; this is where that went.
- */
 export const ORGANISER_GUIDE: HelpNote[] = [
   {
     question: 'What counts as active?',

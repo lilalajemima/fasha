@@ -25,6 +25,7 @@ import MyInitiative from './pages/volunteer/MyInitiative'
 import MyInitiatives from './pages/volunteer/MyInitiatives'
 import OpportunityDetail from './pages/volunteer/OpportunityDetail'
 import Portfolio from './pages/volunteer/Portfolio'
+import Privacy from './pages/Privacy'
 import Profile from './pages/Profile'
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/forgotten" element={<Forgotten />} />
           <Route path="/p/:slug" element={<Portfolio />} />
+          <Route path="/privacy" element={<Privacy />} />
 
           {/* Taking part, plus running your own initiative from inside it. */}
           <Route element={<RequireVolunteer />}>

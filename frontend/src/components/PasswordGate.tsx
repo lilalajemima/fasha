@@ -33,7 +33,6 @@ export default function PasswordGate() {
 
     try {
       await api.post('/account/password', { currentPassword: current, newPassword: next })
-      // Signing in again is the clearest proof to the person that it worked.
       signOut()
       navigate('/signin')
     } catch (problem) {

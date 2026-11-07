@@ -29,7 +29,6 @@ function CopyLink({ link }: { link: string }) {
   )
 }
 
-/** At most three tags on a card; the rest are on the opportunity itself. */
 function Tags({ values }: { values: string[] }) {
   if (values.length === 0) return null
 
@@ -41,7 +40,6 @@ function Tags({ values }: { values: string[] }) {
   )
 }
 
-/** The PDF the organiser attached, opened straight from the page. */
 function Brief({ brief }: { brief: { name: string; url: string } | null }) {
   if (!brief) return null
 
@@ -54,7 +52,6 @@ function Brief({ brief }: { brief: { name: string; url: string } | null }) {
 
 export default function Portfolio() {
   const { slug } = useParams()
-  // No slug means the owner is looking at their own page, so give them a way back.
   const preview = !slug
   const portfolio = useGet<PortfolioView>(slug ? `/p/${slug}` : '/portfolio/mine')
 

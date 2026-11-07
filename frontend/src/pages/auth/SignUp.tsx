@@ -26,8 +26,8 @@ export default function SignUp() {
       return setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
     }
 
-    // Caught here rather than at the door of an account nobody can sign in to:
-    // Fasha sends no email, so a mistyped password is a trip to the admin.
+    // Caught here rather than at the door of an account nobody can sign in
+    // to: Fasha sends no email, so a mistyped password is a trip to the admin.
     if (password !== confirm) {
       return setError('The two passwords are not the same.')
     }
@@ -85,6 +85,12 @@ export default function SignUp() {
                onChange={e => setConfirm(e.target.value)} />
 
         {error && <p className="error" role="alert">{error}</p>}
+
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Fasha is a student project running as a pilot.{' '}
+          <Link to="/privacy">What it does with your data</Link>, and how to look around with a
+          demo account instead.
+        </p>
 
         <Button type="submit" variant="primary" block disabled={busy}>
           {busy

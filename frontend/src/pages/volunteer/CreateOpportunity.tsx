@@ -14,8 +14,6 @@ import { messageFor } from '../../lib/useGet'
 const MIN_TITLE = 6
 const MIN_DESCRIPTION = 20
 
-/** ISO back into what a datetime-local input wants, in the reader's own
- *  timezone, so a loaded record shows the time it was entered as. */
 function forInput(iso: string | null): string {
   if (!iso) return ''
 
@@ -25,12 +23,10 @@ function forInput(iso: string | null): string {
   return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
 }
 
-
 type Brief = { name: string; dataUrl: string }
 
 const MAX_BRIEF_BYTES = 1024 * 1024
 
-/** Reads the chosen PDF into a data URL, which is how it travels to the server. */
 function readPdf(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -73,7 +69,6 @@ export default function CreateOpportunity() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // Editing loads the record once and fills the same fields the create flow uses.
   useEffect(() => {
     if (!id) return
 
@@ -128,7 +123,6 @@ export default function CreateOpportunity() {
       endsAt: new Date(endsAt).toISOString(),
       requiredSkills: skills,
       categories,
-      // undefined leaves a brief alone on an edit; null takes it away.
       brief: brief === undefined ? undefined : brief,
     }
 

@@ -1,9 +1,7 @@
 import { useGet } from './useGet'
 
-/**
- * The lists the server matches on. They are fetched rather than copied into
- * the client, so a form can never offer a tag the server would refuse.
- */
+// The lists the server matches on. They are fetched rather than copied into
+// the client, so a form can never offer a tag the server would refuse.
 export type Catalogue = {
   interests: string[]
   skills: string[]
@@ -37,7 +35,6 @@ export const PART_LABELS: Record<string, string> = {
   EVENING: 'Evening',
 }
 
-/** The order of the week, used wherever slots are listed without the server. */
 export const WEEK = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 export const PARTS = ['MORNING', 'AFTERNOON', 'EVENING']
 
@@ -45,10 +42,6 @@ export function slotOf(day: string, part: string): string {
   return `${day}_${part}`
 }
 
-/**
- * "Sat morning, afternoon" rather than three separate chips, because a person
- * reads their week a day at a time.
- */
 export function availabilityByDay(slots: string[]): { day: string; parts: string[] }[] {
   return WEEK.map(day => ({
     day,

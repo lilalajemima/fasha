@@ -11,7 +11,6 @@ export default function PageHeader({ title, action, display }: {
   title: string
   meta?: ReactNode
   action?: ReactNode
-  /** The larger title, for a page somebody arrives on rather than works in. */
   display?: boolean
 }) {
   return (

@@ -50,7 +50,8 @@ export default function Users() {
   const [status, setStatus] = useState('')
   const [problem, setProblem] = useState('')
   const [busy, setBusy] = useState('')
-  // Shown once, to be read out to the person standing there. It is never stored.
+  // Shown once, to be read out to the person standing there. It is never
+  // stored, and the account must replace it at the next sign-in.
   const [issued, setIssued] = useState<{ name: string; password: string } | null>(null)
 
   const search = new URLSearchParams()

@@ -3,7 +3,6 @@ import type { IconName } from '../components/Icon'
 
 export type NavItem = { to: string; label: string; short: string; icon: IconName; end?: boolean }
 
-/** Taking part. Volunteer accounts only. The portfolio is reached from the profile. */
 export const PARTICIPATE_NAV: NavItem[] = [
   { to: '/discover', label: 'Discover', short: 'Discover', icon: 'discover' },
   { to: '/activity', label: 'My activity', short: 'Activity', icon: 'activity' },
@@ -11,8 +10,6 @@ export const PARTICIPATE_NAV: NavItem[] = [
   { to: '/profile', label: 'My profile', short: 'Profile', icon: 'profile' },
 ]
 
-/** Running opportunities. Organisation accounts only — a volunteer gets these
- *  tools inside their own initiative instead. */
 export const MANAGE_NAV: NavItem[] = [
   { to: '/manage', label: 'Overview', short: 'Overview', icon: 'overview', end: true },
   { to: '/manage/opportunities', label: 'Opportunities', short: 'Opportunities', icon: 'opportunities', end: true },
@@ -21,7 +18,6 @@ export const MANAGE_NAV: NavItem[] = [
   { to: '/profile', label: 'Profile', short: 'Profile', icon: 'profile' },
 ]
 
-/** Oversight. The community admin only: one page per job, like the other two. */
 export const OVERSIGHT_NAV: NavItem[] = [
   { to: '/admin', label: 'Overview', short: 'Overview', icon: 'overview', end: true },
   { to: '/admin/approvals', label: 'Approvals', short: 'Approvals', icon: 'review' },
@@ -30,8 +26,8 @@ export const OVERSIGHT_NAV: NavItem[] = [
   { to: '/profile', label: 'Profile', short: 'Profile', icon: 'profile' },
 ]
 
-/** One workspace per role. The shell and the drawer both read these, so a
- *  destination can never appear in one and be missing from the other. */
+// One workspace per role. The shell and the mobile drawer both read this, so
+// a destination can never appear in one and be missing from the other.
 export const WORKSPACE_NAV: Record<Role, NavItem[]> = {
   volunteer: PARTICIPATE_NAV,
   organisation: MANAGE_NAV,
@@ -44,7 +40,6 @@ export const WORKSPACE_LABEL: Record<Role, string> = {
   admin: 'Community admin',
 }
 
-/** A volunteer is the safe default: an unknown role gets the fewest tools. */
 export function workspaceFor(role: Role | undefined): Role {
   return role === 'organisation' || role === 'admin' ? role : 'volunteer'
 }

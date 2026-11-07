@@ -43,7 +43,6 @@ const SUBMISSION_LABEL: Record<SubmissionStatus, string> = {
   REJECTED: 'Rejected',
 }
 
-/** One set of words for applications and deliverables, which share a shape. */
 const STATES = [
   { id: 'all', label: 'Any state' },
   { id: 'review', label: 'Under review' },
@@ -51,7 +50,6 @@ const STATES = [
   { id: 'rejected', label: 'Rejected' },
 ]
 
-/** Attendance has its own, because an event is either finished or happening. */
 const ATTENDANCE_STATES = [
   { id: 'all', label: 'Any state' },
   { id: 'open', label: 'Checked in now' },
@@ -70,7 +68,6 @@ const SUBMISSION_STATE: Record<string, SubmissionStatus> = {
   rejected: 'REJECTED',
 }
 
-/** An opportunity this volunteer may send work in for, right now. */
 type Sendable = { id: string; title: string }
 
 type AttendanceRow = {
@@ -82,7 +79,6 @@ type AttendanceRow = {
   open: boolean
 }
 
-/** Opening an opportunity from here should come back to here, not to Discover. */
 const HERE = { to: '/activity', label: 'My activity' }
 
 function hits(haystack: string, query: string): boolean {
@@ -237,7 +233,6 @@ export default function MyActivity() {
   const [chosen, setChosen] = useState('')
   const [error, setError] = useState('')
 
-  /** A state chosen on one tab means nothing on the next. */
   function choose(next: string) {
     setTab(next)
     setState('all')
@@ -254,7 +249,6 @@ export default function MyActivity() {
     }
   }
 
-  /** Fix it and send it again, with that opportunity already chosen. */
   function tryAgain(opportunityId: string) {
     setChosen(opportunityId)
     setSending(true)
@@ -262,9 +256,10 @@ export default function MyActivity() {
 
   const accepted = (applications.data ?? []).filter(item => item.status === 'ACCEPTED')
 
-  // Only remote work can be sent in — an event is credited from its register —
-  // and only once: a claim that is waiting or already accepted closes it. A
-  // rejected one does not, which is what makes a second attempt possible.
+  // Only remote work can be sent in, since an event is credited from its
+  // register, and only once: a claim that is waiting or already accepted
+  // closes it. A rejected one does not, which is what makes a second attempt
+  // possible.
   const settled = new Set(
     (deliverables.data ?? [])
       .filter(item => item.status !== 'REJECTED')
@@ -279,8 +274,6 @@ export default function MyActivity() {
     entry => entry.opportunity.mode === 'PHYSICAL',
   )
 
-  // An event you are standing at belongs in the same table as the ones you
-  // have finished, rather than in a card above saying something different.
   const attendance: AttendanceRow[] = [
     ...(open
       ? [

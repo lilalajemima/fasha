@@ -4,7 +4,6 @@
  * off a phone camera. The server refuses anything larger than 150KB, which
  * this stays well inside.
  */
-
 const SIZE = 256
 const MAX_CHARS = 200_000
 
@@ -14,7 +13,6 @@ export class ImageTooLarge extends Error {
   }
 }
 
-/** Centre-crops to a square, scales to 256px, and returns a data URL. */
 export async function toSquareDataUrl(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file)
   const side = Math.min(bitmap.width, bitmap.height)
@@ -42,7 +40,6 @@ export async function toSquareDataUrl(file: File): Promise<string> {
   )
   bitmap.close()
 
-  // A logo with transparency keeps it; a photograph is far smaller as JPEG.
   const candidates =
     file.type === 'image/png'
       ? [canvas.toDataURL('image/png'), canvas.toDataURL('image/jpeg', 0.82)]

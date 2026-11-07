@@ -74,6 +74,8 @@ export default function SignIn() {
 
         <p className="muted" style={{ marginTop: -6, marginBottom: 18 }}>
           <Link to="/forgotten">Forgotten your password?</Link>
+          {' · '}
+          <Link to="/privacy">What Fasha does with your data</Link>
         </p>
 
         {error && <p className="error" role="alert">{error}</p>}

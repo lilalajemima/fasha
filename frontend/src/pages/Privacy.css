@@ -1,0 +1,50 @@
+/* A document rather than a screen: one column, generous measure, nothing to
+   click but the links in the text. It sits outside the signed-in shell so it
+   can be read before anybody decides to make an account. */
+
+.policy { min-height: 100vh; background: var(--surface-base); }
+
+.policy__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 20px 24px; border-bottom: 1px solid var(--neutral-border);
+  background: var(--surface-card);
+}
+
+.policy__updated { font-size: 12px; color: var(--charcoal-muted); }
+
+.policy__body { max-width: 70ch; margin: 0 auto; padding: 40px 24px 72px; }
+
+.policy__body h1 { margin: 0 0 18px; }
+
+.policy__body h2 {
+  margin: 36px 0 10px; font-size: 18px;
+  padding-top: 18px; border-top: 1px solid var(--neutral-border-subtle);
+}
+
+.policy__body p { margin: 0 0 14px; line-height: 1.65; color: var(--charcoal-muted); }
+.policy__body strong { color: var(--imigongo-black); }
+
+.policy__lead { font-size: 17px; }
+
+/* The one thing somebody wary should see first, so it is the only block on the
+   page with a surface of its own. */
+.policy__note {
+  margin: 26px 0 8px; padding: 20px 22px;
+  background: var(--primary-container); border: 1px solid var(--bad-line);
+  border-radius: var(--radius);
+}
+
+.policy__note h2 {
+  margin: 0 0 10px; padding-top: 0; border-top: 0;
+  color: var(--imigongo-black);
+}
+
+.policy__demo { font-variant-numeric: tabular-nums; }
+
+.policy__back { margin-top: 40px; }
+
+@media (max-width: 640px) {
+  .policy__head { padding: 16px 16px; }
+  .policy__body { padding: 28px 16px 56px; }
+  .policy__note { padding: 16px 16px; }
+}

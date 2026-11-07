@@ -13,7 +13,6 @@ import { messageFor, useGet } from '../lib/useGet'
 import '../styles/workspace.css'
 import './Profile.css'
 
-/** "Lilala Runiga" -> "LR". Kept local so the page owns its own small details. */
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -35,7 +34,6 @@ function Picture({ name, avatar, onPick, onRemove, noun }: {
 
     if (file) onPick(file)
 
-    // Let the same file be chosen again after a failure.
     event.target.value = ''
   }
 
@@ -71,6 +69,7 @@ function Picture({ name, avatar, onPick, onRemove, noun }: {
 }
 
 function ChangePassword() {
+  const { replaceToken } = useAuth()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -91,7 +90,12 @@ function ChangePassword() {
     setBusy(true)
 
     try {
-      await api.post('/account/password', { currentPassword: current, newPassword: next })
+      const { token } = await api.post<{ token: string }>('/account/password', {
+        currentPassword: current,
+        newPassword: next,
+      })
+
+      replaceToken(token)
       setCurrent('')
       setNext('')
       setConfirm('')
@@ -157,7 +161,6 @@ function ChangePassword() {
   )
 }
 
-/** Both of these are irreversible for the person doing them, so both ask for the password. */
 function Leaving() {
   const { signOut } = useAuth()
   const navigate = useNavigate()
@@ -242,9 +245,9 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
   const { user, refresh } = useAuth()
   const catalogue = useCatalogue()
   const isVolunteer = loaded.profile !== null
-  // An admin has no volunteer profile either, so a missing profile cannot stand
-  // in for "organisation": a person is asked for a name and a picture, an
-  // organisation for a logo and what it does.
+  // An admin has no volunteer profile either, so a missing profile cannot
+  // stand in for "organisation": a person is asked for a name and a picture,
+  // an organisation for a logo and what it does.
   const isOrganisation = !isVolunteer && user?.role === 'organisation'
 
   const [name, setName] = useState(loaded.user.name)
@@ -259,7 +262,6 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  /** Put every field back to what the server last gave us. */
   function cancel() {
     setName(loaded.user.name)
     setBio(loaded.user.bio ?? '')
@@ -306,7 +308,6 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
       })
       setSaved(true)
       onSaved()
-      // The top bar carries the same picture and name.
       refresh()
     } catch (problem) {
       setError(messageFor(problem))

@@ -7,7 +7,6 @@ import { useGet } from '../../lib/useGet'
 import Calendar from './Calendar'
 import './Manage.css'
 
-/** Published, and not yet over. */
 function isActive(item: OpportunityView): boolean {
   return item.status === 'PUBLISHED' && !hasPassed(item.endsAt ?? item.applicationDeadline)
 }

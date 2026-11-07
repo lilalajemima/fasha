@@ -31,8 +31,11 @@ type AuthValue = {
   signUp: (input: SignUpInput) => Promise<User>
   signIn: (email: string, password: string) => Promise<User>
   signOut: () => void
-  /** Re-reads the account, so a new name or picture reaches the top bar. */
   refresh: () => void
+  // Changing the password ends every session the account had, this one
+  // included. The server answers with a replacement so the device that made
+  // the change carries on; everywhere else is signed out on its next request.
+  replaceToken: (token: string) => void
 }
 
 const ROLES: Record<ServerRole, Role> = {
@@ -103,6 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .get<{ user: ServerUser }>('/auth/me')
           .then(({ user: me }) => setUser(toUser(me)))
           .catch(() => undefined)
+      },
+      replaceToken(token) {
+        tokenStore.save(token)
       },
     }
   }, [user, ready])

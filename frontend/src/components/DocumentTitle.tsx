@@ -1,11 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
-/**
- * The browser tab says where you are. One table rather than a call in every
- * page, so a new route cannot quietly inherit the wrong title. The longer path
- * comes first, because the first match wins.
- */
 const TITLES: { path: string; title: string }[] = [
   { path: '/discover', title: 'Discover' },
   { path: '/activity', title: 'My activity' },
@@ -25,6 +20,7 @@ const TITLES: { path: string; title: string }[] = [
   { path: '/admin/users', title: 'Users' },
   { path: '/admin/activity', title: 'Activity' },
   { path: '/admin', title: 'Oversight' },
+  { path: '/privacy', title: 'Privacy' },
   { path: '/signin', title: 'Sign in' },
   { path: '/signup', title: 'Create an account' },
   { path: '/p/', title: 'Volunteer portfolio' },

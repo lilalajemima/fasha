@@ -9,14 +9,11 @@ import { kindOf } from './filters'
 import '../../styles/workspace.css'
 import './Admin.css'
 
-/** The five oldest waits, because a queue is read from the front. */
 const PREVIEW = 5
 
-/**
- * Where a calendar entry takes the community admin. The organiser's tools are
- * not theirs: what they can do with something waiting is decide it, and with
- * anything else, read it.
- */
+// Where a calendar entry takes the community admin. The organiser's tools are
+// not theirs: what they can do with something waiting is decide it, and with
+// anything else, read it.
 function linkFor(item: OpportunityView): string {
   return item.status === 'PENDING_APPROVAL'
     ? '/admin/approvals'
@@ -29,7 +26,6 @@ function countRole(people: UserView[], role: string): number {
 
 export default function Overview() {
   const queue = useGet<OpportunityView[]>('/opportunities/pending')
-  // Everything in the district for the last twelve months, whatever its state.
   const everything = useGet<OpportunityView[]>('/opportunities/all')
   const people = useGet<UserView[]>('/admin/users')
   const activity = useGet<ActivityRow[]>('/admin/activity')
@@ -38,8 +34,6 @@ export default function Overview() {
   const accounts = people.data ?? []
   const recorded = activity.data ?? []
 
-  // A dash rather than a zero while the number is still on its way: a zero
-  // that turns into eleven reads as though something has just happened.
   const dash = (state: { loading: boolean; data: unknown }, value: number) =>
     state.loading && !state.data ? '—' : value
 

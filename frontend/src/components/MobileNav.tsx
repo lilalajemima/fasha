@@ -5,11 +5,6 @@ import Logo from './Logo'
 import { useAuth } from '../auth/AuthContext'
 import { WORKSPACE_LABEL, WORKSPACE_NAV, workspaceFor } from '../layouts/navItems'
 
-/**
- * Hamburger navigation for screens without room for the sidebar. It carries the
- * same destinations as the sidebar and nothing more: notifications stay in the
- * top bar, where they are on every screen size.
- */
 export default function MobileNav() {
   const { user, signOut } = useAuth()
   const { pathname } = useLocation()
@@ -18,10 +13,8 @@ export default function MobileNav() {
   const workspace = workspaceFor(user?.role)
   const items = WORKSPACE_NAV[workspace]
 
-  // Close on navigation, so a tap on a link does not leave the drawer open.
   useEffect(() => { setOpen(false) }, [pathname])
 
-  // Close on Escape, which is what a keyboard user will reach for.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', onKey)

@@ -1,11 +1,10 @@
 import type { OpportunityView } from './types'
 
 /**
- * Month grid maths for the organiser calendar. It is deliberately free of React
- * so the awkward part, which is the day bucketing, can be reasoned about on its
- * own. Everything works in the browser's own timezone.
+ * Month grid maths for the organiser calendar. It is deliberately free of
+ * React so the awkward part, which is the day bucketing, can be reasoned
+ * about on its own. Everything works in the browser's own timezone.
  */
-
 export type MarkKind = 'HAPPENING' | 'DEADLINE'
 
 export type CalendarMark = {
@@ -14,9 +13,7 @@ export type CalendarMark = {
   title: string
   kind: MarkKind
   at: Date
-  /** Where this entry is worth going: the page that has the next thing to do. */
   to: string
-  /** Drawn into the dot: its shape says the mode, its colour says who runs it. */
   mode: OpportunityView['mode']
   citizen: boolean
 }
@@ -33,7 +30,6 @@ export type CalendarDay = {
 const DAYS_IN_WEEK = 7
 const WEEKS_SHOWN = 6
 
-/** Monday first, which is how a Rwandan week is read. */
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 const monthTitle = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' })
@@ -58,12 +54,10 @@ export function addDays(date: Date, step: number): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + step)
 }
 
-/** Monday, because the week is read Monday first here. */
 export function startOfWeek(date: Date): Date {
   return addDays(date, -((date.getDay() + 6) % 7))
 }
 
-/** "12 to 18 January 2026", or "28 December to 3 January 2026" across a turn. */
 export function weekLabel(start: Date): string {
   const end = addDays(start, 6)
   const sameMonth = start.getMonth() === end.getMonth()
@@ -75,15 +69,10 @@ export function weekLabel(start: Date): string {
 const dayTitle = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 const dayNameTitle = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
-export function dayLabel(date: Date): string {
-  return dayTitle.format(date)
-}
-
 export function dayWithName(date: Date): string {
   return dayNameTitle.format(date)
 }
 
-/** The value a <input type="date"> wants, in local time rather than UTC. */
 export function inputValue(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -103,14 +92,12 @@ export function isSameDay(a: Date, b: Date): boolean {
   return dayKey(a) === dayKey(b)
 }
 
-/** Everything on one day, earliest first. */
 export function marksOn(marks: CalendarMark[], date: Date): CalendarMark[] {
   return marks
     .filter(mark => isSameDay(mark.at, date))
     .sort((a, b) => a.at.getTime() - b.at.getTime())
 }
 
-/** The seven days of the week `date` falls in, each with what is on it. */
 export function weekDays(date: Date, marks: CalendarMark[]): CalendarDay[] {
   const start = startOfWeek(date)
   const today = new Date()
@@ -133,10 +120,10 @@ export function weekDays(date: Date, marks: CalendarMark[]): CalendarDay[] {
  * Where a calendar entry should take you: whatever is left to do on it.
  *
  * While applications are open, that is the applicants. Once the work is over
- * it is the proof — the register for work people turned up to, the deliverables
- * for work done remotely. Between the two, when nobody else can apply but the
- * day has not come, an event is waiting on its register and remote work is
- * still waiting on its people.
+ * it is the proof — the register for work people turned up to, the
+ * deliverables for work done remotely. Between the two, when nobody else can
+ * apply but the day has not come, an event is waiting on its register and
+ * remote work is still waiting on its people.
  */
 export function destinationFor(item: OpportunityView, now = new Date()): string {
   const ends = item.endsAt ?? item.startsAt
@@ -154,7 +141,6 @@ export function destinationFor(item: OpportunityView, now = new Date()): string 
 
   if (open || item.mode === 'VIRTUAL') return applicants
 
-  // In person, nobody else can apply, and the day has not come: the register.
   return `/manage/attendance?event=${item.id}`
 }
 
@@ -201,10 +187,6 @@ export function marksFrom(
   return marks
 }
 
-/**
- * Always six weeks, so the grid does not change height as the months turn.
- * Marks are bucketed once into a map, then each cell is a single lookup.
- */
 export function monthGrid(month: Date, marks: CalendarMark[]): CalendarDay[] {
   const byDay = new Map<string, CalendarMark[]>()
 

@@ -32,10 +32,6 @@ function labelFor(status: ApplicationStatus): string {
   return 'Withdrawn'
 }
 
-/**
- * The applicant's face, and the way to the rest of them. A picture that leads
- * nowhere is decoration; this one opens the portfolio their hours are on.
- */
 function Face({ name, avatar, slug }: { name: string; avatar: string | null; slug: string | null }) {
   const face = (
     <span className="avatar">
@@ -52,7 +48,6 @@ function Face({ name, avatar, slug }: { name: string; avatar: string | null; slu
   )
 }
 
-/** Why the score is what it is. A percentage alone decides nothing. */
 function Fit({ match }: { match: ApplicationView['match'] }) {
   const shared = [...match.sharedSkills, ...match.sharedInterests]
 
@@ -69,8 +64,8 @@ function Fit({ match }: { match: ApplicationView['match'] }) {
 
 /**
  * Who applied to one opportunity, and the accept or reject on each. Kept apart
- * from the page around it so a volunteer can review the applicants to their own
- * initiative from inside that initiative, without a manage workspace.
+ * from the page around it so a volunteer can review the applicants to their
+ * own initiative from inside that initiative, without a manage workspace.
  */
 export function ApplicantsPanel({ opportunityId }: { opportunityId: string }) {
   const applicants = useGet<ApplicationView[]>(`/opportunities/${opportunityId}/applications`)
@@ -214,7 +209,6 @@ export function ApplicantsPanel({ opportunityId }: { opportunityId: string }) {
   )
 }
 
-/** The organisation's page for one of its opportunities. */
 export default function Applicants() {
   const params = useParams()
   const id = params.id ?? ''

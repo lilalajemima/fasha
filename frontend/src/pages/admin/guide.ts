@@ -1,6 +1,5 @@
 import type { HelpNote } from '../../components/HelpButton'
 
-/** What the district office needs to know, the way the other two workspaces have it. */
 export const OVERSIGHT_GUIDE: HelpNote[] = [
   {
     question: 'What reaches Approvals?',

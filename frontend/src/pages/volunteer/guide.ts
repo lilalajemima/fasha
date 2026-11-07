@@ -1,10 +1,5 @@
 import type { HelpNote } from '../../components/HelpButton'
 
-/**
- * What a volunteer needs to know, in one place. This used to be printed onto
- * the pages themselves as tinted cards and stray paragraphs; it lives behind
- * the help button now, so the pages only carry the work.
- */
 export const VOLUNTEER_GUIDE: HelpNote[] = [
   {
     question: 'Where do opportunities come from?',

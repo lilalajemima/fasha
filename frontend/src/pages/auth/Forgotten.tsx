@@ -78,6 +78,8 @@ export default function Forgotten() {
 
       <p className="muted" style={{ marginTop: 18 }}>
         <Link to="/signin">← Back to sign in</Link>
+        {' · '}
+        <Link to="/privacy">Privacy</Link>
       </p>
     </AuthPanel>
   )

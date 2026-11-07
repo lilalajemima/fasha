@@ -80,10 +80,8 @@ function RejectNote({ columns, busy, onCancel, onSend }: {
   )
 }
 
-/**
- * What volunteers sent in for one opportunity, and the accept or reject on
- * each. Exported so the same review sits inside a volunteer's own initiative.
- */
+// What volunteers sent in for one opportunity, and the accept or reject on
+// each. Exported so the same review sits inside a volunteer's own initiative.
 export function DeliverablesPanel({ opportunityId }: { opportunityId: string }) {
   const deliverables = useGet<SubmissionView[]>(`/opportunities/${opportunityId}/submissions`)
   const [state, setState] = useState('PENDING')
@@ -220,8 +218,6 @@ export function DeliverablesPanel({ opportunityId }: { opportunityId: string }) 
  */
 export default function Deliverables() {
   const deliverables = useGet<SubmissionView[]>('/submissions/received')
-  // ?opportunity=<id> arrives from the calendar: the list stays one list, but
-  // it opens narrowed to the piece of work you tapped.
   const [params, setParams] = useSearchParams()
   const only = params.get('opportunity') ?? ''
   const [state, setState] = useState('PENDING')
