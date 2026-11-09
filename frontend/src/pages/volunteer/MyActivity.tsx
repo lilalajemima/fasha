@@ -13,6 +13,7 @@ import type {
   SubmissionStatus,
   SubmissionView,
 } from '../../lib/types'
+import { useDraft } from '../../lib/useDraft'
 import { messageFor, useGet } from '../../lib/useGet'
 import '../../components/pickers.css'
 import '../../styles/workspace.css'
@@ -120,8 +121,7 @@ function SendDeliverable({ options, chosen, onChoose, onSent }: {
   onSent: () => void
 }) {
   const [find, setFind] = useState('')
-  const [hours, setHours] = useState('3')
-  const [proofUrl, setProofUrl] = useState('')
+  const [draft, setDraft, discardDraft] = useDraft('send-deliverable', { hours: '3', proofUrl: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -144,10 +144,11 @@ function SendDeliverable({ options, chosen, onChoose, onSent }: {
 
     try {
       await api.post(`/opportunities/${opportunityId}/submissions`, {
-        hoursClaimed: Number(hours),
-        proofUrl: proofUrl.trim(),
+        hoursClaimed: Number(draft.hours),
+        proofUrl: draft.proofUrl.trim(),
       })
-      setProofUrl('')
+      discardDraft()
+      setDraft({ hours: '3', proofUrl: '' })
       onSent()
     } catch (problem) {
       setError(messageFor(problem))
@@ -195,18 +196,18 @@ function SendDeliverable({ options, chosen, onChoose, onSent }: {
           step="0.5"
           min="0.5"
           max="24"
-          value={hours}
+          value={draft.hours}
           required
-          onChange={event => setHours(event.target.value)}
+          onChange={event => setDraft(current => ({ ...current, hours: event.target.value }))}
         />
         <Field
           id="proof"
           label="Link to what you produced"
           type="url"
           placeholder="https://"
-          value={proofUrl}
+          value={draft.proofUrl}
           required
-          onChange={event => setProofUrl(event.target.value)}
+          onChange={event => setDraft(current => ({ ...current, proofUrl: event.target.value }))}
         />
       </div>
 
@@ -220,8 +221,8 @@ function SendDeliverable({ options, chosen, onChoose, onSent }: {
 }
 
 export default function MyActivity() {
-  const applications = useGet<ApplicationView[]>('/applications/mine')
-  const deliverables = useGet<SubmissionView[]>('/submissions/mine')
+  const applications = useGet<ApplicationView[]>('/applications/mine', 3_000)
+  const deliverables = useGet<SubmissionView[]>('/submissions/mine', 3_000)
   const openCheckins = useGet<CheckinView[]>('/checkins/mine')
   const portfolio = useGet<PortfolioView>('/portfolio/mine')
   const navigate = useNavigate()

@@ -3,6 +3,7 @@ import HelpButton, { type HelpNote } from '../components/HelpButton'
 import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import MobileNav from '../components/MobileNav'
+import OfflineNote from '../components/OfflineNote'
 import { useAuth, type Role } from '../auth/AuthContext'
 import { useNotifications } from '../notifications/NotificationsContext'
 import { OVERSIGHT_GUIDE } from '../pages/admin/guide'
@@ -23,6 +24,8 @@ import './Shell.css'
 export { MANAGE_NAV, OVERSIGHT_NAV, PARTICIPATE_NAV }
 export type { NavItem }
 
+/** One guide per workspace, chosen by the role rather than by the path, so no
+ *  page can forget to offer help and none can offer the wrong help. */
 const GUIDES: Record<Role, { title: string; notes: HelpNote[] }> = {
   volunteer: { title: 'Using Fasha', notes: VOLUNTEER_GUIDE },
   organisation: { title: 'Running opportunities', notes: ORGANISER_GUIDE },
@@ -63,7 +66,6 @@ export default function Shell() {
         </nav>
 
         <div className="side__foot">
-          <Link className="side__link" to="/privacy">Privacy</Link>
           {/* One way out, in the same place for every role. */}
           <button className="navplate navplate--danger"
             onClick={() => { signOut(); navigate('/signin') }}>
@@ -90,6 +92,8 @@ export default function Shell() {
             <span className="topbar__name">{name}</span>
           </div>
         </header>
+
+        <OfflineNote />
 
         <main className="content"><Outlet /></main>
 

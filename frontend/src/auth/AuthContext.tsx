@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, tokenStore } from '../lib/api'
+import { clearCache } from '../lib/cache'
+import { clearDrafts } from '../lib/useDraft'
 
 export type Role = 'volunteer' | 'organisation' | 'admin'
 export type SignUpRole = 'volunteer' | 'organisation'
@@ -31,11 +33,10 @@ type AuthValue = {
   signUp: (input: SignUpInput) => Promise<User>
   signIn: (email: string, password: string) => Promise<User>
   signOut: () => void
-  refresh: () => void
-  // Changing the password ends every session the account had, this one
-  // included. The server answers with a replacement so the device that made
-  // the change carries on; everywhere else is signed out on its next request.
+  /** Keeps the session alive after a password change, which issues a new token. */
   replaceToken: (token: string) => void
+  /** Re-reads the account, so a new name or picture reaches the top bar. */
+  refresh: () => void
 }
 
 const ROLES: Record<ServerRole, Role> = {
@@ -77,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthValue>(() => {
     function accept(result: AuthResponse): User {
+      clearCache()
       tokenStore.save(result.token)
       const next = toUser(result.user)
       setUser(next)
@@ -97,7 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       signOut() {
         tokenStore.clear()
+        clearDrafts()
+        clearCache()
         setUser(null)
+      },
+      replaceToken(token) {
+        tokenStore.save(token)
       },
       refresh() {
         if (!tokenStore.read()) return
@@ -106,9 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .get<{ user: ServerUser }>('/auth/me')
           .then(({ user: me }) => setUser(toUser(me)))
           .catch(() => undefined)
-      },
-      replaceToken(token) {
-        tokenStore.save(token)
       },
     }
   }, [user, ready])

@@ -9,6 +9,7 @@ import { api } from '../../lib/api'
 import { useCatalogue } from '../../lib/catalogue'
 import { SECTORS } from '../../lib/sectors'
 import type { OpportunityMode, OpportunityView } from '../../lib/types'
+import { useDraft } from '../../lib/useDraft'
 import { messageFor } from '../../lib/useGet'
 
 const MIN_TITLE = 6
@@ -50,19 +51,27 @@ export default function CreateOpportunity() {
   const noun = needsApproval ? 'initiative' : 'opportunity'
   const listing = fromManagement ? '/manage/opportunities' : '/initiatives'
 
-  const [mode, setMode] = useState<OpportunityMode>('PHYSICAL')
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [place, setPlace] = useState('')
-  const [sector, setSector] = useState('')
-  const [capacity, setCapacity] = useState('')
-  const [deadline, setDeadline] = useState('')
-  const [startsAt, setStartsAt] = useState('')
-  const [endsAt, setEndsAt] = useState('')
+  const [draft, setDraft, discardDraft, restored] = useDraft(`opportunity-${id ?? 'new'}`, {
+    mode: 'PHYSICAL' as OpportunityMode,
+    title: '',
+    description: '',
+    place: '',
+    sector: '',
+    capacity: '',
+    deadline: '',
+    startsAt: '',
+    endsAt: '',
+    skills: [] as string[],
+    categories: [] as string[],
+  })
+
+  const set = (patch: Partial<typeof draft>) =>
+    setDraft(current => ({ ...current, ...patch }))
+
+  const { mode, title, description, place, sector, capacity, deadline, startsAt, endsAt, skills, categories } = draft
+
   const [brief, setBrief] = useState<Brief | null | undefined>(undefined)
   const [briefName, setBriefName] = useState('')
-  const [skills, setSkills] = useState<string[]>([])
-  const [categories, setCategories] = useState<string[]>([])
   const [reviewNote, setReviewNote] = useState<string | null>(null)
   const [wasRejected, setWasRejected] = useState(false)
   const [loading, setLoading] = useState(editing)
@@ -78,18 +87,23 @@ export default function CreateOpportunity() {
       .then(item => {
         if (!live) return
 
-        setMode(item.mode as OpportunityMode)
-        setTitle(item.title)
-        setDescription(item.description)
-        setPlace(item.location ?? '')
-        setSector(item.sector ?? 'Kimironko')
-        setCapacity(String(item.maxCapacity))
-        setDeadline(forInput(item.applicationDeadline))
-        setStartsAt(forInput(item.startsAt))
-        setEndsAt(forInput(item.endsAt))
+        if (!restored) {
+          setDraft({
+            mode: item.mode as OpportunityMode,
+            title: item.title,
+            description: item.description,
+            place: item.location ?? '',
+            sector: item.sector ?? 'Kimironko',
+            capacity: String(item.maxCapacity),
+            deadline: forInput(item.applicationDeadline),
+            startsAt: forInput(item.startsAt),
+            endsAt: forInput(item.endsAt),
+            skills: item.requiredSkills,
+            categories: item.categories,
+          })
+        }
+
         setBriefName(item.brief?.name ?? '')
-        setSkills(item.requiredSkills)
-        setCategories(item.categories)
         setReviewNote(item.reviewNote)
         setWasRejected(item.status === 'REJECTED')
         setLoading(false)
@@ -133,6 +147,7 @@ export default function CreateOpportunity() {
         await api.post('/opportunities', body)
       }
 
+      discardDraft()
       navigate(listing)
     } catch (problem) {
       setError(messageFor(problem))
@@ -187,7 +202,7 @@ export default function CreateOpportunity() {
               value={title}
               required
               minLength={MIN_TITLE}
-              onChange={event => setTitle(event.target.value)}
+              onChange={event => set({ title: event.target.value })}
             />
 
             <div className="field">
@@ -199,7 +214,7 @@ export default function CreateOpportunity() {
                     type="button"
                     className="mode-card"
                     aria-pressed={mode === option}
-                    onClick={() => setMode(option)}
+                    onClick={() => set({ mode: option })}
                   >
                     <Icon name={option === 'PHYSICAL' ? 'discover' : 'overview'} />
                     <strong>
@@ -220,7 +235,7 @@ export default function CreateOpportunity() {
               required
               minLength={MIN_DESCRIPTION}
               placeholder="What will volunteers actually do, and what should they bring?"
-              onChange={event => setDescription(event.target.value)}
+              onChange={event => set({ description: event.target.value })}
               hint={`At least ${MIN_DESCRIPTION} characters`}
             />
 
@@ -231,14 +246,14 @@ export default function CreateOpportunity() {
               hint="Volunteers choose from this same list, which is what lets Fasha rank them for you."
               options={catalogue.data?.skills ?? []}
               value={skills}
-              onChange={setSkills}
+              onChange={next => set({ skills: next })}
             />
             <TagPicker
               legend="Areas this falls under"
               hint="The causes this belongs to."
               options={catalogue.data?.interests ?? []}
               value={categories}
-              onChange={setCategories}
+              onChange={next => set({ categories: next })}
             />
             <p className="muted">
               These two lists are what the match score is worked out from, so choose only
@@ -303,7 +318,7 @@ export default function CreateOpportunity() {
                 value={place}
                 required
                 placeholder="location, street, town, city"
-                onChange={event => setPlace(event.target.value)}
+                onChange={event => set({ place: event.target.value })}
               />
             )}
 
@@ -313,7 +328,7 @@ export default function CreateOpportunity() {
                 id="sector"
                 className="input"
                 value={sector}
-                onChange={event => setSector(event.target.value)}
+                onChange={event => set({ sector: event.target.value })}
               >
                 <option value="">Choose a sector</option>
                 {SECTORS.map(option => (
@@ -330,7 +345,7 @@ export default function CreateOpportunity() {
                   type="datetime-local"
                   value={startsAt}
                   required
-                  onChange={event => setStartsAt(event.target.value)}
+                  onChange={event => set({ startsAt: event.target.value })}
                 />
                 <Field
                   id="endsAt"
@@ -338,7 +353,7 @@ export default function CreateOpportunity() {
                   type="datetime-local"
                   value={endsAt}
                   required
-                  onChange={event => setEndsAt(event.target.value)}
+                  onChange={event => set({ endsAt: event.target.value })}
                 />
               </div>
             ) : (
@@ -348,7 +363,7 @@ export default function CreateOpportunity() {
                 type="datetime-local"
                 value={endsAt}
                 required
-                onChange={event => setEndsAt(event.target.value)}
+                onChange={event => set({ endsAt: event.target.value })}
               />
             )}
 
@@ -360,7 +375,7 @@ export default function CreateOpportunity() {
                 min="1"
                 value={capacity}
                 required
-                onChange={event => setCapacity(event.target.value)}
+                onChange={event => set({ capacity: event.target.value })}
               />
               <Field
                 id="deadline"
@@ -368,7 +383,7 @@ export default function CreateOpportunity() {
                 type="datetime-local"
                 value={deadline}
                 required
-                onChange={event => setDeadline(event.target.value)}
+                onChange={event => set({ deadline: event.target.value })}
               />
             </div>
 

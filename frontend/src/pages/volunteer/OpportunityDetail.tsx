@@ -8,6 +8,7 @@ import { api } from '../../lib/api'
 import { availabilityLine } from '../../lib/catalogue'
 import { dateAndTime, hasPassed, meta, quantity, sentenceCase, whenLabel } from '../../lib/format'
 import type { OpportunityView, ProfileView } from '../../lib/types'
+import { useDraft } from '../../lib/useDraft'
 import { messageFor, useGet } from '../../lib/useGet'
 import '../../styles/workspace.css'
 
@@ -16,7 +17,7 @@ const MIN_STATEMENT = 30
 function ApplyPanel({ item }: { item: OpportunityView }) {
   const { user } = useAuth()
   const me = useGet<ProfileView>('/auth/me')
-  const [motivation, setMotivation] = useState('')
+  const [draft, setDraft, discardDraft] = useDraft(`apply-${item.id}`, { motivation: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
@@ -32,8 +33,9 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
 
     try {
       await api.post(`/opportunities/${item.id}/applications`, {
-        motivationStatement: motivation.trim(),
+        motivationStatement: draft.motivation.trim(),
       })
+      discardDraft()
       setSent(true)
     } catch (problem) {
       setError(messageFor(problem))
@@ -99,11 +101,11 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
           <TextField
             id="motivation"
             label="Why would you like to help?"
-            value={motivation}
+            value={draft.motivation}
             maxLength={1000}
             required
-            onChange={event => setMotivation(event.target.value)}
-            hint={`At least ${MIN_STATEMENT} characters · ${motivation.length} / 1,000`}
+            onChange={event => setDraft({ motivation: event.target.value })}
+            hint={`At least ${MIN_STATEMENT} characters · ${draft.motivation.length} / 1,000`}
           />
 
           {error && <p className="error" role="alert">{error}</p>}
@@ -112,7 +114,7 @@ function ApplyPanel({ item }: { item: OpportunityView }) {
             type="submit"
             variant="primary"
             block
-            disabled={busy || closed || motivation.trim().length < MIN_STATEMENT}
+            disabled={busy || closed || draft.motivation.trim().length < MIN_STATEMENT}
           >
             {closed ? 'Applications closed' : busy ? 'Sending…' : 'Submit application'}
           </Button>

@@ -1,0 +1,18 @@
+/* A band under the top bar rather than a floating toast: being offline lasts,
+   and a message about it should stay put until it stops being true. */
+.offline { margin: 0; background: var(--warn-bg); border-bottom: 1px solid var(--warn-line);
+           color: var(--warn); font-size: 13px; font-weight: 500; line-height: 1.45;
+           padding: 10px 32px 10px 48px; position: relative; }
+.offline::before { content: ''; position: absolute; left: 32px; top: 15px;
+                   width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+
+/* Sits above the page it applies to, because the claim it makes is about that
+   page and not about the app. */
+.saved { margin: 0 0 16px; background: var(--warn-bg); border: 1px solid var(--warn-line);
+         border-radius: var(--radius-sm); color: var(--warn); font-size: 13px;
+         line-height: 1.45; padding: 9px 12px; }
+
+@media (max-width: 1100px) {
+  .offline { padding: 10px 20px 10px 36px; }
+  .offline::before { left: 20px; }
+}

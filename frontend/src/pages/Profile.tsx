@@ -9,6 +9,7 @@ import { useCatalogue } from '../lib/catalogue'
 import { toSquareDataUrl } from '../lib/image'
 import { SECTORS } from '../lib/sectors'
 import type { ProfileView } from '../lib/types'
+import { useDraft } from '../lib/useDraft'
 import { messageFor, useGet } from '../lib/useGet'
 import '../styles/workspace.css'
 import './Profile.css'
@@ -250,27 +251,38 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
   // an organisation for a logo and what it does.
   const isOrganisation = !isVolunteer && user?.role === 'organisation'
 
-  const [name, setName] = useState(loaded.user.name)
-  const [bio, setBio] = useState(loaded.user.bio ?? '')
+  const [draft, setDraft, discardDraft] = useDraft(`profile-${loaded.user.id}`, {
+    name: loaded.user.name,
+    bio: loaded.user.bio ?? '',
+    skills: loaded.profile?.skills ?? [],
+    interests: loaded.profile?.interests ?? [],
+    availabilitySlots: loaded.profile?.availabilitySlots ?? [],
+    location: loaded.profile?.location ?? '',
+    sector: loaded.profile?.sector ?? '',
+  })
+
+  const set = (patch: Partial<typeof draft>) =>
+    setDraft(current => ({ ...current, ...patch }))
+
+  const { name, bio, skills, interests, availabilitySlots, location, sector } = draft
+
   const [avatar, setAvatar] = useState(loaded.user.avatar)
-  const [skills, setSkills] = useState(loaded.profile?.skills ?? [])
-  const [interests, setInterests] = useState(loaded.profile?.interests ?? [])
-  const [availabilitySlots, setAvailabilitySlots] = useState(loaded.profile?.availabilitySlots ?? [])
-  const [location, setLocation] = useState(loaded.profile?.location ?? '')
-  const [sector, setSector] = useState(loaded.profile?.sector ?? '')
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
 
   function cancel() {
-    setName(loaded.user.name)
-    setBio(loaded.user.bio ?? '')
+    setDraft({
+      name: loaded.user.name,
+      bio: loaded.user.bio ?? '',
+      skills: loaded.profile?.skills ?? [],
+      interests: loaded.profile?.interests ?? [],
+      availabilitySlots: loaded.profile?.availabilitySlots ?? [],
+      location: loaded.profile?.location ?? '',
+      sector: loaded.profile?.sector ?? '',
+    })
+    discardDraft()
     setAvatar(loaded.user.avatar)
-    setSkills(loaded.profile?.skills ?? [])
-    setInterests(loaded.profile?.interests ?? [])
-    setAvailabilitySlots(loaded.profile?.availabilitySlots ?? [])
-    setLocation(loaded.profile?.location ?? '')
-    setSector(loaded.profile?.sector ?? '')
     setError('')
     setSaved(false)
   }
@@ -306,6 +318,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
             }
           : {}),
       })
+      discardDraft()
       setSaved(true)
       onSaved()
       refresh()
@@ -347,7 +360,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                   label={isOrganisation ? 'Organisation name' : 'Full name'}
                   value={name}
                   required
-                  onChange={event => setName(event.target.value)}
+                  onChange={event => set({ name: event.target.value })}
                 />
                 {isVolunteer && (
                   <Field
@@ -355,7 +368,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                     label="Location"
                     value={location}
                     placeholder="Kimironko, Kigali"
-                    onChange={event => setLocation(event.target.value)}
+                    onChange={event => set({ location: event.target.value })}
                   />
                 )}
               </div>
@@ -371,7 +384,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                     : 'What you like working on, and what you bring to it.'
                 }
                 hint={`${bio.length} of 600 characters`}
-                onChange={event => setBio(event.target.value)}
+                onChange={event => set({ bio: event.target.value })}
               />
 
               {isVolunteer && (
@@ -392,14 +405,14 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                     hint="What you can do."
                     options={catalogue.data?.skills ?? []}
                     value={skills}
-                    onChange={setSkills}
+                    onChange={next => set({ skills: next })}
                   />
                   <TagPicker
                     legend="Areas of interest"
                     hint="The causes you want to spend time on."
                     options={catalogue.data?.interests ?? []}
                     value={interests}
-                    onChange={setInterests}
+                    onChange={next => set({ interests: next })}
                   />
 
                   <div className="profile-rule" />
@@ -411,7 +424,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
                       id="sector"
                       className="input"
                       value={sector}
-                      onChange={event => setSector(event.target.value)}
+                      onChange={event => set({ sector: event.target.value })}
                     >
                       <option value="">Not set</option>
                       {SECTORS.map(option => (
@@ -422,7 +435,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
 
                   <div className="profile-rule" />
 
-                  <AvailabilityPicker value={availabilitySlots} onChange={setAvailabilitySlots} />
+                  <AvailabilityPicker value={availabilitySlots} onChange={next => set({ availabilitySlots: next })} />
                 </>
               )}
             </Card>

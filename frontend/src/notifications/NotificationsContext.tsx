@@ -8,6 +8,8 @@ type NotificationsValue = {
   refresh: () => void
 }
 
+const EVERY = 60_000
+
 const NotificationsContext = createContext<NotificationsValue>({
   unread: 0,
   refresh: () => undefined,
@@ -29,6 +31,29 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refresh()
   }, [refresh])
+
+  // Polling only while the tab is in front. A hidden tab cannot show a badge
+  // to anybody, and browsers throttle its timers anyway.
+  useEffect(() => {
+    if (!user) return
+
+    const tick = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+
+    const timer = window.setInterval(tick, EVERY)
+
+    window.addEventListener('focus', tick)
+    window.addEventListener('online', tick)
+    document.addEventListener('visibilitychange', tick)
+
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', tick)
+      window.removeEventListener('online', tick)
+      document.removeEventListener('visibilitychange', tick)
+    }
+  }, [user, refresh])
 
   const value = useMemo(() => ({ unread, refresh }), [unread, refresh])
 

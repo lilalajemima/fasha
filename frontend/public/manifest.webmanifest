@@ -1,0 +1,17 @@
+{
+  "name": "Fasha",
+  "short_name": "Fasha",
+  "description": "Find volunteering near you, run your own initiative, and keep a record of the hours you give.",
+  "lang": "en",
+  "start_url": "/discover",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDFBFB",
+  "theme_color": "#B91C1C",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
