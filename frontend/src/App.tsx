@@ -63,8 +63,10 @@ export default function App() {
                 path="/initiatives/:id/deliverables"
                 element={<MyInitiative tab="deliverables" />}
               />
+              {/* Inside the shell now that it is a place in the sidebar. The
+                  public copy at /p/:slug is the same page without it. */}
+              <Route path="/portfolio" element={<Portfolio />} />
             </Route>
-            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/check-in" element={<CheckIn />} />
           </Route>
 

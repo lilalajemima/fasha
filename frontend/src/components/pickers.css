@@ -12,6 +12,9 @@
 .chipset { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font: inherit;
   font-size: 14px;
   padding: 7px 13px;
@@ -26,8 +29,21 @@
 .chip:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
 .chip:disabled { opacity: .45; cursor: not-allowed; }
 
-.chip--on,
-.chip--on:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+/* These carry :not(:disabled) only to outweigh the hover rule above it, which
+   is a class, a pseudo-class and a :not() and so wins on specificity without
+   it. That was the bug where a chosen tag turned red on red under the cursor
+   and its own label disappeared. */
+.chip--on:not(:disabled),
+.chip--on:hover:not(:disabled) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* The tick is what actually says "chosen". The fill agrees with it, but a
+   chipset where only the colour changed leaves anyone who cannot see the
+   difference counting on the number underneath. */
+.chip--on:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); }
 
 /* A chip that is only being read, not chosen. */
 .chip--static { cursor: default; background: var(--surface-muted); }

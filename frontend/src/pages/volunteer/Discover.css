@@ -8,8 +8,25 @@
            background: var(--surface-card); border: 1px solid var(--neutral-border);
            border-radius: var(--radius-sm); }
 .listing { background: var(--surface-card); border: 1px solid var(--neutral-border);
-           border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+           border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+           border-left: 4px solid var(--neutral-border); }
 .listing:hover { border-color: var(--primary); }
+
+/* The edge repeats what the tag inside already says. It is there to let the
+   eye group the list at a glance, never to carry the answer on its own. */
+.listing--onsite { border-left-color: var(--onsite); }
+.listing--online { border-left-color: var(--online); }
+.listing--onsite:hover { border-color: var(--primary); border-left-color: var(--onsite); }
+.listing--online:hover { border-color: var(--primary); border-left-color: var(--online); }
+
+/* Sits after the last card: by then somebody has read the whole feed and
+   found nothing, which is the moment to offer starting one. */
+.propose { display: flex; align-items: center; justify-content: space-between;
+           gap: 16px; flex-wrap: wrap; margin-top: 18px; padding: 18px 20px;
+           background: var(--primary-container); border: 1px solid #F6DCDC;
+           border-radius: var(--radius); }
+.propose__text { margin: 0; font-size: 15px; font-weight: 500;
+                 color: var(--primary-deep); }
 
 .listing__head { display: grid; grid-template-columns: 56px 1fr auto; gap: 16px;
                  width: 100%; text-align: left; font: inherit;

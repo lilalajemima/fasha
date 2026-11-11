@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import Icon from '../../components/Icon'
 import { Loaded } from '../../components/Loader'
 import PageHeader from '../../components/PageHeader'
 import { AvailabilityChips } from '../../components/Pickers'
@@ -44,6 +45,29 @@ function Face({ name, avatar, slug }: { name: string; avatar: string | null; slu
   return (
     <Link to={`/p/${slug}`} target="_blank" rel="noreferrer" title={`${name}'s portfolio`}>
       {face}
+    </Link>
+  )
+}
+
+/**
+ * People click the name, not the picture, so the name carries the link as well
+ * and says where it goes. A new tab because reading somebody's record is a
+ * detour from deciding on them, and coming back should not mean losing the
+ * list and the filter you were working through.
+ */
+function Name({ name, slug }: { name: string; slug: string | null }) {
+  if (!slug) return <strong>{name}</strong>
+
+  return (
+    <Link
+      className="applicant__name"
+      to={`/p/${slug}`}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`${name}, opens their portfolio in a new tab`}
+    >
+      {name}
+      <Icon name="link" size={14} />
     </Link>
   )
 }
@@ -141,7 +165,10 @@ export function ApplicantsPanel({ opportunityId }: { opportunityId: string }) {
                   <div className="applicant__body">
                     <div className="applicant__head">
                       <div>
-                        <strong>{application.volunteer.name}</strong>
+                        <Name
+                          name={application.volunteer.name}
+                          slug={application.volunteer.portfolioSlug}
+                        />
                         <div className="data__meta">
                           {meta(
                             application.volunteer.location,

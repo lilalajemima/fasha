@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { Loaded } from '../../components/Loader'
-import { Button, EmptyState, StatusBadge, Tag } from '../../components/ui'
-import { dayBlock, hasPassed, longDate, meta, quantity, sentenceCase, shortDate, whenLabel } from '../../lib/format'
+import { Button, EmptyState, ModeTag, StatusBadge, Tag } from '../../components/ui'
+import { dayBlock, hasPassed, longDate, meta, quantity, shortDate, whenLabel } from '../../lib/format'
 import { SECTORS } from '../../lib/sectors'
 import type { OpportunityView } from '../../lib/types'
 import { useGet } from '../../lib/useGet'
@@ -28,7 +28,7 @@ function Listing({ item }: { item: OpportunityView }) {
   const tile = on ? dayBlock(on) : null
 
   return (
-    <article className="listing">
+    <article className={`listing listing--${item.mode === 'PHYSICAL' ? 'onsite' : 'online'}`}>
       <button
         type="button"
         className="listing__head"
@@ -47,10 +47,11 @@ function Listing({ item }: { item: OpportunityView }) {
         <span>
           <span className="listing__title">{item.title}</span>
           <span className="listing__org">
-            {meta(item.creator.name, item.sector, sentenceCase(item.mode))}
+            {meta(item.creator.name, item.sector)}
           </span>
           {when && <span className="listing__when">{when}</span>}
           <span className="cluster">
+            <ModeTag mode={item.mode} />
             {item.matchScore !== undefined && (
               <StatusBadge tone="match">{item.matchScore}% match</StatusBadge>
             )}
@@ -207,20 +208,39 @@ export default function Discover() {
                       aria-label="Sort opportunities"
                       onChange={event => setSort(event.target.value)}>
                 <option value="match">Best match</option>
-                <option value="soonest">Happening soonest</option>
-                <option value="deadline">Closing soonest</option>
-                <option value="newest">Newest</option>
+                <option value="soonest">Happening soon</option>
+                <option value="deadline">Closing soon</option>
+                <option value="newest">Newly posted</option>
               </select>
             </div>
 
             {ordered.length === 0 ? (
-              <EmptyState>
+              <EmptyState
+                action={
+                  <Link to="/initiatives/new">
+                    <Button variant="primary">+ Propose an initiative</Button>
+                  </Link>
+                }
+              >
                 {items.length === 0
-                  ? 'No opportunities are open right now. Check back soon.'
-                  : 'Nothing matches those filters.'}
+                  ? 'No opportunities are open right now. You do not have to wait for one: propose your own and an admin will review it.'
+                  : 'Nothing matches those filters. Widen them, or propose the thing you were looking for.'}
               </EmptyState>
             ) : (
-              ordered.map(item => <Listing key={item.id} item={item} />)
+              <>
+                {ordered.map(item => <Listing key={item.id} item={item} />)}
+
+                {/* The feed is where somebody realises nothing here is theirs,
+                    so the way to start one belongs at the end of it. */}
+                <aside className="propose">
+                  <p className="propose__text">
+                    Can't find an opportunity that interests you? Propose one yourself.
+                  </p>
+                  <Link to="/initiatives/new">
+                    <Button variant="primary">+ Propose an initiative</Button>
+                  </Link>
+                </aside>
+              </>
             )}
           </>
         )}

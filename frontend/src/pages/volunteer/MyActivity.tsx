@@ -407,13 +407,20 @@ export default function MyActivity() {
                         }
                       >
                         <td className="data__title">{application.opportunity.title}</td>
-                        <td>{longDate(application.createdAt)}</td>
-                        <td>
+                        <td data-label="Applied">{longDate(application.createdAt)}</td>
+                        <td data-label="State">
                           <StatusBadge tone={APPLICATION_TONE[application.status]}>
                             {APPLICATION_LABEL[application.status]}
                           </StatusBadge>
                         </td>
                         <td className="data__actions" onClick={event => event.stopPropagation()}>
+                          <Link
+                            className="data__view"
+                            to={`/opportunities/${application.opportunity.id}`}
+                            state={{ from: HERE }}
+                          >
+                            View
+                          </Link>
                           {(application.status === 'PENDING' ||
                             application.status === 'ACCEPTED') && (
                             <button
@@ -458,6 +465,7 @@ export default function MyActivity() {
                     <th>Date</th>
                     <th>Hours</th>
                     <th>State</th>
+                    <th aria-hidden="true" />
                   </tr>
                 </thead>
                 <tbody>
@@ -471,12 +479,21 @@ export default function MyActivity() {
                       }
                     >
                       <td className="data__title">{row.title}</td>
-                      <td>{longDate(row.on)}</td>
-                      <td>{row.hours === null ? '—' : `${row.hours} h`}</td>
-                      <td>
+                      <td data-label="Date">{longDate(row.on)}</td>
+                      <td data-label="Hours">{row.hours === null ? '—' : `${row.hours} h`}</td>
+                      <td data-label="State">
                         <StatusBadge tone={row.open ? 'warn' : 'ok'}>
                           {row.open ? 'Checked in' : 'Credited'}
                         </StatusBadge>
+                      </td>
+                      <td className="data__actions" onClick={event => event.stopPropagation()}>
+                        <Link
+                          className="data__view"
+                          to={`/opportunities/${row.opportunityId}`}
+                          state={{ from: HERE }}
+                        >
+                          View
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -556,16 +573,23 @@ export default function MyActivity() {
                                 <div className="data__meta">Not approved: {item.reviewNote}</div>
                               )}
                             </td>
-                            <td>
+                            <td data-label="Sent">
                               {longDate(item.createdAt)}
                               <div className="data__meta">{item.hoursClaimed} h claimed</div>
                             </td>
-                            <td>
+                            <td data-label="State">
                               <StatusBadge tone={SUBMISSION_TONE[item.status]}>
                                 {SUBMISSION_LABEL[item.status]}
                               </StatusBadge>
                             </td>
                             <td className="data__actions" onClick={event => event.stopPropagation()}>
+                              <Link
+                                className="data__view"
+                                to={`/opportunities/${item.opportunity.id}`}
+                                state={{ from: HERE }}
+                              >
+                                View
+                              </Link>
                               <a
                                 className="data__action"
                                 href={item.proofUrl}

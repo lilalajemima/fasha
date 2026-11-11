@@ -7,6 +7,9 @@ export const PARTICIPATE_NAV: NavItem[] = [
   { to: '/discover', label: 'Discover', short: 'Discover', icon: 'discover' },
   { to: '/activity', label: 'My activity', short: 'Activity', icon: 'activity' },
   { to: '/initiatives', label: 'My initiatives', short: 'Initiatives', icon: 'initiatives', end: true },
+  // Before the profile: the portfolio is somewhere you go to use Fasha, the
+  // profile is where you go to change your account, and settings come last.
+  { to: '/portfolio', label: 'My portfolio', short: 'Portfolio', icon: 'portfolio' },
   { to: '/profile', label: 'My profile', short: 'Profile', icon: 'profile' },
 ]
 

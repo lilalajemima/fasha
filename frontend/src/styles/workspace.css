@@ -107,6 +107,17 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
 .data__action:hover { text-decoration: underline; }
 .data__action[disabled] { opacity: .5; cursor: default; text-decoration: none; }
 
+/* The one action that opens the row, drawn as a button rather than another red
+   word. A row you can click is a convention; a button is not something you
+   have to have been taught. */
+.data__view { display: inline-flex; align-items: center; font: inherit; font-size: 13px;
+              font-weight: 600; padding: 6px 13px; border-radius: var(--radius-btn);
+              border: 1px solid var(--neutral-border); background: var(--surface-card);
+              color: var(--imigongo-black); text-decoration: none; cursor: pointer;
+              white-space: nowrap; }
+.data__view:hover { border-color: var(--primary); color: var(--primary);
+                    text-decoration: none; }
+
 /* ---------- pagination ---------- */
 .pager { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
 .pager__info { margin-right: auto; font-size: 13px; color: var(--charcoal-muted); }
@@ -130,6 +141,14 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
 .applicant__head { display: flex; align-items: flex-start; justify-content: space-between;
                    gap: 12px; }
 .applicant__note { margin: 10px 0 12px; color: var(--charcoal-muted); }
+/* The name is the link, because that is what people click. The icon is there
+   so it reads as one before anybody hovers it. */
+.applicant__name { display: inline-flex; align-items: center; gap: 6px;
+                   font-weight: 600; color: var(--imigongo-black);
+                   text-decoration: none; }
+.applicant__name svg { color: var(--charcoal-muted); }
+.applicant__name:hover { color: var(--primary); text-decoration: underline; }
+.applicant__name:hover svg { color: var(--primary); }
 
 /* ---------- attendance ---------- */
 .codepanel__body { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 28px;
@@ -190,6 +209,53 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
   .event-card { grid-template-columns: 1fr; }
   .data { font-size: 13px; }
   .data th, .data td { padding: 12px 12px; }
+}
+
+/* ---------- tables on a phone ---------- */
+/* A four-column table in 300px is four columns of one word each, which is how
+   a title ends up stacked down the screen a letter at a time. Below this the
+   rows stop being rows: each one becomes its own card, the header row is read
+   out by the cells instead of sitting above them, and the actions go full
+   width where a thumb can reach. */
+@media (max-width: 700px) {
+  .data, .data tbody, .data tr, .data td { display: block; }
+  .data { border: 0; background: none; border-radius: 0; font-size: 14px; }
+
+  /* Gone from view, still read by a screen reader on a wide screen. Here the
+     cells carry their own labels, so the header would only repeat itself. */
+  .data thead { position: absolute; width: 1px; height: 1px; padding: 0;
+                margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+                white-space: nowrap; border: 0; }
+
+  .data tbody tr { background: var(--surface-card); padding: 15px 16px;
+                   border: 1px solid var(--neutral-border);
+                   border-radius: var(--radius); margin-bottom: 12px; }
+  .data tbody tr:hover { background: var(--surface-card); }
+  .data tbody tr:last-child td:first-child,
+  .data tbody tr:last-child td:last-child { border-radius: 0; }
+
+  .data td { padding: 0; border-bottom: 0; }
+  .data td + td { margin-top: 10px; }
+  .data td:empty { display: none; }
+
+  .data td[data-label]::before { content: attr(data-label); display: block;
+                                 font-size: 12px; font-weight: 600;
+                                 color: var(--charcoal-muted); margin-bottom: 2px; }
+
+  .data__title { font-size: 16px; line-height: 1.3; }
+
+  /* td.data__actions, not .data__actions: the rule above sets display on
+     `.data td`, which is a class and an element and so outweighs a class on
+     its own. Without the element here the cell stays block, the gap does
+     nothing, and the actions run into each other. */
+  .data td.data__actions { display: flex; flex-wrap: wrap; align-items: center;
+                           gap: 10px 18px; text-align: left; white-space: normal;
+                           margin-top: 14px; padding-top: 14px;
+                           border-top: 1px solid var(--neutral-border-subtle); }
+  .data__actions > * + * { margin-left: 0; }
+  .data__view { flex: 1 1 100%; justify-content: center; padding: 11px 14px;
+                font-size: 14px; }
+  .data__go { display: none; }
 }
 
 /* ---------- print: the register only ---------- */
@@ -291,6 +357,12 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
 /* The painting is already dark red, the crowd is light and busy. */
 .banner--overview::after   { background: rgba(127, 29, 29, .30); }
 .banner--attendance::after { background: rgba(127, 29, 29, .58); }
+
+/* A page that only ever deals with one kind of work says so on its bottom
+   edge, in the same two colours the feed uses. A band under a banner, not a
+   recolouring of it: the red stays the brand, these stay the filing. */
+.banner--onsite { border-bottom: 4px solid var(--onsite); }
+.banner--online { border-bottom: 4px solid var(--online); }
 
 /* ---------- search and filters, the same on every page that lists things ---------- */
 .searchbar { width: 100%; height: 46px; font-size: 15px; }

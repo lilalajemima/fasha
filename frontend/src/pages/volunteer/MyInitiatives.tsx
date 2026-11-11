@@ -107,11 +107,18 @@ export default function MyInitiatives() {
             )
 
           if (visible.length === 0) {
+            if (items.length > 0) return <EmptyState>Nothing matches that.</EmptyState>
+
             return (
-              <EmptyState>
-                {items.length === 0
-                  ? 'You have not proposed an initiative yet.'
-                  : 'Nothing matches that.'}
+              <EmptyState
+                action={
+                  <Link to="/initiatives/new">
+                    <Button variant="primary">+ Propose an initiative</Button>
+                  </Link>
+                }
+              >
+                You have not proposed an initiative yet. Describe what you want to
+                organise, and an admin will review it before it reaches volunteers.
               </EmptyState>
             )
           }
@@ -148,13 +155,16 @@ export default function MyInitiatives() {
                       )}
                     </td>
                     {/* whenLabel already says "Due by" for work with no start time. */}
-                    <td>{whenLabel(item.startsAt, item.endsAt) ?? 'No date set'}</td>
-                    <td>{longDate(item.applicationDeadline)}</td>
-                    <td>
+                    <td data-label="When">{whenLabel(item.startsAt, item.endsAt) ?? 'No date set'}</td>
+                    <td data-label="Apply by">{longDate(item.applicationDeadline)}</td>
+                    <td data-label="State">
                       <StatusBadge tone={TONE[item.status]}>{LABEL[item.status]}</StatusBadge>
                     </td>
                     {/* Own click handler: changing a row should never open it. */}
                     <td className="data__actions" onClick={event => event.stopPropagation()}>
+                      <Link className="data__view" to={`/initiatives/${item.id}`}>
+                        View
+                      </Link>
                       {editable(item) && (
                         <Link className="data__action" to={`/initiatives/${item.id}/edit`}>
                           Edit

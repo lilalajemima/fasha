@@ -167,7 +167,21 @@ export default function Opportunities() {
               </div>
 
               {visible.length === 0 ? (
-                <EmptyState>Nothing matches that.</EmptyState>
+                items.length > 0 ? (
+                  <EmptyState>Nothing matches that.</EmptyState>
+                ) : (
+                  <EmptyState
+                    action={
+                      <Link to="/manage/opportunities/new">
+                        <Button variant="primary">+ Create an opportunity</Button>
+                      </Link>
+                    }
+                  >
+                    You have not created an opportunity yet. Post one with its date,
+                    place and the skills you need, and Fasha will put it in front of
+                    the volunteers who match.
+                  </EmptyState>
+                )
               ) : (
                 <>
                   <table className="data">
@@ -204,13 +218,13 @@ export default function Opportunities() {
                                 )}
                               </div>
                             </td>
-                            <td>
+                            <td data-label="When">
                               {happening(item)}
                               <div className="data__meta">
                                 Apply by {longDate(item.applicationDeadline)}
                               </div>
                             </td>
-                            <td>
+                            <td data-label="Applications">
                               {row && row.pendingApplications > 0 ? (
                                 <span className="pill">{row.pendingApplications} to review</span>
                               ) : (
@@ -219,7 +233,7 @@ export default function Opportunities() {
                                 </span>
                               )}
                             </td>
-                            <td>
+                            <td data-label="State">
                               <StatusBadge tone={mark.tone}>{mark.label}</StatusBadge>
                             </td>
                             {/* Own click handler: changing a row should never open it. */}
@@ -227,6 +241,12 @@ export default function Opportunities() {
                               className="data__actions"
                               onClick={event => event.stopPropagation()}
                             >
+                              {/* The whole row already opens this, but a row
+                                  that opens something is a convention you have
+                                  to know. The button says what it does. */}
+                              <Link className="data__view" to={applications}>
+                                Review applicants
+                              </Link>
                               {editable(item) && (
                                 <Link
                                   className="data__action"

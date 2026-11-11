@@ -359,7 +359,7 @@ export default function Attendance() {
 
   return (
     <>
-      <section className="banner banner--attendance">
+      <section className="banner banner--attendance banner--onsite">
         <h1 className="banner__title">Attendance</h1>
       </section>
 
@@ -425,17 +425,17 @@ export default function Attendance() {
                       <div className="data__meta">Next up</div>
                     )}
                   </td>
-                  <td>
+                  <td data-label="When">
                     {whenLabel(item.startsAt, item.endsAt)}
                     {hasPassed(item.endsAt ?? item.applicationDeadline) && (
                       <div className="data__meta">Finished</div>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Where">
                     {item.location ?? '—'}
                     <div className="data__meta">{item.sector ?? ''}</div>
                   </td>
-                  <td>
+                  <td data-label="Volunteers">
                     {row ? `${row.acceptedApplications} of ${item.maxCapacity}` : `up to ${item.maxCapacity}`}
                   </td>
                   <td className="data__actions">

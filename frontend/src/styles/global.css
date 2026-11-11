@@ -140,6 +140,28 @@ textarea.input { min-height: 96px; resize: vertical; }
 .table tr:last-child td { border-bottom: 0; }
 
 .empty { text-align: center; color: var(--charcoal-muted); padding: var(--space-6) 0; }
+
+/* The version with a way forward in it. Taller and centred, because this is
+   the whole page when somebody has nothing yet. */
+.empty--action { display: flex; flex-direction: column; align-items: center;
+                 justify-content: center; gap: var(--space-4);
+                 min-height: 300px; padding: var(--space-6) var(--space-4);
+                 background: var(--surface-card); border: 1px dashed var(--neutral-border);
+                 border-radius: var(--radius); }
+.empty__text { margin: 0; max-width: 42ch; font-size: 15px; line-height: 1.5; }
+.empty--action .btn { font-size: 15px; padding: 11px 20px; }
+
+/* How the work happens. In person is tinted and virtual is outlined, which
+   keeps the orange one clear of the filled amber --warn badges and keeps both
+   apart in greyscale. The hue is the last of the three signals, after the icon
+   and the word. */
+.modetag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
+           font-weight: 600; padding: 4px 10px; border-radius: var(--radius-chip);
+           border: 1px solid transparent; white-space: nowrap; }
+.modetag--onsite { background: var(--onsite-bg); border-color: var(--onsite-line);
+                   color: var(--onsite); }
+.modetag--online { background: var(--surface-card); border-color: var(--online);
+                   color: var(--online); }
 .divided > * + * { border-top: 1px solid var(--neutral-border); padding-top: var(--space-4);
                    margin-top: var(--space-4); }
 

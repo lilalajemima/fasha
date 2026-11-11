@@ -7,6 +7,7 @@ import {
   availabilityByDay,
   slotOf,
 } from '../lib/catalogue'
+import Icon from './Icon'
 import './pickers.css'
 
 /**
@@ -46,6 +47,7 @@ export function TagPicker({ legend, hint, options, value, max = 10, onChange }: 
               disabled={full && !chosen}
               onClick={() => toggle(option)}
             >
+              {chosen && <Icon name="tick" size={13} />}
               {option}
             </button>
           )

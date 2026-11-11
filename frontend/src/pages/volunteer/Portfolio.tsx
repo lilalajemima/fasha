@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { Loaded } from '../../components/Loader'
 import Logo from '../../components/Logo'
@@ -55,16 +55,8 @@ export default function Portfolio() {
   const preview = !slug
   const portfolio = useGet<PortfolioView>(slug ? `/p/${slug}` : '/portfolio/mine')
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-base)' }}>
-            <header className="topbar">
-        <Logo size={24} />
-        <div className="topbar__right">
-          {preview && <Link to="/profile">← Back to Fasha</Link>}
-        </div>
-      </header>
-
-      <div className="pf-body">
+  const body = (
+    <div className="pf-body">
         <Loaded state={portfolio} what="this portfolio">
           {view => {
             const link = `${window.location.origin}/p/${view.volunteer.portfolioSlug}`
@@ -220,8 +212,20 @@ export default function Portfolio() {
               </>
             )
           }}
-        </Loaded>
-      </div>
+      </Loaded>
+    </div>
+  )
+
+  // Signed in, this page sits in the sidebar and the shell already draws the
+  // brand and the navigation. Only the public copy brings its own.
+  if (preview) return body
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--surface-base)' }}>
+      <header className="topbar">
+        <Logo size={24} />
+      </header>
+      {body}
     </div>
   )
 }

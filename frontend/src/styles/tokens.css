@@ -32,6 +32,17 @@
   /* A match score is not a status, so it stays out of the semantic palette. */
   --match:   #18181B;
 
+  /* How the work happens, which is not a status either. Both are taken from
+     the handprints on the Discover banner and darkened until they carry text:
+     the blue hand (#27BCD3) for turning up somewhere, the orange one
+     (#F0791D) for work done from anywhere. Blue against orange is the pair
+     that survives colour blindness best, which is the distinction that has to
+     hold. The cost is that orange sits in the same hue band as --warn, so the
+     two never take the same shape: a mode is an outlined or tinted pill with
+     an icon and the word, a status is a filled badge. */
+  --onsite: #0E7490;  --onsite-bg: #ECFEFF;  --onsite-line: #A5F3FC;
+  --online: #C2410C;  --online-bg: #FFF7ED;  --online-line: #FED7AA;
+
   /* Type */
   --font-display: 'Fugaz One', Impact, system-ui, sans-serif;
   --font-body:    'Work Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;

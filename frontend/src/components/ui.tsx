@@ -24,6 +24,23 @@ export function StatusBadge({ tone = 'neutral', children }: { tone?: Tone; child
 }
 
 /**
+ * Whether you turn up somewhere or do it from anywhere. Three things say so at
+ * once, because the two colours are hard to tell apart without full colour
+ * vision: the hue, the icon, and the word. In person is filled and virtual is
+ * outlined, so even a greyscale print keeps them apart.
+ */
+export function ModeTag({ mode }: { mode: 'PHYSICAL' | 'VIRTUAL' }) {
+  const onsite = mode === 'PHYSICAL'
+
+  return (
+    <span className={`modetag modetag--${onsite ? 'onsite' : 'online'}`}>
+      <Icon name={onsite ? 'pin' : 'screen'} size={13} />
+      {onsite ? 'In person' : 'Virtual'}
+    </span>
+  )
+}
+
+/**
  * Every field in Fasha, and every password field with it: a password can be
  * shown, because the alternative is people choosing one they can type blind.
  * The toggle lives here rather than at each call site, so no form can forget.
@@ -88,6 +105,18 @@ export function Tabs({ items, active, onChange }:
   )
 }
 
-export function EmptyState({ children }: { children: ReactNode }) {
-  return <p className="empty">{children}</p>
+/**
+ * A page with nothing on it yet is the one place the way forward should be the
+ * largest thing on screen, so `action` is drawn under the sentence rather than
+ * left in a corner of the banner where somebody new has to go looking for it.
+ */
+export function EmptyState({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  if (!action) return <p className="empty">{children}</p>
+
+  return (
+    <div className="empty empty--action">
+      <p className="empty__text">{children}</p>
+      {action}
+    </div>
+  )
 }

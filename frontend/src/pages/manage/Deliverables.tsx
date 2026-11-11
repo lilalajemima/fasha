@@ -160,7 +160,7 @@ export function DeliverablesPanel({ opportunityId }: { opportunityId: string }) 
                   <Fragment key={item.id}>
                   <tr className="data__row--plain">
                     <td className="data__title">{item.volunteer.name}</td>
-                    <td>{longDate(item.createdAt)}</td>
+                    <td data-label="Sent">{longDate(item.createdAt)}</td>
                     <td>
                       <a href={item.proofUrl} target="_blank" rel="noreferrer">Open ↗</a>
                     </td>
@@ -246,7 +246,7 @@ export default function Deliverables() {
 
   return (
     <>
-      <section className="banner banner--deliverables">
+      <section className="banner banner--deliverables banner--online">
         <h1 className="banner__title">Deliverables</h1>
       </section>
 
@@ -327,12 +327,12 @@ export default function Deliverables() {
                           {quantity(item.hoursClaimed, 'hour')} claimed
                         </div>
                       </td>
-                      <td>{item.opportunity.title}</td>
-                      <td>{longDate(item.createdAt)}</td>
-                      <td>
+                      <td data-label="Opportunity">{item.opportunity.title}</td>
+                      <td data-label="Sent">{longDate(item.createdAt)}</td>
+                      <td data-label="Proof">
                         <a href={item.proofUrl} target="_blank" rel="noreferrer">Open ↗</a>
                       </td>
-                      <td>
+                      <td data-label="State">
                         <StatusBadge tone={toneFor(item.status)}>
                           {labelFor(item.status)}
                         </StatusBadge>
