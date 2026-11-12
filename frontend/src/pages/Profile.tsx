@@ -340,7 +340,7 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
           {error && <p className="error" role="alert">{error}</p>}
           {saved && <StatusBadge tone="ok">Saved</StatusBadge>}
 
-          <form className="stack" onSubmit={save}>
+          <form className="stack" onSubmit={save} data-tour="profile-form">
             {/* One sheet. The headings separate the sections; cards would only
                 chop a single form into four boxes. */}
             <Card>

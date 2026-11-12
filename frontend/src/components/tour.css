@@ -1,0 +1,69 @@
+/* The first-time guide. Above the help button (40) and everything else on the
+   page, below nothing: while it is open it is the thing you are looking at. */
+.tour { position: fixed; inset: 0; z-index: 80; pointer-events: none; }
+
+/* One cut-out in a sheet of shade, made from a shadow so the edge can be
+   rounded. It lets clicks through; the four blocks around it do not. */
+.tour__spot { position: fixed; border-radius: var(--radius);
+              box-shadow: 0 0 0 9999px rgba(24, 24, 27, .58),
+                          0 0 0 3px rgba(255, 255, 255, .9);
+              pointer-events: none; animation: tour-in .2s ease-out; }
+.tour__block { position: fixed; pointer-events: auto; }
+
+.tour__card { position: fixed; width: 360px; max-width: calc(100vw - 32px);
+              padding: 18px 20px 16px; pointer-events: auto;
+              background: var(--surface-card); color: var(--imigongo-black);
+              border-radius: var(--radius); border-top: 4px solid var(--primary);
+              box-shadow: 0 18px 50px rgba(0, 0, 0, .28); }
+
+/* Focus moves to the card on every step so a screen reader reads it out, but
+   the card is not a control, so it gets no ring; its buttons keep theirs.
+   Two classes' worth of selector on purpose: the global ring is a class's
+   worth too, so a single class here would win or lose on stylesheet order. */
+.tour__card:focus, .tour__card:focus-visible { outline: none; }
+.tour__card--dock { right: 24px; bottom: 24px; }
+
+.tour__top { display: flex; align-items: center; justify-content: space-between;
+             gap: 12px; margin-bottom: 8px; }
+.tour__count { font-size: 12px; font-weight: 600; letter-spacing: .02em;
+               color: var(--primary); }
+.tour__skip { padding: 4px 0; border: 0; background: none; font: inherit; font-size: 13px;
+              color: var(--charcoal-muted); cursor: pointer; }
+.tour__skip:hover { color: var(--imigongo-black); text-decoration: underline; }
+
+.tour__content { animation: tour-in .2s ease-out; }
+.tour__title { margin: 0 0 6px; font-family: var(--font-display); font-size: 21px;
+               line-height: 1.15; }
+.tour__body { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--charcoal-muted); }
+
+.tour__foot { display: flex; align-items: center; justify-content: space-between;
+              gap: 12px; margin-top: 16px; }
+.tour__dots { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tour__dots li { width: 8px; height: 8px; border-radius: 50%;
+                 background: var(--neutral-border); transition: width .2s ease; }
+.tour__dots li.is-done { background: #E9A8A8; }
+.tour__dots li.is-on { width: 22px; border-radius: 999px; background: var(--primary); }
+.tour__actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+@keyframes tour-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A phone gets a sheet along the bottom rather than a card that has to find
+   room beside its target. The step scrolls its target to the top to match. */
+@media (max-width: 700px) {
+  .tour__card, .tour__card--dock { left: 12px; right: 12px; bottom: 12px; top: auto;
+                                   width: auto; max-width: none; max-height: 55vh;
+                                   overflow-y: auto; }
+  .tour__title { font-size: 19px; }
+  .tour__actions .btn { padding: 10px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour__spot, .tour__content { animation: none; }
+  .tour__dots li { transition: none; }
+}
+
+/* Whatever a step scrolls to lands clear of the top edge. */
+[data-tour] { scroll-margin-top: 24px; }

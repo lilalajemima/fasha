@@ -24,28 +24,45 @@ export function messageFor(problem: unknown): string {
 }
 
 export function useGet<T>(path: string | null, poll = 0): Loaded<T> {
-  const [data, setData] = useState<T | null>(null)
+  // The saved copy is read while rendering, not in an effect. From an effect
+  // it would arrive one paint late, after the empty page had already shown,
+  // which is the cascading render the compiler lint warns about.
+  const [first] = useState(() => (path === null ? null : readCache<T>(path)))
+  const [seededFor, setSeededFor] = useState(path)
+  const [copyFor, setCopyFor] = useState(first ? path : null)
+  const [data, setData] = useState<T | null>(first?.data ?? null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(path !== null)
+  const [loading, setLoading] = useState(path !== null && first === null)
   const [stale, setStale] = useState(false)
-  const [at, setAt] = useState<number | null>(null)
+  const [at, setAt] = useState<number | null>(first?.at ?? null)
   const [attempt, setAttempt] = useState(0)
   const fetchedAt = useRef(0)
   const lastSeen = useRef(0)
-  const showing = useRef(false)
+  const fetched = useRef(false)
+
+  // When the path changes, the saved copy for the new one is picked up in the
+  // same render, using React's pattern for state that follows a prop: compare,
+  // set, and React renders again before anything reaches the screen.
+  if (path !== seededFor) {
+    setSeededFor(path)
+    setStale(false)
+    setError(null)
+
+    const saved = path === null ? null : readCache<T>(path)
+
+    setCopyFor(saved ? path : null)
+
+    if (saved) {
+      setData(saved.data)
+      setAt(saved.at)
+      setLoading(false)
+    }
+  }
+
+  const hasCopy = path !== null && copyFor === path
 
   useEffect(() => {
-    if (path === null) return
-
-    const saved = readCache<T>(path)
-
-    showing.current = saved !== null
-
-    if (!saved) return
-
-    setData(saved.data)
-    setAt(saved.at)
-    setLoading(false)
+    fetched.current = false
   }, [path])
 
   useEffect(() => {
@@ -59,7 +76,7 @@ export function useGet<T>(path: string | null, poll = 0): Loaded<T> {
         if (!live) return
 
         fetchedAt.current = Date.now()
-        showing.current = true
+        fetched.current = true
         writeCache(path, result)
         setData(result)
         setAt(Date.now())
@@ -74,7 +91,7 @@ export function useGet<T>(path: string | null, poll = 0): Loaded<T> {
 
         // A saved copy is worth more than an error page, so the failure is
         // reported as staleness and only becomes an error with nothing to show.
-        if (showing.current) setStale(true)
+        if (fetched.current || hasCopy) setStale(true)
         else setError(messageFor(problem))
 
         setLoading(false)
@@ -83,7 +100,7 @@ export function useGet<T>(path: string | null, poll = 0): Loaded<T> {
     return () => {
       live = false
     }
-  }, [path, attempt])
+  }, [path, attempt, hasCopy])
 
   useEffect(() => {
     if (path === null) return

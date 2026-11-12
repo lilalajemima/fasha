@@ -403,7 +403,7 @@ export default function Attendance() {
       )}
 
       {visible.length > 0 && (
-        <table className="data">
+        <table className="data" data-tour="attendance">
           <thead>
             <tr>
               <th>Event</th>

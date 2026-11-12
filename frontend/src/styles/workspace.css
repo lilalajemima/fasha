@@ -194,6 +194,11 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
                border: 1px solid var(--neutral-border); border-radius: var(--radius);
                box-shadow: 0 14px 40px rgba(0, 0, 0, .15); }
 .help__panel h3 { margin-bottom: 12px; }
+.help__tour { display: block; width: 100%; margin: 0 0 14px; padding: 10px 12px;
+              font: inherit; font-size: 14px; font-weight: 600; text-align: left;
+              color: var(--primary); background: var(--primary-container);
+              border: 1px solid #F6DCDC; border-radius: var(--radius-sm); cursor: pointer; }
+.help__tour:hover { border-color: var(--primary); }
 .help__item + .help__item { margin-top: 12px; padding-top: 12px;
                             border-top: 1px solid var(--neutral-border-subtle); }
 .help__q { margin: 0 0 3px; font-size: 13px; font-weight: 600; }

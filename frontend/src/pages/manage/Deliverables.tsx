@@ -306,7 +306,7 @@ export default function Deliverables() {
                 {quantity(visible.length, 'deliverable')}
               </p>
 
-              <table className="data">
+              <table className="data" data-tour="deliverables">
                 <thead>
                   <tr>
                     <th>Volunteer</th>

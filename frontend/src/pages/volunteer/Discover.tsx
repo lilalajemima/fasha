@@ -28,7 +28,10 @@ function Listing({ item }: { item: OpportunityView }) {
   const tile = on ? dayBlock(on) : null
 
   return (
-    <article className={`listing listing--${item.mode === 'PHYSICAL' ? 'onsite' : 'online'}`}>
+    <article
+      className={`listing listing--${item.mode === 'PHYSICAL' ? 'onsite' : 'online'}`}
+      data-tour="listing"
+    >
       <button
         type="button"
         className="listing__head"
@@ -199,6 +202,21 @@ export default function Discover() {
       <Loaded state={feed} what="opportunities">
         {() => (
           <>
+            {/* Up here rather than after the last card: most people never
+                scroll to the end of a long feed, so an offer that waits there
+                is an offer almost nobody sees. When nothing matches, the empty
+                state below makes the same offer, so this one steps aside. */}
+            {ordered.length > 0 && (
+              <aside className="propose" data-tour="propose">
+                <p className="propose__text">
+                  Can't find an opportunity that interests you? Propose one yourself.
+                </p>
+                <Link to="/initiatives/new">
+                  <Button variant="primary">+ Propose an initiative</Button>
+                </Link>
+              </aside>
+            )}
+
             <div className="board__bar">
               <span className="muted">
                 {quantity(ordered.length, 'opportunity', 'opportunities')}
@@ -227,20 +245,7 @@ export default function Discover() {
                   : 'Nothing matches those filters. Widen them, or propose the thing you were looking for.'}
               </EmptyState>
             ) : (
-              <>
-                {ordered.map(item => <Listing key={item.id} item={item} />)}
-
-                {/* The feed is where somebody realises nothing here is theirs,
-                    so the way to start one belongs at the end of it. */}
-                <aside className="propose">
-                  <p className="propose__text">
-                    Can't find an opportunity that interests you? Propose one yourself.
-                  </p>
-                  <Link to="/initiatives/new">
-                    <Button variant="primary">+ Propose an initiative</Button>
-                  </Link>
-                </aside>
-              </>
+              ordered.map(item => <Listing key={item.id} item={item} />)
             )}
           </>
         )}

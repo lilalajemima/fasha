@@ -111,7 +111,7 @@ export default function Opportunities() {
       <section className="banner banner--opportunities">
         <div className="banner__bar">
           <h1 className="banner__title">Opportunities</h1>
-          <Link to="/manage/opportunities/new">
+          <Link to="/manage/opportunities/new" data-tour="create-opportunity">
             <Button variant="primary">+ Create opportunity</Button>
           </Link>
         </div>
@@ -244,7 +244,7 @@ export default function Opportunities() {
                               {/* The whole row already opens this, but a row
                                   that opens something is a convention you have
                                   to know. The button says what it does. */}
-                              <Link className="data__view" to={applications}>
+                              <Link className="data__view" to={applications} data-tour="review-applicants">
                                 Review applicants
                               </Link>
                               {editable(item) && (

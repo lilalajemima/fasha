@@ -1,14 +1,19 @@
+import { useCallback, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import HelpButton, { type HelpNote } from '../components/HelpButton'
 import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import MobileNav from '../components/MobileNav'
 import OfflineNote from '../components/OfflineNote'
+import Tour from '../components/Tour'
 import { useAuth, type Role } from '../auth/AuthContext'
+import { tourFinish, tourSave, tourStart, type TourStep } from '../lib/tour'
 import { useNotifications } from '../notifications/NotificationsContext'
 import { OVERSIGHT_GUIDE } from '../pages/admin/guide'
 import { ORGANISER_GUIDE } from '../pages/manage/guide'
+import { ORGANISER_TOUR } from '../pages/manage/tour'
 import { VOLUNTEER_GUIDE } from '../pages/volunteer/guide'
+import { VOLUNTEER_TOUR } from '../pages/volunteer/tour'
 import {
   MANAGE_NAV,
   OVERSIGHT_NAV,
@@ -32,6 +37,14 @@ const GUIDES: Record<Role, { title: string; notes: HelpNote[] }> = {
   admin: { title: 'Community admin', notes: OVERSIGHT_GUIDE },
 }
 
+/** The first-time guide for the two workspaces people join on their own. An
+ *  admin account is made by hand for one person, who does not need one. */
+const TOURS: Record<Role, TourStep[] | null> = {
+  volunteer: VOLUNTEER_TOUR,
+  organisation: ORGANISER_TOUR,
+  admin: null,
+}
+
 function initials(name: string) {
   return name.split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase()
 }
@@ -52,6 +65,24 @@ export default function Shell() {
   const { unread } = useNotifications()
   const workspace = workspaceFor(user?.role)
   const guide = GUIDES[workspace]
+  const tour = TOURS[workspace]
+  const userId = user?.id ?? null
+
+  // Read once, when the shell first appears after signing in. Every route in
+  // here sits behind a guard that waits for the account, so the id is known.
+  const [step, setStep] = useState<number | null>(() =>
+    tour && userId ? tourStart(userId, tour.length) : null,
+  )
+
+  const moveTo = useCallback((next: number) => {
+    setStep(next)
+    if (userId) tourSave(userId, next)
+  }, [userId])
+
+  const closeTour = useCallback(() => {
+    setStep(null)
+    if (userId) tourFinish(userId)
+  }, [userId])
 
   return (
     <div className="shell">
@@ -97,7 +128,15 @@ export default function Shell() {
 
         <main className="content"><Outlet /></main>
 
-        <HelpButton title={guide.title} notes={guide.notes} />
+        <HelpButton
+          title={guide.title}
+          notes={guide.notes}
+          onTour={tour ? () => moveTo(0) : undefined}
+        />
+
+        {tour && step !== null && (
+          <Tour steps={tour} step={step} onStep={moveTo} onClose={closeTour} />
+        )}
       </div>
     </div>
   )

@@ -7,7 +7,11 @@ export type HelpNote = { question: string; answer: string }
  * to sit as paragraphs between the controls lives in here instead, so a page
  * stays quiet until somebody actually wants to be told how it works.
  */
-export default function HelpButton({ title, notes }: { title: string; notes: HelpNote[] }) {
+export default function HelpButton({ title, notes, onTour }: {
+  title: string
+  notes: HelpNote[]
+  onTour?: () => void
+}) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -27,6 +31,19 @@ export default function HelpButton({ title, notes }: { title: string; notes: Hel
       {open && (
         <div className="help__panel" role="dialog" aria-label={`${title} help`}>
           <h3>{title}</h3>
+          {/* The first-time guide, for anyone who skipped it or wants it again. */}
+          {onTour && (
+            <button
+              type="button"
+              className="help__tour"
+              onClick={() => {
+                setOpen(false)
+                onTour()
+              }}
+            >
+              Show me around again
+            </button>
+          )}
           {notes.map(note => (
             <div key={note.question} className="help__item">
               <p className="help__q">{note.question}</p>
