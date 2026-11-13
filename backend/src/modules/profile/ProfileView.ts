@@ -8,6 +8,9 @@ export type ProfileView = {
     role: string
     status: string
     mustChangePassword: boolean
+    // Whether there is a password to change. Somebody who joined with Google
+    // and never set one is offered "Set a password" instead.
+    hasPassword: boolean
     avatar: string | null
     bio: string | null
   }
@@ -30,6 +33,7 @@ export function toProfileView(user: UserWithProfile): ProfileView {
       role: user.role,
       status: user.status,
       mustChangePassword: user.mustChangePassword,
+      hasPassword: user.passwordHash !== null,
       avatar: user.avatar,
       bio: user.bio,
     },

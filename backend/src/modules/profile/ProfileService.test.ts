@@ -30,6 +30,12 @@ class FakeUserStore implements UserStore {
   async updateAccount(_id: string, changes: AccountChanges) {
     Object.assign(this.user, changes)
   }
+
+  async findByGoogleId() {
+    return null
+  }
+
+  async linkGoogle() {}
 }
 
 class FakeProfileStore implements ProfileStore {

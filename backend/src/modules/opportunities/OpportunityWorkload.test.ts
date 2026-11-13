@@ -92,6 +92,12 @@ class SilentUsers implements UserStore {
   async updateAccount() {
     throw new Error('not needed in this test')
   }
+
+  async findByGoogleId() {
+    return null
+  }
+
+  async linkGoogle() {}
 }
 
 const notifier: Notifier = {

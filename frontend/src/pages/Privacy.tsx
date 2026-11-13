@@ -56,6 +56,11 @@ export default function Privacy() {
           is hashed before it is stored, so nobody, me included, can read it back.
         </p>
         <p>
+          If you sign in with Google instead, Google tells Fasha your name, your email address and
+          the number it uses for your Google account, so Fasha knows you next time. Fasha never
+          sees your Google password and asks Google for nothing else.
+        </p>
+        <p>
           If you fill in a profile, whatever you choose to put there: a picture, a short
           description of yourself, the skills and interests you pick from the list, the times of
           the week you are usually free, and your sector. All of it is optional, and the app works
@@ -72,7 +77,9 @@ export default function Privacy() {
           There is no advertising, no analytics service, no tracking across other websites and no
           cookies for any of that. The only thing Fasha puts in your browser is the token that
           keeps you signed in, and clearing your browser data removes it. Fasha sends no email at
-          all, so your address is only ever used to sign you in.
+          all, so your address is only ever used to sign you in. The Google button on the
+          sign-in pages comes from Google itself, and Google&rsquo;s own privacy policy covers what
+          it does when you use it.
         </p>
 
         <h2>Who can see it</h2>
@@ -131,8 +138,9 @@ export default function Privacy() {
         </p>
         <p>
           <strong>Deleting</strong> removes what identifies you: your name, your email address,
-          your password and your portfolio address, which stops working. The record of the work
-          itself stays, with nobody's name on it, because other people's attendance registers and
+          your password, the link to your Google account and your portfolio address, which stops
+          working. The record of the work itself stays, with nobody's name on it, because other
+          people's attendance registers and
           the hours an organiser verified are their records too and erasing yours would rewrite
           theirs. If that is not what you want, ask me and I will take the whole thing out by hand
           instead.

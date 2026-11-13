@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import GoogleButton from '../components/GoogleButton'
 import { Loaded } from '../components/Loader'
 import { AvailabilityPicker, TagPicker } from '../components/Pickers'
 import { Button, Card, Field, StatusBadge, TextField } from '../components/ui'
@@ -69,19 +70,22 @@ function Picture({ name, avatar, onPick, onRemove, noun }: {
   )
 }
 
-function ChangePassword() {
+// Somebody who joined with Google has no password to type, so they show it is
+// them by signing in with Google again instead.
+function ChangePassword({ hasPassword, onChanged }: { hasPassword: boolean; onChanged: () => void }) {
   const { replaceToken } = useAuth()
   const [current, setCurrent] = useState('')
+  const [googleCredential, setGoogleCredential] = useState<string | null>(null)
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+  const [done, setDone] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
-    setDone(false)
+    setDone('')
 
     if (next !== confirm) {
       setError('The two new passwords do not match')
@@ -92,7 +96,7 @@ function ChangePassword() {
 
     try {
       const { token } = await api.post<{ token: string }>('/account/password', {
-        currentPassword: current,
+        ...(hasPassword ? { currentPassword: current } : { googleCredential }),
         newPassword: next,
       })
 
@@ -100,9 +104,14 @@ function ChangePassword() {
       setCurrent('')
       setNext('')
       setConfirm('')
-      setDone(true)
+      setDone(hasPassword ? 'Password changed' : 'Password set')
+
+      if (!hasPassword) onChanged()
     } catch (problem) {
       setError(messageFor(problem))
+      // A Google sign-in for the wrong account, or one left too long, is no
+      // use for a second try.
+      if (!hasPassword) setGoogleCredential(null)
     } finally {
       setBusy(false)
     }
@@ -111,64 +120,88 @@ function ChangePassword() {
   return (
     <Card>
       <h2>Password</h2>
-      <form onSubmit={submit}>
-        <Field
-          id="current-password"
-          label="Current password"
-          type="password"
-          value={current}
-          required
-          autoComplete="current-password"
-          onChange={event => setCurrent(event.target.value)}
-        />
-        <div className="two-col">
-          <Field
-            id="new-password"
-            label="New password"
-            type="password"
-            value={next}
-            required
-            minLength={8}
-            hint="At least 8 characters"
-            autoComplete="new-password"
-            onChange={event => setNext(event.target.value)}
-          />
-          <Field
-            id="confirm-password"
-            label="New password again"
-            type="password"
-            value={confirm}
-            required
-            autoComplete="new-password"
-            onChange={event => setConfirm(event.target.value)}
-          />
-        </div>
+      {!hasPassword && (
+        <p className="muted">
+          You sign in with Google, so this account has no password. Set one and you can sign in
+          with your email address as well.
+        </p>
+      )}
+      {!hasPassword && googleCredential === null ? (
+        <>
+          <p className="muted" style={{ marginBottom: 12 }}>First, confirm it&rsquo;s you.</p>
+          <GoogleButton text="continue_with" onCredential={setGoogleCredential} />
+          {error && <p className="error" role="alert">{error}</p>}
+        </>
+      ) : (
+        <form onSubmit={submit}>
+          {hasPassword ? (
+            <Field
+              id="current-password"
+              label="Current password"
+              type="password"
+              value={current}
+              required
+              autoComplete="current-password"
+              onChange={event => setCurrent(event.target.value)}
+            />
+          ) : (
+            <p style={{ marginBottom: 14 }}><StatusBadge tone="ok">Confirmed with Google</StatusBadge></p>
+          )}
+          <div className="two-col">
+            <Field
+              id="new-password"
+              label="New password"
+              type="password"
+              value={next}
+              required
+              minLength={8}
+              hint="At least 8 characters"
+              autoComplete="new-password"
+              onChange={event => setNext(event.target.value)}
+            />
+            <Field
+              id="confirm-password"
+              label="New password again"
+              type="password"
+              value={confirm}
+              required
+              autoComplete="new-password"
+              onChange={event => setConfirm(event.target.value)}
+            />
+          </div>
 
-        {error && <p className="error" role="alert">{error}</p>}
-        {done && <StatusBadge tone="ok">Password changed</StatusBadge>}
+          {error && <p className="error" role="alert">{error}</p>}
+          {done && <StatusBadge tone="ok">{done}</StatusBadge>}
 
-        <div className="cluster" style={{ marginTop: 14 }}>
-          <Button type="submit" variant="primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Change password'}
-          </Button>
-        </div>
-      </form>
+          <div className="cluster" style={{ marginTop: 14 }}>
+            <Button type="submit" variant="primary" disabled={busy}>
+              {busy ? 'Saving…' : hasPassword ? 'Change password' : 'Set password'}
+            </Button>
+          </div>
+        </form>
+      )}
 
-      <p className="muted" style={{ margin: '14px 0 0' }}>
-        Forgotten it? Fasha doesn't send an  email, so ask the community admin to issue a temporary
-        one. You'll be asked to replace it as soon as you sign in.
-      </p>
+      {hasPassword && (
+        <p className="muted" style={{ margin: '14px 0 0' }}>
+          Forgotten it? Fasha doesn't send an  email, so ask the community admin to issue a temporary
+          one. You'll be asked to replace it as soon as you sign in.
+        </p>
+      )}
     </Card>
   )
 }
 
-function Leaving() {
+function Leaving({ hasPassword }: { hasPassword: boolean }) {
   const { signOut } = useAuth()
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
+  const [googleCredential, setGoogleCredential] = useState<string | null>(null)
   const [typed, setTyped] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState('')
+
+  const proof = hasPassword ? { password } : { googleCredential }
+  const proven = hasPassword ? password !== '' : googleCredential !== null
 
   async function run(what: string, work: () => Promise<unknown>) {
     setError('')
@@ -181,6 +214,7 @@ function Leaving() {
     } catch (problem) {
       setError(messageFor(problem))
       setBusy('')
+      if (!hasPassword) setGoogleCredential(null)
     }
   }
 
@@ -195,22 +229,31 @@ function Leaving() {
         your portfolio link stops working.
       </p>
 
-      <Field
-        id="leave-password"
-        label="Your password"
-        type="password"
-        value={password}
-        autoComplete="current-password"
-        onChange={event => setPassword(event.target.value)}
-      />
+      {hasPassword ? (
+        <Field
+          id="leave-password"
+          label="Your password"
+          type="password"
+          value={password}
+          autoComplete="current-password"
+          onChange={event => setPassword(event.target.value)}
+        />
+      ) : googleCredential === null ? (
+        <>
+          <p className="muted" style={{ marginBottom: 12 }}>Confirm it&rsquo;s you before either of these.</p>
+          <GoogleButton text="continue_with" onCredential={setGoogleCredential} />
+        </>
+      ) : (
+        <p style={{ marginBottom: 14 }}><StatusBadge tone="ok">Confirmed with Google</StatusBadge></p>
+      )}
 
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="cluster" style={{ marginBottom: 20 }}>
         <Button
           type="button"
-          disabled={password === '' || busy !== ''}
-          onClick={() => run('deactivate', () => api.patch('/account/deactivate', { password }))}
+          disabled={!proven || busy !== ''}
+          onClick={() => run('deactivate', () => api.patch('/account/deactivate', proof))}
         >
           {busy === 'deactivate' ? 'Deactivating…' : 'Deactivate my account'}
         </Button>
@@ -229,11 +272,11 @@ function Leaving() {
       <Button
         type="button"
         className="btn--danger"
-        disabled={password === '' || typed !== 'DELETE' || busy !== ''}
+        disabled={!proven || typed !== 'DELETE' || busy !== ''}
         onClick={() => {
           if (!window.confirm('Delete your account? This cannot be undone.')) return
 
-          run('delete', () => api.post('/account/delete', { password }))
+          run('delete', () => api.post('/account/delete', proof))
         }}
       >
         {busy === 'delete' ? 'Deleting…' : 'Delete my account'}
@@ -448,8 +491,8 @@ function Editor({ loaded, onSaved }: { loaded: ProfileView; onSaved: () => void 
             </div>
           </form>
 
-          <ChangePassword />
-          <Leaving />
+          <ChangePassword hasPassword={loaded.user.hasPassword !== false} onChanged={onSaved} />
+          <Leaving hasPassword={loaded.user.hasPassword !== false} />
         </div>
 
         <aside className="stack">

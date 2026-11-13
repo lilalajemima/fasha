@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { api, tokenStore } from '../lib/api'
 import { clearCache } from '../lib/cache'
 import { clearDrafts } from '../lib/useDraft'
+import { forgetGoogleChoice } from '../lib/google'
 
 export type Role = 'volunteer' | 'organisation' | 'admin'
 export type SignUpRole = 'volunteer' | 'organisation'
@@ -12,6 +13,8 @@ export type User = {
   role: Role
   mustChangePassword: boolean
   avatar: string | null
+  /** False for somebody who has only ever signed in with Google. */
+  hasPassword: boolean
 }
 
 type ServerRole = 'VOLUNTEER' | 'ORGANISATION' | 'ADMIN'
@@ -22,8 +25,13 @@ type ServerUser = {
   role: ServerRole
   mustChangePassword: boolean
   avatar: string | null
+  hasPassword: boolean
 }
 type AuthResponse = { token: string; user: ServerUser }
+
+/** Google knows who this is, but Fasha needs to know how they'll take part. */
+export type NewToFasha = { chooseRole: { name: string; email: string } }
+type GoogleResponse = AuthResponse | NewToFasha
 
 type SignUpInput = { name: string; email: string; password: string; role: SignUpRole }
 
@@ -32,6 +40,8 @@ type AuthValue = {
   ready: boolean
   signUp: (input: SignUpInput) => Promise<User>
   signIn: (email: string, password: string) => Promise<User>
+  /** Signs in, or joins when a role is given. Without one, a newcomer gets asked. */
+  signInWithGoogle: (credential: string, role?: SignUpRole) => Promise<User | NewToFasha>
   signOut: () => void
   /** Keeps the session alive after a password change, which issues a new token. */
   replaceToken: (token: string) => void
@@ -97,7 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signIn(email, password) {
         return accept(await api.post<AuthResponse>('/auth/login', { email, password }))
       },
+      async signInWithGoogle(credential, role) {
+        const result = await api.post<GoogleResponse>('/auth/google', {
+          credential,
+          ...(role ? { role: toServerRole(role) } : {}),
+        })
+
+        return 'chooseRole' in result ? result : accept(result)
+      },
       signOut() {
+        forgetGoogleChoice()
         tokenStore.clear()
         clearDrafts()
         clearCache()

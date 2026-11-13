@@ -1,14 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import Icon from '../../components/Icon'
+import GoogleButton from '../../components/GoogleButton'
 import { Button, Field } from '../../components/ui'
 import { homeFor, useAuth, type SignUpRole } from '../../auth/AuthContext'
 import AuthPanel from './AuthPanel'
+import RoleChoice from './RoleChoice'
 
 const MIN_PASSWORD_LENGTH = 8
 
 export default function SignUp() {
-  const { signUp } = useAuth()
+  const { signUp, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [role, setRole] = useState<SignUpRole>('volunteer')
   const [name, setName] = useState('')
@@ -44,6 +45,23 @@ export default function SignUp() {
     }
   }
 
+  // Somebody who already has an account just ends up signed in: the role
+  // chosen above only matters for a new one.
+  async function joinWithGoogle(credential: string) {
+    setError('')
+    setBusy(true)
+
+    try {
+      const user = await signInWithGoogle(credential, role)
+
+      if (!('chooseRole' in user)) navigate(homeFor(user.role))
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : 'Could not create the account')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <AuthPanel>
       <div className="auth__top">
@@ -55,22 +73,9 @@ export default function SignUp() {
         <h1>Let&rsquo;s get you started</h1>
         <p className="lede" style={{ marginBottom: 26 }}>Choose how you&rsquo;d like to take part.</p>
 
-        <div className="role-grid">
-          <button type="button" className="role-card" aria-pressed={role === 'volunteer'}
-                  onClick={() => setRole('volunteer')}>
-            <span className="role-card__mark" />
-            <Icon name="profile" size={19} />
-            <strong>Volunteer</strong>
-            <span className="muted">Give time &amp; create initiatives</span>
-          </button>
-          <button type="button" className="role-card" aria-pressed={role === 'organisation'}
-                  onClick={() => setRole('organisation')}>
-            <span className="role-card__mark" />
-            <Icon name="overview" size={19} />
-            <strong>Organisation</strong>
-            <span className="muted">Organise &amp; manage initiatives</span>
-          </button>
-        </div>
+        <RoleChoice value={role} onChange={setRole} />
+
+        <GoogleButton text="signup_with" onCredential={joinWithGoogle} divider />
 
         <Field id="name" label="Full name" value={name} required autoComplete="name"
                onChange={e => setName(e.target.value)} />

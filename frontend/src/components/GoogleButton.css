@@ -1,0 +1,15 @@
+.google { margin-bottom: 22px; }
+
+/* Google's iframe is 44px tall at this size. Holding the space stops the form
+   jumping down when the script arrives. */
+.google__slot { display: flex; justify-content: center; min-height: 44px; }
+.google__slot[hidden] { display: none; }
+.google__offline { margin: 0; }
+
+.google__or { display: flex; align-items: center; gap: 12px; margin-top: 22px;
+              color: var(--charcoal-muted); font-size: 13px; }
+.google__or::before, .google__or::after { content: ''; flex: 1;
+                                          border-top: 1px solid var(--neutral-border); }
+
+/* Inside a profile card it lines up with the buttons around it. */
+.card .google__slot { justify-content: flex-start; }

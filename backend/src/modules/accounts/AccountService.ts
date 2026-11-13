@@ -6,10 +6,21 @@ import {
   NotFoundError,
   UnauthorisedError,
 } from '../../core/errors/HttpErrors'
+import type { GoogleCheck } from '../../core/security/GoogleVerifier'
 import type { Hasher } from '../../core/security/PasswordHasher'
 import type { TokenPayload, TokenService } from '../../core/security/TokenService'
 import { NOTIFICATION_TYPES, type Notifier } from '../notifications/Notifier'
 import type { AccountStore } from './AccountStore'
+
+/**
+ * How somebody shows it is really them before a change they cannot undo.
+ * Usually the password; for somebody who only ever signs in with Google, a
+ * fresh Google sign-in for the same Google account.
+ */
+export type Proof = {
+  password: string | null
+  googleCredential: string | null
+}
 
 /**
  * What a signed-in person may do to their own account: change the password,
@@ -26,6 +37,7 @@ export class AccountService {
     private readonly passwords: Hasher,
     private readonly notifier: Notifier,
     private readonly tokens: TokenService,
+    private readonly google: GoogleCheck | null = null,
   ) {}
 
   /**
@@ -68,16 +80,14 @@ export class AccountService {
    */
   async changePassword(
     actor: TokenPayload,
-    currentPassword: string,
+    proof: Proof,
     newPassword: string,
   ): Promise<string> {
     const user = await this.findOrFail(actor.userId)
 
-    if (!(await this.passwords.matches(currentPassword, user.passwordHash))) {
-      throw new UnauthorisedError('Your current password is not correct')
-    }
+    await this.prove(user, proof, 'Your current password is not correct')
 
-    if (currentPassword === newPassword) {
+    if (proof.password !== null && proof.password === newPassword) {
       throw new BadRequestError('The new password has to be different from the current one')
     }
 
@@ -90,15 +100,15 @@ export class AccountService {
     return this.tokens.issue({ userId: user.id, role: user.role, tokenVersion })
   }
 
-  async deactivate(actor: TokenPayload, password: string): Promise<void> {
-    const user = await this.confirm(actor.userId, password)
+  async deactivate(actor: TokenPayload, proof: Proof): Promise<void> {
+    const user = await this.confirm(actor.userId, proof)
 
     await this.assertNotTheLastAdmin(user.role, user.status)
     await this.accounts.setStatus(user.id, UserStatus.DEACTIVATED, new Date())
   }
 
-  async remove(actor: TokenPayload, password: string): Promise<void> {
-    const user = await this.confirm(actor.userId, password)
+  async remove(actor: TokenPayload, proof: Proof): Promise<void> {
+    const user = await this.confirm(actor.userId, proof)
 
     await this.assertNotTheLastAdmin(user.role, user.status)
     await this.accounts.anonymise(user.id, {
@@ -111,14 +121,38 @@ export class AccountService {
 
   // Both leaving actions ask for the password again, because neither is
   // reversible by the user.
-  private async confirm(userId: string, password: string) {
+  private async confirm(userId: string, proof: Proof) {
     const user = await this.findOrFail(userId)
 
-    if (!(await this.passwords.matches(password, user.passwordHash))) {
-      throw new UnauthorisedError('That password is not correct')
-    }
+    await this.prove(user, proof, 'That password is not correct')
 
     return user
+  }
+
+  private async prove(
+    user: { passwordHash: string | null; googleId: string | null },
+    proof: Proof,
+    wrongPassword: string,
+  ): Promise<void> {
+    if (proof.password !== null && user.passwordHash) {
+      if (await this.passwords.matches(proof.password, user.passwordHash)) return
+
+      throw new UnauthorisedError(wrongPassword)
+    }
+
+    if (proof.googleCredential !== null && user.googleId && this.google) {
+      const identity = await this.google.verify(proof.googleCredential)
+
+      if (identity.googleId === user.googleId) return
+
+      throw new UnauthorisedError('That is not the Google account this Fasha account uses.')
+    }
+
+    throw new UnauthorisedError(
+      !user.passwordHash
+        ? 'Confirm with Google that it is you first.'
+        : wrongPassword,
+    )
   }
 
   private async assertNotTheLastAdmin(role: UserRole, status: UserStatus): Promise<void> {

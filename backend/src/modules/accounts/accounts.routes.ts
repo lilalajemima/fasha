@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { passwordHasher, tokenService } from '../../core/container'
+import { googleVerifier, passwordHasher, tokenService } from '../../core/container'
 import { authenticate } from '../../middleware/authenticate'
 import { authorise } from '../../middleware/authorise'
 import { AccountController } from './AccountController'
@@ -17,6 +17,7 @@ const account = new AccountController(
     passwordHasher,
     new DatabaseNotifier(new NotificationRepository()),
     tokenService,
+    googleVerifier,
   ),
 )
 const users = new UserAdminController(new UserAdminService(store, passwordHasher))

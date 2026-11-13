@@ -13,4 +13,7 @@ export const env = {
   port: Number(process.env.PORT ?? 4000),
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
   isProduction: process.env.NODE_ENV === 'production',
+  // Optional: without it the server still runs, and Google sign-in says it
+  // is not set up rather than failing in a way nobody can read.
+  googleClientId: process.env.GOOGLE_CLIENT_ID?.trim() || null,
 }

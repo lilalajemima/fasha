@@ -1,19 +1,25 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import GoogleButton from '../../components/GoogleButton'
 import Icon from '../../components/Icon'
 import { Button, Card, Field } from '../../components/ui'
 import { homeFor, useAuth, type SignUpRole } from '../../auth/AuthContext'
 import { demoAccounts } from '../../lib/demo'
 import AuthPanel from './AuthPanel'
+import RoleChoice from './RoleChoice'
+
+type Newcomer = { credential: string; name: string; email: string }
 
 export default function SignIn() {
-  const { signIn } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [role, setRole] = useState<SignUpRole>('volunteer')
   const [email, setEmail] = useState(demoAccounts?.volunteer.email ?? '')
   const [password, setPassword] = useState(demoAccounts?.volunteer.password ?? '')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [newcomer, setNewcomer] = useState<Newcomer | null>(null)
+  const [joining, setJoining] = useState<SignUpRole>('volunteer')
 
   function choose(next: SignUpRole) {
     if (!demoAccounts) return
@@ -38,6 +44,64 @@ export default function SignIn() {
     }
   }
 
+  async function withGoogle(credential: string, joiningAs?: SignUpRole) {
+    setError('')
+    setBusy(true)
+
+    try {
+      const result = await signInWithGoogle(credential, joiningAs)
+
+      if ('chooseRole' in result) {
+        setNewcomer({ credential, ...result.chooseRole })
+      } else {
+        navigate(homeFor(result.role))
+      }
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : 'Could not sign in')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Google said who this is, but there is no account yet. Rather than send
+  // them to the sign-up page to start again, ask the one thing still missing.
+  if (newcomer) {
+    return (
+      <AuthPanel>
+        <div className="auth__top">
+          <span className="muted">Not you?</span>
+          <Button type="button" disabled={busy} onClick={() => {
+            setNewcomer(null)
+            setError('')
+          }}>
+            Use a different account
+          </Button>
+        </div>
+
+        <form className="auth__form" onSubmit={event => {
+          event.preventDefault()
+          withGoogle(newcomer.credential, joining)
+        }}>
+          <h1>Welcome to Fasha, {newcomer.name.split(' ')[0]}</h1>
+          <p className="lede" style={{ marginBottom: 26 }}>
+            There&rsquo;s no account for {newcomer.email} yet. Choose how you&rsquo;d like to
+            take part and we&rsquo;ll make one.
+          </p>
+
+          <RoleChoice value={joining} onChange={setJoining} />
+
+          {error && <p className="error" role="alert">{error}</p>}
+
+          <Button type="submit" variant="primary" block disabled={busy}>
+            {busy
+              ? 'Creating your account…'
+              : joining === 'volunteer' ? 'Create volunteer account' : 'Create organisation account'}
+          </Button>
+        </form>
+      </AuthPanel>
+    )
+  }
+
   return (
     <AuthPanel>
       <div className="auth__top">
@@ -47,6 +111,8 @@ export default function SignIn() {
 
       <form className="auth__form" onSubmit={handleSubmit}>
         <h1 style={{ marginBottom: 26 }}>Sign in to Fasha</h1>
+
+        <GoogleButton text="signin_with" onCredential={credential => withGoogle(credential)} divider />
 
         {demoAccounts && (
           <div className="role-grid">

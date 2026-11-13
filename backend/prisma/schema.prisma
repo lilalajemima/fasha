@@ -60,7 +60,11 @@ model User {
   id           String    @id @default(uuid())
   name         String
   email        String    @unique
-  passwordHash String    @map("password_hash")
+  /// Empty for somebody who only ever signs in with Google.
+  passwordHash String?   @map("password_hash")
+  /// Google's own id for the person ("sub"), not their email: an address
+  /// can change hands, this cannot.
+  googleId     String?   @unique @map("google_id")
   role         UserRole  @default(VOLUNTEER)
   /// A square picture the browser has already resized, kept as a data URL.
   /// Small enough to live on the row; Supabase Storage is the step after.

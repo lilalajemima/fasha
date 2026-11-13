@@ -3,7 +3,9 @@ import type { User, VolunteerProfile } from '@prisma/client'
 export type NewAccount = {
   name: string
   email: string
-  passwordHash: string
+  // Null for somebody who joined with Google and has never set a password.
+  passwordHash: string | null
+  googleId?: string | null
 }
 
 export type UserWithProfile = User & { profile: VolunteerProfile | null }
@@ -16,9 +18,11 @@ export type AccountChanges = {
 
 export interface UserStore {
   findByEmail(email: string): Promise<User | null>
+  findByGoogleId(googleId: string): Promise<User | null>
   findById(id: string): Promise<User | null>
   findWithProfile(id: string): Promise<UserWithProfile | null>
   createVolunteer(account: NewAccount, portfolioSlug: string): Promise<User>
   createOrganisation(account: NewAccount): Promise<User>
   updateAccount(id: string, changes: AccountChanges): Promise<void>
+  linkGoogle(id: string, googleId: string): Promise<void>
 }

@@ -1,15 +1,31 @@
 import type { User } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
+import type { GoogleCheck } from '../../core/security/GoogleVerifier'
 import type { Hasher } from '../../core/security/PasswordHasher'
 import { TokenService, type TokenPayload } from '../../core/security/TokenService'
 import type { Notifier } from '../notifications/Notifier'
-import { AccountService } from './AccountService'
+import { AccountService, type Proof } from './AccountService'
 import type { AccountRow, AccountStore, Anonymised, UserFilter } from './AccountStore'
 
 const volunteer: TokenPayload = { userId: 'volunteer-1', role: 'VOLUNTEER' }
 const admin: TokenPayload = { userId: 'admin-1', role: 'ADMIN' }
 
 const tokens = new TokenService('test-secret-value', '1h')
+
+function password(value: string): Proof {
+  return { password: value, googleCredential: null }
+}
+
+function google(credential: string): Proof {
+  return { password: null, googleCredential: credential }
+}
+
+// Stands in for Google: a credential is just the Google id it vouches for.
+const googleCheck: GoogleCheck = {
+  async verify(credential: string) {
+    return { googleId: credential, email: 'amara@example.rw', name: 'Amara Mensah' }
+  },
+}
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -118,7 +134,7 @@ function build(users: User[] = [makeUser()], activeAdmins = 2) {
   return {
     store,
     notifier,
-    service: new AccountService(store, hasher, notifier, tokens),
+    service: new AccountService(store, hasher, notifier, tokens, googleCheck),
   }
 }
 
@@ -148,7 +164,7 @@ describe('changing your own password', () => {
     const { service } = build()
 
     await expect(
-      service.changePassword(volunteer, 'not-my-password', 'a-brand-new-password'),
+      service.changePassword(volunteer, password('not-my-password'), 'a-brand-new-password'),
     ).rejects.toThrow('current password is not correct')
   })
 
@@ -156,14 +172,14 @@ describe('changing your own password', () => {
     const { service } = build()
 
     await expect(
-      service.changePassword(volunteer, 'correct-horse', 'correct-horse'),
+      service.changePassword(volunteer, password('correct-horse'), 'correct-horse'),
     ).rejects.toThrow('has to be different')
   })
 
   it('stores the new password and clears the forced change', async () => {
     const { service, store } = build([makeUser({ mustChangePassword: true })])
 
-    await service.changePassword(volunteer, 'correct-horse', 'a-brand-new-password')
+    await service.changePassword(volunteer, password('correct-horse'), 'a-brand-new-password')
 
     expect(store.passwordSetTo).toEqual({ hash: 'hash:a-brand-new-password', mustChange: false })
   })
@@ -171,7 +187,7 @@ describe('changing your own password', () => {
   it('moves the account on to a new token version', async () => {
     const { service, store } = build()
 
-    await service.changePassword(volunteer, 'correct-horse', 'a-brand-new-password')
+    await service.changePassword(volunteer, password('correct-horse'), 'a-brand-new-password')
 
     expect(store.tokenVersion).toBe(1)
   })
@@ -179,7 +195,7 @@ describe('changing your own password', () => {
   it('hands back a token carrying the new version', async () => {
     const { service } = build()
 
-    const token = await service.changePassword(volunteer, 'correct-horse', 'a-brand-new-password')
+    const token = await service.changePassword(volunteer, password('correct-horse'), 'a-brand-new-password')
 
     expect(tokens.verify(token)).toEqual({
       userId: 'volunteer-1',
@@ -193,13 +209,13 @@ describe('deactivating your own account', () => {
   it('asks for the password first', async () => {
     const { service } = build()
 
-    await expect(service.deactivate(volunteer, 'wrong')).rejects.toThrow('not correct')
+    await expect(service.deactivate(volunteer, password('wrong'))).rejects.toThrow('not correct')
   })
 
   it('records when it happened', async () => {
     const { service, store } = build()
 
-    await service.deactivate(volunteer, 'correct-horse')
+    await service.deactivate(volunteer, password('correct-horse'))
 
     expect(store.statusSetTo?.status).toBe('DEACTIVATED')
     expect(store.statusSetTo?.deactivatedAt).toBeInstanceOf(Date)
@@ -208,7 +224,7 @@ describe('deactivating your own account', () => {
   it('refuses to leave the platform without an admin', async () => {
     const { service } = build([makeUser({ id: 'admin-1', role: 'ADMIN' })], 1)
 
-    await expect(service.deactivate(admin, 'correct-horse')).rejects.toThrow('only active')
+    await expect(service.deactivate(admin, password('correct-horse'))).rejects.toThrow('only active')
   })
 })
 
@@ -216,7 +232,7 @@ describe('deleting your own account', () => {
   it('replaces the identity rather than erasing the record', async () => {
     const { service, store } = build()
 
-    await service.remove(volunteer, 'correct-horse')
+    await service.remove(volunteer, password('correct-horse'))
 
     expect(store.anonymisedWith?.name).toBe('Removed account')
     expect(store.anonymisedWith?.email).toBe('deleted-volunteer-1@fasha.invalid')
@@ -226,7 +242,7 @@ describe('deleting your own account', () => {
   it('breaks the old portfolio address', async () => {
     const { service, store } = build()
 
-    await service.remove(volunteer, 'correct-horse')
+    await service.remove(volunteer, password('correct-horse'))
 
     expect(store.anonymisedWith?.portfolioSlug).toMatch(/^removed-/)
   })
@@ -234,6 +250,49 @@ describe('deleting your own account', () => {
   it('asks for the password first', async () => {
     const { service } = build()
 
-    await expect(service.remove(volunteer, 'wrong')).rejects.toThrow('not correct')
+    await expect(service.remove(volunteer, password('wrong'))).rejects.toThrow('not correct')
+  })
+})
+
+describe('an account that only ever signed in with Google', () => {
+  const googleOnly = () => makeUser({ passwordHash: null, googleId: 'google-amara' })
+
+  it('sets a first password once Google confirms it is them', async () => {
+    const { service, store } = build([googleOnly()])
+
+    await service.changePassword(volunteer, google('google-amara'), 'a-brand-new-password')
+
+    expect(store.passwordSetTo).toEqual({ hash: 'hash:a-brand-new-password', mustChange: false })
+  })
+
+  it('will not set one on somebody else\'s Google sign-in', async () => {
+    const { service, store } = build([googleOnly()])
+
+    await expect(
+      service.changePassword(volunteer, google('google-someone-else'), 'a-brand-new-password'),
+    ).rejects.toThrow('not the Google account')
+    expect(store.passwordSetTo).toBeNull()
+  })
+
+  it('asks for Google, not a password it never had', async () => {
+    const { service } = build([googleOnly()])
+
+    await expect(service.deactivate(volunteer, password('anything'))).rejects.toThrow('Confirm with Google')
+  })
+
+  it('can leave after confirming with Google', async () => {
+    const { service, store } = build([googleOnly()])
+
+    await service.remove(volunteer, google('google-amara'))
+
+    expect(store.anonymisedWith?.name).toBe('Removed account')
+  })
+
+  it('still lets a linked account with a password use the password', async () => {
+    const { service, store } = build([makeUser({ googleId: 'google-amara' })])
+
+    await service.deactivate(volunteer, password('correct-horse'))
+
+    expect(store.statusSetTo?.status).toBe('DEACTIVATED')
   })
 })

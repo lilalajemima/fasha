@@ -87,6 +87,9 @@ export class AccountRepository extends BaseRepository implements AccountStore {
           name: replacement.name,
           email: replacement.email,
           passwordHash: replacement.passwordHash,
+          // Without this, signing in with the same Google account later would
+          // land in the emptied row instead of starting a new one.
+          googleId: null,
           status: UserStatus.DELETED,
           mustChangePassword: false,
           deletedAt: new Date(),

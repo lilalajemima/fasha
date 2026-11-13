@@ -12,6 +12,10 @@ export class UserRepository extends BaseRepository implements UserStore {
     return this.db.user.findUnique({ where: { email } })
   }
 
+  findByGoogleId(googleId: string): Promise<User | null> {
+    return this.db.user.findUnique({ where: { googleId } })
+  }
+
   findById(id: string): Promise<User | null> {
     return this.db.user.findUnique({ where: { id } })
   }
@@ -38,5 +42,9 @@ export class UserRepository extends BaseRepository implements UserStore {
 
   async updateAccount(id: string, changes: AccountChanges): Promise<void> {
     await this.db.user.update({ where: { id }, data: changes })
+  }
+
+  async linkGoogle(id: string, googleId: string): Promise<void> {
+    await this.db.user.update({ where: { id }, data: { googleId } })
   }
 }

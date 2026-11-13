@@ -102,6 +102,7 @@ export type ProfileView = {
     mustChangePassword: boolean
     avatar: string | null
     bio: string | null
+    hasPassword: boolean
   }
   profile: {
     skills: string[]
