@@ -70,6 +70,7 @@ export class AdminService {
       to: filter.to ?? new Date(),
       mode: filter.mode ?? null,
       sector: filter.sector ?? null,
+      opportunityId: filter.opportunityId ?? null,
     }
 
     if (grain === 'checkins') {

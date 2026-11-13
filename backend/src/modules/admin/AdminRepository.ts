@@ -75,6 +75,7 @@ export class AdminRepository extends BaseRepository implements AdminStore {
   async listEvents(filter: ReportFilter): Promise<ActivityRow[]> {
     const opportunities = await this.db.opportunity.findMany({
       where: {
+        ...(filter.opportunityId ? { id: filter.opportunityId } : {}),
         ...(filter.mode ? { mode: filter.mode } : {}),
         ...(filter.sector ? { sector: filter.sector } : {}),
       },
@@ -116,6 +117,7 @@ export class AdminRepository extends BaseRepository implements AdminStore {
     const checkins = await this.db.checkin.findMany({
       where: {
         checkinTime: { gte: filter.from, lte: filter.to },
+        ...(filter.opportunityId ? { opportunityId: filter.opportunityId } : {}),
         opportunity: {
           ...(filter.mode ? { mode: filter.mode } : {}),
           ...(filter.sector ? { sector: filter.sector } : {}),

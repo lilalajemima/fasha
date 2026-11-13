@@ -10,6 +10,7 @@ import { useAuth, type Role } from '../auth/AuthContext'
 import { tourFinish, tourSave, tourStart, type TourStep } from '../lib/tour'
 import { useNotifications } from '../notifications/NotificationsContext'
 import { OVERSIGHT_GUIDE } from '../pages/admin/guide'
+import { ADMIN_TOUR } from '../pages/admin/tour'
 import { ORGANISER_GUIDE } from '../pages/manage/guide'
 import { ORGANISER_TOUR } from '../pages/manage/tour'
 import { VOLUNTEER_GUIDE } from '../pages/volunteer/guide'
@@ -37,12 +38,11 @@ const GUIDES: Record<Role, { title: string; notes: HelpNote[] }> = {
   admin: { title: 'Community admin', notes: OVERSIGHT_GUIDE },
 }
 
-/** The first-time guide for the two workspaces people join on their own. An
- *  admin account is made by hand for one person, who does not need one. */
+/** The first-time guide for each workspace. */
 const TOURS: Record<Role, TourStep[] | null> = {
   volunteer: VOLUNTEER_TOUR,
   organisation: ORGANISER_TOUR,
-  admin: null,
+  admin: ADMIN_TOUR,
 }
 
 function initials(name: string) {

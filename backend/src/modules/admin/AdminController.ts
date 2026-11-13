@@ -47,6 +47,7 @@ export class AdminController {
       to: readDate(req.query.to, true),
       mode: readMode(req.query.mode),
       sector: readText(req.query.sector),
+      opportunityId: readText(req.query.opportunity),
     })
     const stamp = new Date().toISOString().slice(0, 10)
 

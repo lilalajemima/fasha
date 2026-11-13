@@ -168,7 +168,16 @@ describe('the district report', () => {
 
     await new AdminService(reports).report('events', { from, to, sector: 'Kimironko' })
 
-    expect(reports.filters[0]).toEqual({ from, to, mode: null, sector: 'Kimironko' })
+    expect(reports.filters[0]).toEqual({ from, to, mode: null, sector: 'Kimironko', opportunityId: null })
+  })
+
+  it('narrows both reports to one opportunity when asked', async () => {
+    const reports = new FakeReports([])
+
+    await new AdminService(reports).report('events', { opportunityId: 'opportunity-7' })
+    await new AdminService(reports).report('checkins', { opportunityId: 'opportunity-7' })
+
+    expect(reports.filters.map(filter => filter.opportunityId)).toEqual(['opportunity-7', 'opportunity-7'])
   })
 
   it('quotes a title that contains a comma', async () => {

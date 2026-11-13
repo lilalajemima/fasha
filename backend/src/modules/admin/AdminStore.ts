@@ -44,6 +44,9 @@ export type ReportFilter = {
   to: Date
   mode: 'PHYSICAL' | 'VIRTUAL' | null
   sector: string | null
+  // One opportunity's report rather than a period's. Optional, so every
+  // caller written before it existed still compiles and means the same.
+  opportunityId?: string | null
 }
 
 export interface AdminStore {

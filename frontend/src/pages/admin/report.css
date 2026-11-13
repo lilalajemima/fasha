@@ -1,0 +1,48 @@
+/* The printed report. Hidden on screen; when one is being printed, the app is
+   hidden instead and only this goes to the page. */
+.report { display: none; }
+
+@media print {
+  body.is-printing-report > #root { display: none !important; }
+  body.is-printing-report > .report { display: block; }
+
+  /* workspace.css hides everything when printing so that only the attendance
+     register comes out, and that rule is loaded on every page. Without this
+     line the report is laid out but invisible: blank pages. */
+  body.is-printing-report > .report,
+  body.is-printing-report > .report * { visibility: visible; }
+
+  @page { size: A4; margin: 14mm 14mm 16mm; }
+
+  /* Paper is white. The app's warm off-white would print as a faint box. */
+  html:has(body.is-printing-report), body.is-printing-report { background: #FFFFFF !important; }
+
+  /* Browsers leave out background colours when printing unless told not to,
+     which would print every bar in the summary as an empty track. */
+  .report { font-family: var(--font-body); color: #18181B; font-size: 10.5pt;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .report__head { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 14px; }
+  .report__brand { font-size: 16pt; font-weight: 700; letter-spacing: -.01em; }
+  .report__dot { display: inline-block; width: 6px; height: 6px; margin-left: 3px;
+                 border-radius: 50%; background: var(--primary); vertical-align: 2px; }
+  .report__title { margin: 6px 0 4px; font-family: var(--font-display); font-size: 20pt; line-height: 1.15; }
+  .report__line { margin: 0; font-size: 9.5pt; color: #3F3F46; }
+
+  .report .summary { border: 0; padding: 0; margin: 0; }
+  .report .summary__tiles { gap: 8px; }
+  .report .tile { border: 1px solid #E4E4E7; background: #FAFAFA; break-inside: avoid; }
+  .report .tile__value { font-size: 18pt; }
+  .report .meters { max-width: none; }
+
+  /* The rows start on a fresh page, after the summary. */
+  .report__rows { break-before: page; }
+  .report__section { margin: 0 0 8px; font-size: 13pt; }
+  .report__empty { color: #3F3F46; }
+
+  .report table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  .report thead { display: table-header-group; }
+  .report th { text-align: left; font-weight: 600; background: #F4F4F5; }
+  .report th, .report td { padding: 5px 6px; border-bottom: 1px solid #E4E4E7; vertical-align: top; }
+  .report tr { break-inside: avoid; }
+}

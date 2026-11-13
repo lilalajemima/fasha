@@ -26,3 +26,51 @@
   .counters--four .counter:nth-child(3) { border-left: 0; }
   .counters--four .counter__value { font-size: 30px; }
 }
+
+/* ---------- the summary above the rows ---------- */
+/* It sits between the filters and the list, so it is the first answer to
+   "what happened in this period" and the first page of the report. */
+.summary { background: var(--surface-card); border: 1px solid var(--neutral-border);
+           border-radius: var(--radius); padding: 20px 22px; margin-bottom: 20px; }
+.summary__heading { margin: 0 0 4px; font-family: var(--font-body); font-size: 13px;
+                    font-weight: 600; letter-spacing: .02em; color: var(--charcoal-muted); }
+.summary__lede { margin: 0 0 16px; font-size: 16px; line-height: 1.5; max-width: 70ch; }
+
+.summary__tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+                  margin-bottom: 20px; }
+.tile { display: flex; flex-direction: column; gap: 3px; padding: 14px 16px;
+        background: var(--surface-muted); border-radius: var(--radius-sm); }
+.tile__label { font-size: 13px; color: var(--charcoal-muted); }
+.tile__value { font-size: 28px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile__note { font-size: 12px; color: var(--charcoal-muted); }
+.tile__change { font-size: 12.5px; font-weight: 500; color: var(--charcoal-muted); }
+.tile__change--good { color: var(--ok); }
+.tile__change--bad { color: var(--bad); }
+
+.summary__subheading { margin: 0; font-size: 15px; font-weight: 600; }
+.summary__hint { margin: 2px 0 10px; font-size: 13px; color: var(--charcoal-muted); }
+
+/* A ranked list rather than a chart with axes: three named rows, each with its
+   bar and its figure, largest first, on one baseline so lengths compare. One
+   hue for every bar, because the bars are one measure, not three series. */
+.meters { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-width: 640px; }
+.meter { display: grid; grid-template-columns: minmax(120px, 200px) 1fr auto; align-items: center;
+         gap: 12px; font-size: 14px; }
+.meter__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meter__track { height: 10px; background: var(--primary-container); border-radius: 999px; overflow: hidden; }
+.meter__fill { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+.meter__figure { font-size: 13px; color: var(--charcoal-muted); font-variant-numeric: tabular-nums;
+                 min-width: 64px; text-align: right; }
+
+@media (max-width: 760px) {
+  .summary { padding: 16px; }
+  .summary__tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .tile__value { font-size: 24px; }
+  .meter { grid-template-columns: 1fr auto; row-gap: 4px; }
+  .meter__track { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* A decision already made: the outcome and what was said, no buttons. */
+.review--decided { background: var(--surface-muted); }
+.review__note { margin: 0 0 4px; font-size: 13.5px; color: var(--charcoal-muted); }
+.review__note strong { color: var(--imigongo-black); font-weight: 600; }
