@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { reloadWhenCodeIsStale } from './lib/staleCode'
 import { registerServiceWorker } from './lib/serviceWorker'
 import './styles/global.css'
 
@@ -14,3 +15,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 )
 
 registerServiceWorker()
+
+reloadWhenCodeIsStale()

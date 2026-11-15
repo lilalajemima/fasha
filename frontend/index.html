@@ -5,6 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#B91C1C" />
+    <meta name="description" content="Fasha connects volunteers in Gasabo with community organisations and resident-led initiatives, and keeps a verified record of the hours they give." />
+    <script>
+      // Sign in and sign up open on a large picture, and React only asks for it
+      // once its own code has arrived. Asking for it here, at the same time as
+      // that code, is most of the difference on a slow phone. Only on those two
+      // pages: nothing else shows it.
+      if (/^\/(signin|signup)\/?$/.test(location.pathname)) {
+        var firstSlide = document.createElement('link')
+        firstSlide.rel = 'preload'
+        firstSlide.as = 'image'
+        firstSlide.href = '/auth/together.webp'
+        firstSlide.setAttribute('fetchpriority', 'high')
+        document.head.appendChild(firstSlide)
+      }
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import HelpButton, { type HelpNote } from '../components/HelpButton'
 import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import MobileNav from '../components/MobileNav'
 import OfflineNote from '../components/OfflineNote'
+import PageBoundary from '../components/PageBoundary'
 import Tour from '../components/Tour'
 import { useAuth, type Role } from '../auth/AuthContext'
 import { tourFinish, tourSave, tourStart, type TourStep } from '../lib/tour'
@@ -61,6 +62,7 @@ function plates(items: NavItem[]) {
 export default function Shell() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const name = user?.name ?? 'Guest'
   const { unread } = useNotifications()
   const workspace = workspaceFor(user?.role)
@@ -126,7 +128,12 @@ export default function Shell() {
 
         <OfflineNote />
 
-        <main className="content"><Outlet /></main>
+        {/* Around the page only, so the sidebar and top bar stay put while a
+            page's code arrives, and a page that fails to load leaves them
+            working. */}
+        <main className="content">
+          <PageBoundary resetOn={pathname}><Outlet /></PageBoundary>
+        </main>
 
         <HelpButton
           title={guide.title}

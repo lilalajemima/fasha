@@ -1,0 +1,5 @@
+# Every page is either public or behind a sign-in, so there is nothing to hide
+# from search engines. Without this file the server answers /robots.txt with
+# the app itself, which a crawler cannot read.
+User-agent: *
+Allow: /

@@ -4,10 +4,12 @@ import Imigongo from '../../components/Imigongo'
 import Logo from '../../components/Logo'
 import './Auth.css'
 
+// WebP, about half the size of the JPEGs they came from. The first one is
+// also asked for from index.html, before any of this code has loaded.
 const SLIDES: Slide[] = [
-  { src: '/auth/together.jpg', caption: 'hands lifting something together' },
-  { src: '/auth/hands.jpg', caption: 'raised hands in many colours' },
-  { src: '/auth/crowd.jpg', caption: 'a painted crowd of people' },
+  { src: '/auth/together.webp', caption: 'hands lifting something together' },
+  { src: '/auth/hands.webp', caption: 'raised hands in many colours' },
+  { src: '/auth/crowd.webp', caption: 'a painted crowd of people' },
 ]
 
 export default function AuthPanel({ children }: { children: ReactNode }) {

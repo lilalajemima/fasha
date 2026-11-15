@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ApiError } from '../lib/ApiClient'
 import { api, tokenStore } from '../lib/api'
-import { clearCache } from '../lib/cache'
+import { clearCache, readCache, writeCache } from '../lib/cache'
 import { clearDrafts } from '../lib/useDraft'
 import { forgetGoogleChoice } from '../lib/google'
 
@@ -63,6 +64,11 @@ function toServerRole(role: SignUpRole): ServerRole {
   return role === 'organisation' ? 'ORGANISATION' : 'VOLUNTEER'
 }
 
+// Kept under the same address the profile page caches, so either one leaves a
+// copy to fall back on, and signing out clears both.
+const SESSION = '/auth/me'
+const SIGNED_OUT = [401, 403, 404]
+
 const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -74,8 +80,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     api
       .get<{ user: ServerUser }>('/auth/me')
-      .then(({ user: me }) => setUser(toUser(me)))
-      .catch(() => tokenStore.clear())
+      .then(({ user: me }) => {
+        writeCache(SESSION, { user: me })
+        setUser(toUser(me))
+      })
+      .catch(problem => {
+        // Only the server saying no ends the session: an expired or replaced
+        // token, a deactivated account, one that no longer exists. Offline, or
+        // a request cut short by a reload, says nothing about the token, so
+        // carry on as the person last seen rather than signing them out.
+        if (problem instanceof ApiError && SIGNED_OUT.includes(problem.status)) {
+          tokenStore.clear()
+          clearCache()
+          return
+        }
+
+        const saved = readCache<{ user: ServerUser }>(SESSION)
+
+        if (saved) setUser(toUser(saved.data.user))
+      })
       .finally(() => setReady(true))
   }, [])
 
