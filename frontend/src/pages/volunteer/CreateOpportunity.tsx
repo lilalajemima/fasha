@@ -118,7 +118,7 @@ export default function CreateOpportunity() {
     return () => {
       live = false
     }
-  }, [id])
+  }, [id, restored, setDraft])
 
   async function submit(event: FormEvent) {
     event.preventDefault()

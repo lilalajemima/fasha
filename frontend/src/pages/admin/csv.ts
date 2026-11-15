@@ -45,13 +45,20 @@ export function parseCsv(text: string): string[][] {
   return rows
 }
 
+// The server puts an apostrophe in front of anything a spreadsheet would run
+// as a formula. That is for Excel; here the value is read as text, and a title
+// has to come back exactly as it was typed to be matched against its row.
+function unguarded(cell: string): string {
+  return /^'[=+\-@\t\r]/.test(cell) ? cell.slice(1) : cell
+}
+
 /** One object per row, keyed by the header, so columns can move without breaking this. */
 export function recordsOf(text: string): Record<string, string>[] {
-  const [header, ...rows] = parseCsv(text.replace(/^﻿/, ''))
+  const [header, ...rows] = parseCsv(text.replace(/^\uFEFF/, ''))
 
   if (!header) return []
 
   return rows
     .filter(cells => cells.some(cell => cell !== ''))
-    .map(cells => Object.fromEntries(header.map((name, index) => [name, cells[index] ?? ''])))
+    .map(cells => Object.fromEntries(header.map((name, index) => [name, unguarded(cells[index] ?? '')])))
 }

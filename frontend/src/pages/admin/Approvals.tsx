@@ -7,22 +7,24 @@ import { longDate, meta, quantity } from '../../lib/format'
 import { SECTORS } from '../../lib/sectors'
 import type { OpportunityView } from '../../lib/types'
 import { messageFor, useGet, type Loaded as LoadedState } from '../../lib/useGet'
-import { Period, kindOf, rangeFor } from './filters'
+import { Period } from './filters'
 import { PrintReport, ReportRows } from './Report'
 import { Summary, type Tile } from './Summary'
 import {
   comparePhrase,
+  type Decision,
   decisionOf,
   interestPhrase,
+  kindOf,
   periodPhrase,
   previousSpan,
+  rangeFor,
+  type Span,
   spanLabel,
   stamp,
   tallyApprovals,
   topInterests,
   within,
-  type Decision,
-  type Span,
 } from './stats'
 import '../../styles/workspace.css'
 import './Admin.css'

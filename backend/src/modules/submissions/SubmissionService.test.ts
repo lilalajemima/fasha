@@ -110,6 +110,24 @@ class FakeOpportunityStore implements OpportunityStore {
   }
 
   async setQrToken() {}
+
+  async countWorkload() {
+    return []
+  }
+
+  async countActivity() {
+    return { applications: 0, deliverables: 0, credited: 0 }
+  }
+
+  async update(): Promise<never> {
+    throw new Error('not needed in this test')
+  }
+
+  async closeApplications(): Promise<never> {
+    throw new Error('not needed in this test')
+  }
+
+  async remove() {}
 }
 
 class FakeSubmissionStore implements SubmissionStore {
@@ -340,5 +358,24 @@ describe('reviewing hours', () => {
     const { service } = build()
 
     await expect(service.decide(organiser, 'nope', 'APPROVE', null)).rejects.toThrow('do not exist')
+  })
+})
+
+describe('your own hours', () => {
+  it('lists only the hours of the person asking', async () => {
+    const { service } = build([
+      makeSubmission({ id: 'mine', volunteerId: 'volunteer-1' }),
+      makeSubmission({ id: 'theirs', volunteerId: 'volunteer-2' }),
+    ])
+
+    const views = await service.mine(volunteer)
+
+    expect(views.map(view => view.id)).toEqual(['mine'])
+  })
+
+  it('shows somebody else none of them', async () => {
+    const { service } = build([makeSubmission({ volunteerId: 'volunteer-1' })])
+
+    expect(await service.mine(outsider)).toEqual([])
   })
 })

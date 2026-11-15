@@ -1,3 +1,4 @@
+import type { User } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 import type { UserStore, UserWithProfile } from '../auth/UserStore'
 import { MatchingService } from '../matching/MatchingService'
@@ -81,11 +82,11 @@ class SilentUsers implements UserStore {
     return { profile: { skills: [], interests: [] } } as unknown as UserWithProfile
   }
 
-  async createVolunteer() {
+  async createVolunteer(): Promise<User> {
     throw new Error('not needed in this test')
   }
 
-  async createOrganisation() {
+  async createOrganisation(): Promise<User> {
     throw new Error('not needed in this test')
   }
 

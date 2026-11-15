@@ -50,6 +50,8 @@ function makeUser(overrides: Partial<User> = {}): User {
 class FakeUsers implements UserStore {
   created: { role: string; account: NewAccount }[] = []
   linked: { id: string; googleId: string }[] = []
+  slugs: string[] = []
+  profiles = new Map<string, UserWithProfile>()
 
   constructor(private readonly users: User[] = []) {}
 
@@ -65,12 +67,13 @@ class FakeUsers implements UserStore {
     return this.users.find(user => user.id === id) ?? null
   }
 
-  async findWithProfile(): Promise<UserWithProfile | null> {
-    return null
+  async findWithProfile(id: string): Promise<UserWithProfile | null> {
+    return this.profiles.get(id) ?? null
   }
 
-  async createVolunteer(account: NewAccount) {
+  async createVolunteer(account: NewAccount, portfolioSlug: string) {
     this.created.push({ role: 'VOLUNTEER', account })
+    this.slugs.push(portfolioSlug)
 
     return makeUser({ id: 'new-1', ...account, role: 'VOLUNTEER' })
   }
@@ -193,5 +196,87 @@ describe('signing in with a password', () => {
     const result = await service.login('amara@example.rw', 'correct-horse')
 
     expect(result.user.hasPassword).toBe(true)
+  })
+})
+
+describe('signing up with an email and password', () => {
+  const amaraSigningUp = {
+    name: 'Amara Mensah',
+    email: 'amara@example.rw',
+    password: 'a-long-password',
+    role: 'VOLUNTEER' as const,
+  }
+
+  it('refuses an address that already has an account', async () => {
+    const { service, store } = build([makeUser()])
+
+    await expect(service.register(amaraSigningUp)).rejects.toMatchObject({ statusCode: 409 })
+    expect(store.created).toEqual([])
+  })
+
+  it('stores the password hashed, never as it was typed', async () => {
+    const { service, store } = build()
+
+    await service.register(amaraSigningUp)
+
+    expect(store.created[0].account.passwordHash).toBe('hash:a-long-password')
+    expect(JSON.stringify(store.created)).not.toContain('"a-long-password"')
+  })
+
+  it('gives a new volunteer a portfolio address made from their name', async () => {
+    const { service, store } = build()
+
+    await service.register(amaraSigningUp)
+
+    expect(store.slugs[0]).toMatch(/^amara-mensah-[a-z0-9]{1,5}$/)
+  })
+
+  it('still makes a usable address from a name with no plain letters in it', async () => {
+    const { service, store } = build()
+
+    await service.register({ ...amaraSigningUp, name: 'Ñ!' })
+
+    expect(store.slugs[0]).toMatch(/^[a-z0-9-]+$/)
+    expect(store.slugs[0].startsWith('-')).toBe(false)
+  })
+
+  it('makes an organisation without a portfolio', async () => {
+    const { service, store } = build()
+
+    const result = await service.register({ ...amaraSigningUp, role: 'ORGANISATION' })
+
+    expect(store.created[0].role).toBe('ORGANISATION')
+    expect(store.slugs).toEqual([])
+    expect(result.user.role).toBe('ORGANISATION')
+  })
+
+  it('signs them straight in with a token for the new account', async () => {
+    const { service } = build()
+
+    const result = await service.register(amaraSigningUp)
+
+    expect(tokens.verify(result.token)).toMatchObject({ userId: 'new-1', role: 'VOLUNTEER' })
+  })
+})
+
+describe('reading your own account', () => {
+  it('reports an account that has gone', async () => {
+    const { service } = build()
+
+    await expect(service.profileOf('gone')).rejects.toMatchObject({ statusCode: 404 })
+  })
+
+  it('never sends the password hash, the Google id or the token version', async () => {
+    const { service, store } = build()
+
+    store.profiles.set('user-1', { ...makeUser({ googleId: 'google-amara', tokenVersion: 3 }), profile: null })
+
+    const view = await service.profileOf('user-1')
+    const sent = JSON.stringify(view)
+
+    expect(view.user.hasPassword).toBe(true)
+    expect(sent).not.toContain('hash:correct-horse')
+    expect(sent).not.toContain('google-amara')
+    expect('tokenVersion' in view.user).toBe(false)
   })
 })

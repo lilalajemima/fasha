@@ -8,20 +8,22 @@ import { api } from '../../lib/api'
 import type { ActivityRow, OpportunityView } from '../../lib/types'
 import { messageFor, useGet } from '../../lib/useGet'
 import { recordsOf } from './csv'
-import { Period, kindOf, rangeFor } from './filters'
+import { Period } from './filters'
 import { PrintReport, ReportRows } from './Report'
 import { Summary, type Tile } from './Summary'
 import {
   comparePhrase,
   interestPhrase,
+  kindOf,
   periodPhrase,
   previousSpan,
+  rangeFor,
+  type Span,
   spanLabel,
   stamp,
   tallyActivity,
   topInterests,
   within,
-  type Span,
 } from './stats'
 import '../../styles/workspace.css'
 import './Admin.css'

@@ -62,9 +62,31 @@ test('a volunteer is matched, turns up, and ends up with verified hours', async 
     await expect(volunteer.getByText('Application sent')).toBeVisible()
   })
 
-  await test.step('the organiser sees the match and accepts', async () => {
-    await organiser.goto(`/manage/opportunities/${opportunityId}/applications`)
+  await test.step('the organiser finds the applicants from their list', async () => {
+    await organiser.goto('/manage/opportunities')
+    await organiser.getByRole('row', { name: new RegExp(title) })
+      .getByRole('link', { name: 'Review applicants' })
+      .click()
 
+    await expect(organiser).toHaveURL(new RegExp(`/manage/opportunities/${opportunityId}/applications$`))
+  })
+
+  await test.step('the applicant\'s name opens their portfolio in a new tab', async () => {
+    const [portfolio] = await Promise.all([
+      organiserContext.waitForEvent('page'),
+      organiser.getByRole('link', { name: /Amara Mensah, opens their portfolio/ }).click(),
+    ])
+
+    await portfolio.waitForLoadState()
+    await expect(portfolio).toHaveURL(/\/p\//)
+    await expect(portfolio.getByRole('heading', { name: 'Amara Mensah' })).toBeVisible()
+    await portfolio.close()
+
+    // The list they were working through is still there behind it.
+    await expect(organiser).toHaveURL(/\/applications$/)
+  })
+
+  await test.step('the organiser sees the match and accepts', async () => {
     await expect(organiser.getByText('Amara Mensah')).toBeVisible()
     await shot(organiser, '3 the applicant with their match score')
 

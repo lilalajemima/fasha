@@ -5,7 +5,7 @@ import Calendar from '../manage/Calendar'
 import { longDate, meta, quantity } from '../../lib/format'
 import type { ActivityRow, OpportunityView, UserView } from '../../lib/types'
 import { useGet } from '../../lib/useGet'
-import { kindOf } from './filters'
+import { kindOf } from './stats'
 import '../../styles/workspace.css'
 import './Admin.css'
 

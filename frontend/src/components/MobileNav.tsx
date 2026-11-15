@@ -9,14 +9,15 @@ export default function MobileNav() {
   const { user, signOut } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
+  // The page the menu was opened on. Following a link changes the page, which
+  // closes the menu without anything having to close it.
+  const [openOn, setOpenOn] = useState<string | null>(null)
+  const open = openOn === pathname
   const workspace = workspaceFor(user?.role)
   const items = WORKSPACE_NAV[workspace]
 
-  useEffect(() => { setOpen(false) }, [pathname])
-
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenOn(null) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
@@ -24,17 +25,17 @@ export default function MobileNav() {
   return (
     <>
       <button className="burger" aria-label="Open navigation" aria-expanded={open}
-              onClick={() => setOpen(true)}>
+              onClick={() => setOpenOn(pathname)}>
         <Icon name="menu" size={21} />
       </button>
 
       {open && (
         <>
-          <div className="drawer__backdrop" onClick={() => setOpen(false)} />
+          <div className="drawer__backdrop" onClick={() => setOpenOn(null)} />
           <nav className="drawer" aria-label="Main navigation">
             <div className="drawer__head">
               <Logo size={24} />
-              <button className="burger" aria-label="Close navigation" onClick={() => setOpen(false)}>
+              <button className="burger" aria-label="Close navigation" onClick={() => setOpenOn(null)}>
                 <Icon name="close" size={21} />
               </button>
             </div>

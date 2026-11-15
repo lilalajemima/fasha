@@ -1,9 +1,11 @@
+import type { User } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 import { ConflictError, ForbiddenError } from '../../core/errors/HttpErrors'
 import { MatchingService } from '../matching/MatchingService'
 import type { Notifier } from '../notifications/Notifier'
 import { OpportunityService } from './OpportunityService'
 import type {
+  BriefFile,
   FeedFilter,
   NewOpportunity,
   OpportunityRecord,
@@ -51,6 +53,10 @@ class RecordingNotifier implements Notifier {
 }
 
 class FakeOpportunityStore implements OpportunityStore {
+  // How many people have applied, which decides whether it can be deleted.
+  applications = 0
+  readonly briefs = new Map<string, BriefFile>()
+
   constructor(private readonly records: OpportunityRecord[] = []) { }
 
   async create(creatorId: string, status: string, input: NewOpportunity) {
@@ -67,8 +73,8 @@ class FakeOpportunityStore implements OpportunityStore {
     return this.records.filter(record => record.status === 'PUBLISHED')
   }
 
-  async findBrief() {
-    return null
+  async findBrief(id: string) {
+    return this.briefs.get(id) ?? null
   }
 
   async findSince() {
@@ -94,7 +100,7 @@ class FakeOpportunityStore implements OpportunityStore {
     return record
   }
 
-    async update(id: string, input: NewOpportunity, status: string) {
+  async update(id: string, input: NewOpportunity, status: string) {
     const record = this.records.find(entry => entry.id === id)!
     Object.assign(record, input, { status: status as OpportunityRecord['status'] })
     return record
@@ -139,11 +145,11 @@ class FakeUserStore implements UserStore {
     } as unknown as UserWithProfile
   }
 
-  async createVolunteer(_account: NewAccount, _portfolioSlug: string) {
+  async createVolunteer(_account: NewAccount, _portfolioSlug: string): Promise<User> {
     throw new Error('not needed in this test')
   }
 
-  async createOrganisation(_account: NewAccount) {
+  async createOrganisation(_account: NewAccount): Promise<User> {
     throw new Error('not needed in this test')
   }
 
@@ -260,6 +266,7 @@ describe('the feed', () => {
     const feed = await buildService(records, users).feed({ userId: 'volunteer-1', role: 'VOLUNTEER' }, {
       search: null,
       mode: null,
+      sector: null,
     })
 
     expect(feed.map(view => view.id)).toEqual(['match', 'mismatch'])
@@ -270,6 +277,7 @@ describe('the feed', () => {
     const feed = await buildService(records).feed({ userId: 'organisation-1', role: 'ORGANISATION' }, {
       search: null,
       mode: null,
+      sector: null,
     })
 
     expect(feed[0].matchScore).toBeUndefined()
@@ -394,5 +402,67 @@ describe('changing an initiative after it is posted', () => {
     const view = await buildService(records).closeEarly(owner, 'proposal')
 
     expect(new Date(view.applicationDeadline).getTime()).toBeLessThanOrEqual(Date.now())
+  })
+})
+describe('reading the PDF brief', () => {
+  const plan = { name: 'plan.pdf', data: 'JVBERi0xLjQK' }
+
+  function withBrief(record: OpportunityRecord) {
+    const store = new FakeOpportunityStore([record])
+
+    store.briefs.set(record.id, plan)
+
+    return new OpportunityService(store, new FakeUserStore(), new MatchingService(), notifier)
+  }
+
+  it('lets anybody read the brief of something published, signed in or not', async () => {
+    const service = withBrief(makeRecord())
+
+    await expect(service.brief(undefined, 'opportunity-1')).resolves.toEqual(plan)
+    await expect(service.brief({ userId: 'volunteer-9', role: 'VOLUNTEER' }, 'opportunity-1')).resolves.toEqual(plan)
+  })
+
+  it('keeps the brief of an unpublished proposal from strangers', async () => {
+    const service = withBrief(citizenProposal())
+
+    await expect(service.brief(undefined, 'proposal')).rejects.toThrow(ForbiddenError)
+    await expect(service.brief({ userId: 'volunteer-9', role: 'VOLUNTEER' }, 'proposal')).rejects.toThrow(ForbiddenError)
+    await expect(service.brief({ userId: 'organisation-1', role: 'ORGANISATION' }, 'proposal')).rejects.toThrow(ForbiddenError)
+  })
+
+  it('shows it to the person who proposed it and to the admin reviewing it', async () => {
+    const service = withBrief(citizenProposal())
+
+    await expect(service.brief({ userId: 'volunteer-1', role: 'VOLUNTEER' }, 'proposal')).resolves.toEqual(plan)
+    await expect(service.brief({ userId: 'admin-1', role: 'ADMIN' }, 'proposal')).resolves.toEqual(plan)
+  })
+
+  it('says so when there is no brief', async () => {
+    await expect(buildService([makeRecord()]).brief(undefined, 'opportunity-1')).rejects.toThrow('has no brief')
+  })
+})
+
+describe('lists for one person', () => {
+  it('shows an organiser only what they created', async () => {
+    const records = [
+      makeRecord({ id: 'mine', creatorId: 'organisation-1' }),
+      makeRecord({ id: 'theirs', creatorId: 'organisation-2' }),
+    ]
+
+    const views = await buildService(records).createdBy({ userId: 'organisation-1', role: 'ORGANISATION' })
+
+    expect(views.map(view => view.id)).toEqual(['mine'])
+  })
+
+  it('puts only proposals still waiting in the approval queue', async () => {
+    const records = [
+      citizenProposal({ id: 'waiting' }),
+      citizenProposal({ id: 'approved', status: 'PUBLISHED' }),
+      citizenProposal({ id: 'turned-down', status: 'REJECTED' }),
+    ]
+
+    const views = await buildService(records).awaitingApproval()
+
+    expect(views.map(view => view.id)).toEqual(['waiting'])
   })
 })

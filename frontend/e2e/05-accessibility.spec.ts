@@ -17,8 +17,11 @@ for (const entry of PAGES) {
   test(`${entry.name} has no automatically detectable accessibility faults`, async ({ page }) => {
     await page.goto(entry.path)
 
+    // Google's sign-in button is Google's own page in a frame, so a fault in
+    // it is not one Fasha can fix. Everything around it is still checked.
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .exclude('.google__slot')
       .analyze()
 
     await test.info().attach(`axe ${entry.name}`, {

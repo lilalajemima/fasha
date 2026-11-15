@@ -26,6 +26,27 @@ export async function shot(page: Page, name: string): Promise<void> {
 
 type Role = 'volunteer' | 'organisation'
 
+const HOME: Record<Role, string> = { volunteer: '/discover', organisation: '/manage' }
+
+/**
+ * Every browser here is new, so every account meets the first-time guide. It
+ * covers the page, and it moves to its own first step, so a test that wants
+ * to get on with something closes it the way a person would. A guide that
+ * never appears is fine: it may already have been dismissed in this browser.
+ */
+export async function skipGuide(page: Page): Promise<void> {
+  const skip = page.getByRole('button', { name: 'Skip guide' })
+
+  try {
+    await skip.waitFor({ state: 'visible', timeout: 5_000 })
+  } catch {
+    return
+  }
+
+  await skip.click()
+  await expect(skip).toHaveCount(0)
+}
+
 export async function signUp(page: Page, role: Role, name: string, email: string): Promise<void> {
   await page.goto('/signup')
 
@@ -40,6 +61,11 @@ export async function signUp(page: Page, role: Role, name: string, email: string
   await page.getByRole('button', { name: /Create (volunteer|organisation) account/ }).click()
 
   await expect(page).not.toHaveURL(/\/signup/)
+
+  // The guide's first step is the profile page, so go back to where a new
+  // account lands, which is where the tests expect to start.
+  await skipGuide(page)
+  await page.goto(HOME[role])
 }
 
 export async function signInAs(page: Page, email: string, password: string): Promise<void> {
@@ -48,6 +74,7 @@ export async function signInAs(page: Page, email: string, password: string): Pro
   await page.getByLabel('Password', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).not.toHaveURL(/\/signin/)
+  await skipGuide(page)
 }
 
 // The format a datetime-local input wants.

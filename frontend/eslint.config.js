@@ -18,5 +18,14 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Each context keeps its hook in the same file as its provider, so the
+      // two cannot drift apart. Editing one of those files reloads the page
+      // instead of hot swapping it, which is the price.
+      'react-refresh/only-export-components': [
+        'error',
+        { allowConstantExport: true, allowExportNames: ['useAuth', 'useNotifications'] },
+      ],
+    },
   },
 ])

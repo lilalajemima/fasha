@@ -41,6 +41,8 @@ function makeOpportunity(overrides: Partial<OpportunityRecord> = {}): Opportunit
     startsAt: new Date('2026-11-14T08:00:00.000Z'),
     endsAt: new Date('2026-11-14T12:00:00.000Z'),
     status: 'PUBLISHED',
+    reviewNote: null,
+    reviewedAt: null,
     qrToken: secret,
     requiredSkills: ['Teamwork'],
     categories: ['Environment'],
@@ -112,6 +114,24 @@ class FakeOpportunityStore implements OpportunityStore {
   async setQrToken(_id: string, qrToken: string) {
     this.saved = qrToken
   }
+
+  async countWorkload() {
+    return []
+  }
+
+  async countActivity() {
+    return { applications: 0, deliverables: 0, credited: 0 }
+  }
+
+  async update(): Promise<never> {
+    throw new Error('not needed in this test')
+  }
+
+  async closeApplications(): Promise<never> {
+    throw new Error('not needed in this test')
+  }
+
+  async remove() {}
 }
 
 class FakeApplicationStore implements ApplicationStore {
@@ -409,5 +429,39 @@ describe('the attendance list', () => {
     const { service } = build({ checkins: [makeCheckin()] })
 
     await expect(service.attendance(volunteer, 'opportunity-1')).rejects.toThrow(ForbiddenError)
+  })
+})
+
+describe('downloading the register', () => {
+  const left = new Date(arrival.getTime() + 3.5 * 3600000)
+
+  it('gives the organiser one line per person, with their hours', async () => {
+    const { service } = build({
+      checkins: [
+        makeCheckin({ checkoutTime: left }),
+        makeCheckin({ id: 'checkin-2', volunteerId: 'volunteer-3', method: 'MANUAL', volunteer: { id: 'volunteer-3', name: 'Keza Uwase' } }),
+      ],
+    })
+
+    const [header, first, second] = (await service.attendanceCsv(organiser, 'opportunity-1')).split('\n')
+
+    expect(header).toBe('Volunteer,Date,Checked in,Checked out,Hours,How')
+    expect(first).toMatch(/^Amara Mensah,\d{4}-\d{2}-\d{2},\d{2}:\d{2},\d{2}:\d{2},3\.50,Scanned$/)
+    expect(second).toMatch(/^Keza Uwase,.*,,,By hand$/)
+  })
+
+  it('keeps the register from volunteers, including the people on it', async () => {
+    const { service } = build({ checkins: [makeCheckin()] })
+
+    await expect(service.attendanceCsv(volunteer, 'opportunity-1')).rejects.toMatchObject({ statusCode: 403 })
+    await expect(service.attendanceCsv(stranger, 'opportunity-1')).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('keeps it from another organisation', async () => {
+    const { service } = build({ checkins: [makeCheckin()] })
+
+    await expect(
+      service.attendanceCsv({ userId: 'organisation-2', role: 'ORGANISATION' }, 'opportunity-1'),
+    ).rejects.toMatchObject({ statusCode: 403 })
   })
 })

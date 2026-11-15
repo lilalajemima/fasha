@@ -187,3 +187,40 @@ describe('the district report', () => {
     expect(csv).toContain('"Clean up, then plant"')
   })
 })
+
+describe('the activity table', () => {
+  it('asks for every event there has ever been, with nothing narrowing it', async () => {
+    const reports = new FakeReports([eventOf()])
+
+    await new AdminService(reports).activity()
+
+    expect(reports.filters).toHaveLength(1)
+    expect(reports.filters[0]).toMatchObject({ mode: null, sector: null })
+    expect(reports.filters[0]!.from.getTime()).toBeLessThan(new Date('2020-01-01').getTime())
+    expect(reports.filters[0]!.opportunityId ?? null).toBeNull()
+  })
+
+  it('gives each event its numbers and its dates as text', async () => {
+    const reports = new FakeReports([eventOf()])
+
+    const [view] = await new AdminService(reports).activity()
+
+    expect(view).toMatchObject({
+      id: 'opportunity-1',
+      organiser: 'Green Neighbourhood',
+      applications: 12,
+      accepted: 9,
+      checkedIn: 7,
+      postedAt: '2026-10-01T08:00:00.000Z',
+      happenedAt: '2026-10-18T08:00:00.000Z',
+    })
+  })
+
+  it('leaves the description out of the table', async () => {
+    const reports = new FakeReports([eventOf()])
+
+    const [view] = await new AdminService(reports).activity()
+
+    expect('description' in view!).toBe(false)
+  })
+})

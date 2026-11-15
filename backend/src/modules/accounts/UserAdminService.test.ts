@@ -69,6 +69,12 @@ class FakeAccountStore implements AccountStore {
     return user ? rowFor(user) : null
   }
 
+  async findByEmail(email: string) {
+    const user = this.users.find(entry => entry.email === email)
+
+    return user ? rowFor(user) : null
+  }
+
   async list(filter: UserFilter) {
     this.askedFor = filter
 

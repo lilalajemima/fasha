@@ -45,6 +45,8 @@ back means the server started and the database answered.
 | `JWT_EXPIRES_IN` | How long a sign in lasts. Defaults to 7 days |
 | `PORT` | Defaults to 4000 |
 | `CLIENT_ORIGIN` | The one origin CORS accepts |
+| `GOOGLE_CLIENT_ID` | The OAuth client id from Google Cloud. Without it, signing in with Google says it is not set up |
+| `TEST_DATABASE_URL` | Only for `npm run test:db`. Has to be a database on this computer |
 
 `CLIENT_ORIGIN` is the one that catches people out. If the frontend loads but every request fails,
 it is almost always because this does not match where the page is being served from.
@@ -58,6 +60,7 @@ three roles, plus `SEED_PASSWORD` of at least 8 characters.
 | --- | --- |
 | `npm run dev` | Runs the API and restarts when a file changes |
 | `npm test` | Runs the unit tests |
+| `npm run test:db` | Runs the query tests against a throwaway local database. See below |
 | `npm run typecheck` | Type checks without building |
 | `npm run build` | Compiles to `dist`. This is what Vercel runs, so run it before pushing |
 | `npm run db:migrate` | Creates a migration from a schema change and applies it |
@@ -67,6 +70,23 @@ three roles, plus `SEED_PASSWORD` of at least 8 characters.
 | `npm run db:cleanup` | Removes what the smoke test created |
 | `npm run smoke` | Runs the end to end suite against a running API |
 | `npm run load` | Load tests the API. See below |
+
+## Testing the queries
+
+`npm test` checks the rules with fakes in place of the database, so it never runs a Prisma query.
+The `*.db.test.ts` files do: the report filters, the feed search, the user search, the capacity
+check when two organisers accept at once, and the Google id staying unique. They need a real
+Postgres, and they empty every table before they start, so they refuse anything but a database
+on this computer.
+
+```bash
+docker compose -f docker-compose.test.yml up -d
+TEST_DATABASE_URL=postgresql://fasha:fasha@localhost:5433/fasha_test npm run test:db
+docker compose -f docker-compose.test.yml down
+```
+
+`test:db` applies every migration to that database first, so it also shows that the migrations
+still run in order from nothing. The container keeps its data in memory, and `down` throws it away.
 
 ## Architecture
 

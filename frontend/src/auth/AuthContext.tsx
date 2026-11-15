@@ -63,13 +63,6 @@ function toServerRole(role: SignUpRole): ServerRole {
   return role === 'organisation' ? 'ORGANISATION' : 'VOLUNTEER'
 }
 
-export function homeFor(role: Role): string {
-  if (role === 'admin') return '/admin'
-  if (role === 'organisation') return '/manage'
-
-  return '/discover'
-}
-
 const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {

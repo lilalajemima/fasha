@@ -162,7 +162,7 @@ class FakeApplicationStore implements ApplicationStore {
 
   constructor(
     private readonly existing: ApplicationRecord[] = [],
-    private readonly capacityTaken = 0,
+    capacityTaken = 0,
   ) {
     this.accepted = capacityTaken
   }
@@ -446,5 +446,24 @@ describe('listing', () => {
     await expect(service.forOpportunity(otherVolunteer, 'opportunity-1')).rejects.toThrow(
       ForbiddenError,
     )
+  })
+})
+
+describe('your own applications', () => {
+  it('lists only the applications of the person asking', async () => {
+    const applications = new FakeApplicationStore([
+      makeApplication({ id: 'mine', volunteerId: 'volunteer-1' }),
+      makeApplication({ id: 'theirs', volunteerId: 'volunteer-2' }),
+    ])
+
+    const views = await buildService(applications).mine(volunteer)
+
+    expect(views.map(view => view.id)).toEqual(['mine'])
+  })
+
+  it('shows somebody with none an empty list', async () => {
+    const applications = new FakeApplicationStore([makeApplication({ volunteerId: 'volunteer-1' })])
+
+    expect(await buildService(applications).mine(otherVolunteer)).toEqual([])
   })
 })

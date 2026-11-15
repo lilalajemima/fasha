@@ -34,6 +34,29 @@ export function stamp(): { day: string; label: string } {
   return { day: dayOf(now), label: `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}` }
 }
 
+/** The days a preset covers, ending today. "all" and "custom" leave both open. */
+export function rangeFor(preset: string): Span {
+  const today = new Date()
+
+  if (preset === 'month') {
+    return { from: dayOf(new Date(today.getFullYear(), today.getMonth(), 1)), to: dayOf(today) }
+  }
+
+  if (preset === '30' || preset === '90') {
+    const back = new Date(today)
+
+    back.setDate(back.getDate() - Number(preset))
+
+    return { from: dayOf(back), to: dayOf(today) }
+  }
+
+  return { from: '', to: '' }
+}
+
+export function kindOf(mode: string): string {
+  return mode === 'VIRTUAL' ? 'Virtual' : 'In person'
+}
+
 export function within(day: string, span: Span): boolean {
   if (span.from !== '' && day < span.from) return false
   if (span.to !== '' && day > span.to) return false
