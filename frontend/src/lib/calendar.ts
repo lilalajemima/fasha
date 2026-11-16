@@ -120,7 +120,7 @@ export function weekDays(date: Date, marks: CalendarMark[]): CalendarDay[] {
  * Where a calendar entry should take you: whatever is left to do on it.
  *
  * While applications are open, that is the applicants. Once the work is over
- * it is the proof — the register for work people turned up to, the
+ * it is the proof: the register for work people turned up to, the
  * deliverables for work done remotely. Between the two, when nobody else can
  * apply but the day has not come, an event is waiting on its register and
  * remote work is still waiting on its people.

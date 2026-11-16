@@ -1,6 +1,6 @@
 import type { TourStep } from '../../lib/tour'
 
-/** What a new organisation sees the first time it signs in, in the order it needs it. */
+// What a new organisation sees the first time it signs in, in the order it needs it.
 export const ORGANISER_TOUR: TourStep[] = [
   {
     route: '/profile',

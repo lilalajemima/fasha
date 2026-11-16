@@ -83,7 +83,7 @@ function load(clientId: string): Promise<GoogleId> {
   return loading
 }
 
-/** Draws Google's button into `parent`. The returned promise fails offline. */
+// Draws Google's button into `parent`. The returned promise fails offline.
 export async function drawGoogleButton(
   parent: HTMLElement,
   text: GoogleButtonText,
@@ -109,7 +109,7 @@ export async function drawGoogleButton(
   })
 }
 
-/** After signing out, so Google does not pick the same account by itself. */
+// After signing out, so Google does not pick the same account by itself.
 export function forgetGoogleChoice(): void {
   window.google?.accounts.id.disableAutoSelect()
 }

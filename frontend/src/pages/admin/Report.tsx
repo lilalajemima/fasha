@@ -58,7 +58,7 @@ export function PrintReport({ title, file, lines, onDone, children }: {
   )
 }
 
-/** The rows of a report, on a page of their own after the summary. */
+// The rows of a report, on a page of their own after the summary.
 export function ReportRows({ heading, children }: { heading: string; children: ReactNode }) {
   return (
     <section className="report__rows">

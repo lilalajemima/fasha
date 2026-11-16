@@ -34,7 +34,7 @@ function at(dayOffset: number, hour: number, minute = 0): Date {
   )
 }
 
-/** Umuganda is the last Saturday of the month. The next one, in Kigali time. */
+// Umuganda is the last Saturday of the month. The next one, in Kigali time.
 function nextUmuganda(hour: number): Date {
   const now = new Date()
 

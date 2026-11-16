@@ -4,8 +4,8 @@ What people actually use: the volunteer's side, the organiser's side and the com
 side, all in one React application.
 
 React 19 with TypeScript, built by Vite and routed by React Router. There is no UI library and no
-CSS framework. The styling is plain CSS with design tokens, which is the main reason it stays
-small.
+CSS framework. The styling is plain CSS with design tokens, and pages are loaded on demand, which
+is why the first download stays small.
 
 ## Features
 
@@ -53,9 +53,11 @@ It expects the API at `http://localhost:4000`. To point it somewhere else, set `
 | `VITE_DEMO_VOLUNTEER_EMAIL` | Fills the demo panel on the sign in page |
 | `VITE_DEMO_ORGANISATION_EMAIL` | The same, for an organisation |
 | `VITE_DEMO_PASSWORD` | The password both demo accounts share |
+| `VITE_GOOGLE_CLIENT_ID` | The same OAuth client id as the API's `GOOGLE_CLIENT_ID`. Without it, the Google button does not appear |
 
 Vite reads these at build time, not at run time, so changing one means building again. They also
-end up in the bundle, which is fine for demo accounts and not fine for anything secret.
+end up in the bundle, which is fine for demo accounts and a public client id, and not fine for
+anything secret.
 
 If the three `VITE_DEMO_*` variables are not set, the demo panel does not appear and the privacy
 page stops offering demo sign in. Set them wherever you want people to look around without making
@@ -69,7 +71,7 @@ an account.
 | `npm run build` | `tsc -b` then `vite build`. This is what Vercel runs |
 | `npm run lint` | ESLint over everything |
 | `npm run preview` | Serves the built files |
-| `npm test` | Unit tests over the pure functions in `lib` |
+| `npm test` | Unit tests over the logic in `lib` and the admin reports |
 | `npm run e2e` | Playwright, across three browser engines and two phones |
 | `npm run e2e:report` | Opens the last end to end report |
 | `npm run lighthouse` | Performance and accessibility on the public pages |
@@ -89,6 +91,7 @@ src/
   pages/         one folder per role
   styles/        tokens, global rules and the shared workspace styles
 e2e/             Playwright specs
+public/          icons, the service worker, sign-in and banner images
 scripts/         the Lighthouse runner and its summariser
 ```
 
@@ -209,8 +212,9 @@ Two rules in there are easy to trip over:
 npm test
 ```
 
-58 tests over the pure functions in `lib`: `calendar.ts`, `roster.ts`, `paging.ts`, `format.ts`,
-`umuganda.ts`. No React, no DOM, under a second.
+116 tests in 10 files: eight in `lib` (`ApiClient`, `cache`, `calendar`, `catalogue`, `format`,
+`paging`, `roster`, `tour`) and two for the admin reports (`csv`, `stats`). No React, no DOM, a few
+seconds.
 
 `vitest.config.ts` pins the timezone to `Africa/Kigali`. Several of these format dates, and
 without pinning it they pass here and fail in CI.
@@ -230,7 +234,9 @@ Docker build instead:
 E2E_BASE_URL=http://localhost:8081 npm run e2e
 ```
 
-102 tests across five projects: Chromium, Firefox, WebKit, a Pixel 7 and an iPhone 13.
+27 tests in 10 files across five projects: Chromium, Firefox, WebKit, a Pixel 7 and an iPhone 13.
+The specs marked "all five" run in every project and the rest in Chromium, 113 runs in total. A
+full run shows 4 skipped, because the phone workspace test only runs on the Pixel 7.
 
 | Spec | Runs on | What it covers |
 | --- | --- | --- |
@@ -240,7 +246,10 @@ E2E_BASE_URL=http://localhost:8081 npm run e2e
 | `04-responsive` | all five | No sideways scrolling, readable line length, every input labelled, every button named |
 | `05-accessibility` | all five | axe-core at WCAG 2.1 AA, plus a keyboard path |
 | `06-portfolio` | Chromium | The public portfolio from a browser that has never signed in |
+| `04-workspace-on-phones` | Pixel 7 | An organiser can read and act on their opportunities on a phone |
 | `07-admin` | Chromium | A resident's initiative is invisible until the district approves it |
+| `08-guide` | Chromium | The first-time guide for volunteers and organisations, and skipping it |
+| `09-offline-and-drafts` | Chromium | A page seen once still shows offline; a half-written opportunity survives a reload |
 
 Rendering differs between engines, so those checks run everywhere. Behaviour does not, so the
 journeys run once.
@@ -257,7 +266,8 @@ Without those they skip rather than fail.
 
 Every run writes traces and screenshots to `e2e-report/`. Do not point it at production: it
 creates accounts, opportunities and attendance rows and nothing cleans them up. Test accounts all
-use `e2e-...@example.invalid`, so they are easy to find.
+use `e2e-...@example.invalid`, so they are easy to find. `npm run db:cleanup` in the backend does
+not remove them; it only removes `@fasha.test` accounts.
 
 ### Lighthouse
 
@@ -289,6 +299,20 @@ demo accounts.
 Everything on it is a claim about how the code behaves. If the storage, the sharing or the
 deletion behaviour changes, that page changes in the same commit.
 
+## Licences and credits
+
+Libraries keep their own licences: MIT for React, React Router, Vite, Vitest and ESLint,
+Apache-2.0 for jsQR, TypeScript, Playwright and Lighthouse, and MPL-2.0 for `@axe-core/playwright`,
+which only runs in the tests. The fonts (Fugaz One, Work Sans, Plus Jakarta Sans) come from Google
+Fonts under the SIL Open Font License. The Google button follows the Google APIs Terms of Service.
+
+The photographs in `public/auth` and `public/banner` were found on Pinterest. Pinterest does not
+license the images it shows and the original creators could not be traced, so Fasha holds no
+licence for them and their copyright stays with the people who made them. They are used only in
+this non-commercial student prototype and will be replaced with licensed or original photographs
+before Fasha is used beyond the pilot. If one of them is yours, write to the address on the
+privacy page and it will be taken down.
+
 ## Known limitations
 
 - a slow connection shows a spinner rather than a loading skeleton
@@ -297,7 +321,8 @@ deletion behaviour changes, that page changes in the same commit.
 - the admin pages page through everything in the browser rather than asking the server for one
   page at a time. fine for this pilot but it has to be scaled
 - check in needs a connection at the moment somebody scans. queuing scans locally would fix it
-- there is no `.env.example`, so the four `VITE_` variables are only written down here
+- there is no `.env.example`, so the five `VITE_` variables are only written down here
+- the sign-in and banner photographs are not licensed (see above)
 
 ## Common issues
 

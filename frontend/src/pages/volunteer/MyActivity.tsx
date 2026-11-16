@@ -88,7 +88,7 @@ function hits(haystack: string, query: string): boolean {
 
 /**
  * Which attempt each claim is, per opportunity. A rejection is not the end of
- * the road — the work can be fixed and sent again — so the table says
+ * the road, since the work can be fixed and sent again, so the table says
  * "Attempt 2 of 2" rather than showing rows that look like duplicates.
  */
 function attemptsOf(items: SubmissionView[]): Map<string, { index: number; total: number }> {

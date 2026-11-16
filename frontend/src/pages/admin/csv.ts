@@ -52,7 +52,7 @@ function unguarded(cell: string): string {
   return /^'[=+\-@\t\r]/.test(cell) ? cell.slice(1) : cell
 }
 
-/** One object per row, keyed by the header, so columns can move without breaking this. */
+// One object per row, keyed by the header, so columns can move without breaking this.
 export function recordsOf(text: string): Record<string, string>[] {
   const [header, ...rows] = parseCsv(text.replace(/^\uFEFF/, ''))
 

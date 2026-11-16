@@ -198,7 +198,7 @@
 .pf-when__label { font-size: 13px; color: var(--charcoal-muted); text-transform: uppercase;
                   letter-spacing: .06em; }
 
-/* A card now carries the work itself, not only its name: who ran it, what it
+/* A card carries the work itself, not only its name: who ran it, what it
    was, the tags it was matched on, and the one number that matters. */
 .pf-card__body {
   margin: 10px 0 0;

@@ -39,7 +39,7 @@ const GUIDES: Record<Role, { title: string; notes: HelpNote[] }> = {
   admin: { title: 'Community admin', notes: OVERSIGHT_GUIDE },
 }
 
-/** The first-time guide for each workspace. */
+// The first-time guide for each workspace.
 const TOURS: Record<Role, TourStep[] | null> = {
   volunteer: VOLUNTEER_TOUR,
   organisation: ORGANISER_TOUR,

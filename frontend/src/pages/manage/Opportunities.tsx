@@ -59,7 +59,7 @@ function searchable(item: OpportunityView): string {
 /**
  * The organisation's own workspace. A volunteer's initiatives live at
  * /initiatives, with the organiser tools inside the initiative itself, so this
- * page serves one role and no longer has to relabel itself.
+ * page serves one role.
  */
 export default function Opportunities() {
   const navigate = useNavigate()

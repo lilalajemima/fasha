@@ -5,7 +5,7 @@ import './GoogleButton.css'
 type Props = {
   text: GoogleButtonText
   onCredential: (credential: string) => void
-  /** Puts "or" between the button and the form beneath it. */
+  // Puts "or" between the button and the form beneath it.
   divider?: boolean
 }
 

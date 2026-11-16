@@ -4,12 +4,10 @@ import Imigongo from './Imigongo'
 /**
  * Every page opens the same way: the title, whatever action belongs to it, and
  * the Imigongo band. Explanation belongs in the help button rather than the
- * heading, so `eyebrow` and `meta` are still accepted but no longer drawn.
+ * heading.
  */
 export default function PageHeader({ title, action, display }: {
-  eyebrow?: ReactNode
   title: string
-  meta?: ReactNode
   action?: ReactNode
   display?: boolean
 }) {

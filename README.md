@@ -23,19 +23,19 @@ records check in and check out against a code that changes every 30 seconds, let
 review virtual work, and credits approved hours to a portfolio page the volunteer can share with
 an employer or a scholarship panel.
 
-**Live app:** https://fasha-frontend.vercel.app
-**API:** https://fashas-backend-eight.vercel.app
-**Repository:** https://github.com/lilalajemima/fasha
-**Walkthrough video:**:https://drive.google.com/drive/u/0/folders/1gsJXpxpPxZ-ZbGQMlDezs7ed79X_vXbH 
-**Technical report:** https://docs.google.com/document/d/1uxHBEK3BN9rj2KWV9RmNXGZ_2gaEFdyxco14cu7Q2FM/edit?usp=sharing 
-
-**Both Video and Report:** https://drive.google.com/drive/u/0/folders/1gsJXpxpPxZ-ZbGQMlDezs7ed79X_vXbH 
+- **Live app:** https://fasha-frontend.vercel.app
+- **API:** https://fashas-backend-eight.vercel.app
+- **Repository:** https://github.com/lilalajemima/fasha
+- **Walkthrough video:** https://drive.google.com/drive/u/0/folders/1gsJXpxpPxZ-ZbGQMlDezs7ed79X_vXbH
+- **Technical report:** https://docs.google.com/document/d/1uxHBEK3BN9rj2KWV9RmNXGZ_2gaEFdyxco14cu7Q2FM/edit?usp=sharing
+- **Video and report together:** https://drive.google.com/drive/u/0/folders/1gsJXpxpPxZ-ZbGQMlDezs7ed79X_vXbH
+- **Privacy page:** https://fasha-frontend.vercel.app/privacy
 
 **Author:** Lilala Runiga Jemima, BSc Software Engineering, African Leadership University
 
-The platform is now complete and deployed. The frontend, the API and the database are all live,
-and the mock data layer the earlier sprint ran on has been removed. What is left before the pilot
-is the field testing itself.
+The platform is complete and deployed. The frontend, the API and the database are all live. It
+was piloted from 9 to 13 November 2026 with 41 people in Kibagabaga cell, Kimironko: 36
+volunteers, four organisation representatives and one community leader.
 
 ---
 
@@ -89,12 +89,13 @@ reinstated, given a temporary password or removed.
 | Backend | Node.js, Express 5, TypeScript | A single modular monolith, as set out in the proposal |
 | ORM | Prisma 7 | Typed queries, and migrations I can version and replay |
 | Database | PostgreSQL via Supabase | Native array columns, which is how matching compares skill and interest tags |
-| Auth | bcrypt, JSON Web Tokens | Hashed passwords and stateless protected routes |
+| Auth | bcrypt, JSON Web Tokens, Google Identity Services | Hashed passwords, stateless protected routes, and signing in with an existing Google account |
 | Verification | Node crypto HMAC, qrcode | The event code is a one time password derived from the clock, so a photographed code expires |
 | Unit tests | Vitest | Fast enough to run on every save, on both halves |
-| End to end tests | Playwright | Drives three real browser engines and two phone profiles |
+| End to end tests | Playwright, axe-core | Drives three real browser engines and two phone profiles, and checks accessibility |
+| Performance | Lighthouse | Measures the public pages on a simulated mid-range phone |
 | Containers | Docker Compose | So the whole thing runs from one command on a machine that is not mine |
-| Fonts | Fugaz One, Plus Jakarta Sans | Display and body faces from the design system |
+| Fonts | Fugaz One, Work Sans, Plus Jakarta Sans | Display and body faces from the design system |
 
 ---
 
@@ -103,10 +104,11 @@ reinstated, given a temporary password or removed.
 ```
 fasha/
 ├── docker-compose.yml          runs both halves together
-├── docs/testing/               load test and Lighthouse results, kept as evidence
 ├── frontend/
 │   ├── e2e/                    Playwright specs
+│   ├── public/                 icons, the service worker, sign-in and banner images
 │   ├── scripts/                the Lighthouse runner and its summariser
+│   ├── Dockerfile
 │   ├── nginx.conf              serves the built app in the container
 │   ├── playwright.config.ts    five browser projects
 │   ├── vitest.config.ts
@@ -117,7 +119,7 @@ fasha/
 │       ├── components/         Button, Card, Field, pickers, the QR scanner
 │       ├── auth/               session state and the four route guards
 │       ├── layouts/            one shell, and the navigation table all three roles read
-│       ├── lib/                the logic that is not React, and its unit tests
+│       ├── lib/                the logic that is not React, and most of its unit tests
 │       ├── notifications/      the unread count in the top bar
 │       └── pages/
 │           ├── auth/           SignIn, SignUp, Forgotten
@@ -128,7 +130,9 @@ fasha/
 │           └── Privacy.tsx     public, reachable without an account
 └── backend/
     ├── api/index.ts            the Vercel entry point
-    ├── scripts/                the smoke test and the load test
+    ├── scripts/                the smoke test, the load test and the database test runner
+    ├── Dockerfile
+    ├── docker-compose.test.yml a throwaway Postgres for the database tests
     ├── prisma/
     │   ├── schema.prisma       the data model: 10 models and 8 enums
     │   └── migrations/         applied in order, never by hand
@@ -144,9 +148,9 @@ Each half has its own README with the detail:
 - [backend/README.md](backend/README.md) — the module pattern, the API, the schema, how to add a feature
 - [frontend/README.md](frontend/README.md) — the shell, the guards, the data hook, the test suites
 
-In the earlier sprint every screen read its data through `frontend/src/mocks/api.ts`. That was
-deliberate: each function in that file became a `fetch` call to the API, and no screen component
-had to change when it did. The mock layer has since been deleted.
+In an earlier sprint every screen read its data through a mock file. Each function in it became a
+`fetch` call to the API, so no screen component had to change when the real API arrived. The mock
+layer has since been deleted.
 
 ---
 
@@ -174,7 +178,7 @@ cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Copy `backend/.env.example` to `backend/.env` and fill it in:
 
 ```
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:6543/postgres?pgbouncer=true"
@@ -183,7 +187,11 @@ JWT_SECRET="a long random string"
 JWT_EXPIRES_IN="7d"
 PORT=4000
 CLIENT_ORIGIN="http://localhost:5173"
+GOOGLE_CLIENT_ID=""
 ```
+
+`GOOGLE_CLIENT_ID` is the OAuth client id from Google Cloud. Leave it empty and everything works
+except signing in with Google.
 
 There are two database URLs because Prisma needs a direct connection to run migrations, while the
 running server uses the pooled one. `prisma.config.ts` reads `DIRECT_URL` for that reason.
@@ -216,7 +224,8 @@ It expects the API at `http://localhost:4000`. To point it elsewhere, set `VITE_
 
 Setting `VITE_DEMO_VOLUNTEER_EMAIL`, `VITE_DEMO_ORGANISATION_EMAIL` and `VITE_DEMO_PASSWORD` makes
 a demo panel appear on the sign in page, so somebody can look around without making an account.
-Leave them unset and the panel does not exist.
+Leave them unset and the panel does not exist. `VITE_GOOGLE_CLIENT_ID` has to match the API's
+`GOOGLE_CLIENT_ID` for the Google button to appear.
 
 The other commands:
 
@@ -259,15 +268,17 @@ loads but every request fails.
 
 | What | Command | Covers |
 | --- | --- | --- |
-| Backend units | `npm --prefix backend test` | 169 tests over the services, where the rules are |
-| Frontend units | `npm --prefix frontend test` | 58 tests over the pure functions in `lib` |
-| End to end | `npm --prefix frontend run e2e` | 102 tests across three browser engines and two phones |
-| API smoke | `npm --prefix backend run smoke` | A whole scenario against a running API |
+| Backend units | `npm --prefix backend test` | 269 tests in 21 files over the services, where the rules are |
+| Database | `npm --prefix backend run test:db` | 28 tests in 5 files against a throwaway local Postgres |
+| Frontend units | `npm --prefix frontend test` | 116 tests in 10 files over the logic in `lib` and the admin reports |
+| End to end | `npm --prefix frontend run e2e` | 27 tests in 10 files, 113 runs across three browser engines and two phones |
+| API smoke | `npm --prefix backend run smoke` | 89 checks along a whole scenario against a running API |
 | Load | `npm --prefix backend run load` | Three endpoints at 10, 25 and 50 concurrent users |
 | Lighthouse | `npm --prefix frontend run lighthouse` | Performance and accessibility on the public pages |
 
 Both unit suites use in-memory fakes and pure functions, so they need nothing running and finish
-in about a second each.
+in a few seconds each. The database tests empty every table before they start, so they refuse to
+run against anything but a database on the same computer.
 
 The end to end suite needs the app running. It drives real browsers against the real API, so it
 creates real accounts and events. Do not point it at production. The journey test runs two
@@ -279,7 +290,8 @@ database, `/health` is one `SELECT 1`, and `/opportunities` is a real query. The
 between the first two is what reaching the database costs, and the difference between the second
 and third is what Fasha costs.
 
-Results kept as evidence are in [docs/testing](docs/testing).
+The load test writes its results to `backend/load-results/` and Lighthouse to
+`frontend/lighthouse-results/`. Neither folder is committed.
 
 ---
 
@@ -294,8 +306,8 @@ Results kept as evidence are in [docs/testing](docs/testing).
 | Database | Supabase | Managed PostgreSQL in `eu-central-1`, pooled for the app and direct for migrations |
 | Files | Postgres | Pictures and briefs are stored as base64 on the row, not in object storage |
 
-I went with managed services rather than hosting anything myself. The pilot runs for a month with
-25 to 40 users, which the free tiers cover comfortably, and neither I nor the people testing it
+I went with managed services rather than hosting anything myself. The pilot ran for a week with
+41 users, which the free tiers covered comfortably, and neither I nor the people testing it
 should depend on a machine that has to stay switched on.
 
 The API and the database are in the same region deliberately. Load testing from my own machine in
@@ -316,6 +328,50 @@ production the two sit in the same city, so that cost very nearly disappears.
 
 No secret is committed. Vercel holds `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET` and
 `CLIENT_ORIGIN` for the API, and `VITE_API_URL` plus the three demo variables for the client.
+
+---
+
+## Privacy and data protection
+
+The privacy page at `/privacy` says in plain English what Fasha collects, who can see it, where it
+is kept and how to remove it. It opens without an account, because the people who most need it
+are the ones deciding whether to make one.
+
+- only a name, an email and a password are required. everything else on a profile is optional
+- passwords are hashed with bcrypt and never stored as written
+- there is no analytics, advertising or tracking. the only thing kept in the browser is the token
+  that keeps you signed in
+- the public portfolio shows a name, a picture, a description, skills, interests and credited
+  work, and never an email address or a phone number
+- deleting an account removes everything that identifies the person in one transaction, while the
+  registers and verified hours other people rely on stay, with nobody's name on them
+- demo accounts let anybody look around without giving any details at all
+
+One gap is known. The database is hosted in Frankfurt, and Rwanda's data protection law (Law
+N° 058/2021, Article 50) only allows personal data to be stored outside Rwanda with a certificate
+from the supervisory authority, which this pilot does not have. Using Fasha beyond the pilot needs
+that certificate or a host in Rwanda.
+
+---
+
+## Licences and credits
+
+Every library keeps its own licence. The application uses MIT libraries (React, React Router,
+Express, cors, pg, bcrypt, jsonwebtoken, qrcode), Apache-2.0 libraries (jsQR, Prisma) and dotenv
+under BSD-2-Clause. The development tools are MIT or Apache-2.0, apart from `@axe-core/playwright`,
+which is MPL-2.0 and only runs in the tests. None of them is GPL. The fonts come from Google Fonts
+under the SIL Open Font License, and signing in with Google follows the Google APIs Terms of
+Service.
+
+The skills and interests catalogue and all the demo data were written for Fasha. The software uses
+no external dataset.
+
+The photographs in `frontend/public/auth` and `frontend/public/banner` were found on Pinterest.
+Pinterest does not license the images it shows and the original creators could not be traced, so
+Fasha holds no licence for them and their copyright stays with the people who made them. They are
+used only in this non-commercial student prototype and will be replaced with licensed or original
+photographs before Fasha is used beyond the pilot. If one of them is yours, write to the address
+on the privacy page and it will be taken down.
 
 ---
 
@@ -343,12 +399,14 @@ can walk in, and does not scale beyond it.
 
 ---
 
-## Thinking about the pilot
+## Designing for the pilot
 
-People will use this on their own phones, on mobile data, outdoors. That shaped a few decisions:
-it is a browser app so there is nothing to install, the production bundle is kept small, the
-colours are high contrast rather than pale, and the QR check in has a manual fallback for the
-moments when the network drops.
+People used this on their own phones, on mobile data, outdoors. That shaped a few decisions: it is
+a browser app so there is nothing to install, pages load on demand so the first download stays
+small, profile pictures are shrunk in the browser before they are sent, a page seen once still
+shows when the connection drops, the colours are high contrast rather than pale, and check in can
+be done by scanning, by typing the six digit code, or by the organiser marking somebody present
+by hand.
 
 It also shaped the testing. The end to end suite runs on a Pixel and an iPhone profile as well as
 on desktop, and Lighthouse measures the public pages on a simulated mid-range phone over

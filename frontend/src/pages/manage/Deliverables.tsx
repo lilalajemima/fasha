@@ -212,9 +212,7 @@ export function DeliverablesPanel({ opportunityId }: { opportunityId: string }) 
 
 /**
  * The organisation's page: everything sent in to any of their opportunities,
- * in one list. It used to be one opportunity at a time behind a dropdown,
- * which hid work that was waiting and made "is anything outstanding?" a
- * question you answered by clicking through every event you run.
+ * in one list, so work that is waiting is never hidden behind another event.
  */
 export default function Deliverables() {
   const deliverables = useGet<SubmissionView[]>('/submissions/received')

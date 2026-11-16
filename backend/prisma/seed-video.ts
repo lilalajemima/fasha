@@ -102,7 +102,7 @@ const L = (
 ): Listing => ({ title, description, skills, categories, mode })
 
 const LISTINGS: Listing[] = [
-  /* ---------------- Education ---------------- */
+  // Education
   L('After-school reading club', 'Read with two P4 pupils for an hour and a half, twice a week. The school provides the term reader. Most of the work is listening.', [TEA, SPK], [EDU, YOU]),
   L('Senior 6 exam revision, maths and physics', 'Work through past papers with a group of four. We supply the papers and the room.', [TEA], [EDU, YOU]),
   L('Homework support at the community library', 'Sit with whoever turns up after school and help with what they have been set.', [TEA], [EDU, YOU]),
@@ -113,7 +113,7 @@ const LISTINGS: Listing[] = [
   L('Mark practice papers remotely', 'Thirty scripts, with a marking scheme provided. Comments more useful than scores.', [TEA, DAT], [EDU], V),
   L('Library cataloguing afternoon', 'Sort and shelve a donation of around four hundred books.', [DAT], [EDU, INF]),
 
-  /* ---------------- Healthcare ---------------- */
+  // Healthcare
   L('Health centre queue support', 'Help people find the right desk and fill in forms. Nothing clinical.', [SPK, WRI], [HEA]),
   L('Malaria prevention door to door', 'Walk a route with a community health worker, explaining bed net use.', [SPK], [HEA, INF]),
   L('First aid cover at the sector sports day', 'Trained first aiders to staff a tent for the morning.', [AID], [HEA, SPO]),
@@ -123,7 +123,7 @@ const LISTINGS: Listing[] = [
   L('Mental health awareness session for youth', 'Facilitate a ninety minute conversation using a provided guide.', [SPK], [HEA, YOU]),
   L('Write plain-language health leaflets', 'Turn four clinical fact sheets into something a reader can actually use.', [WRI], [HEA], V),
 
-  /* ---------------- Climate and environment ---------------- */
+  // Climate and environment
   L('Umuganda: clear the market drains', 'The monthly community work, then the sector meeting afterwards.', [CON, GAR], [ENV, INF]),
   L('Tree planting along the school boundary', 'Plant and water forty seedlings. Tools provided.', [GAR], [ENV, EDU]),
   L('Wetland clean-up at Nyabugogo', 'Collect and sort waste along a marked stretch. Gloves and bags supplied.', [CON], [ENV]),
@@ -134,7 +134,7 @@ const LISTINGS: Listing[] = [
   L('Map illegal dumping sites', 'Walk assigned streets and record locations in a shared sheet.', [DAT], [ENV, TEC]),
   L('Write up the sector tree survival survey', 'Turn two years of planting records into a short report.', [DAT, WRI], [ENV], V),
 
-  /* ---------------- Youth and children ---------------- */
+  // Youth and children
   L('Saturday football coaching for girls', 'Run drills, keep score and walk the youngest ones home afterwards.', [EVT, SPK, TEA], [SPO, YOU]),
   L('Holiday art club', 'Three mornings of drawing and painting with P2 to P5.', [EVT], [ART, YOU]),
   L('Careers morning for S5 and S6', 'Talk about what you do and answer questions. Twenty minutes each.', [SPK], [EDU, YOU]),
@@ -144,7 +144,7 @@ const LISTINGS: Listing[] = [
   L('Film a day in the life of the youth centre', 'Three minute piece for the sector page. Consent forms provided.', [VID, EDT], [YOU, ART]),
   L('Run a storytelling hour at the library', 'Read aloud to under-sevens and their carers.', [SPK], [YOU, ART]),
 
-  /* ---------------- Technology and digital skills ---------------- */
+  // Technology and digital skills
   L('Smartphone basics for older residents', 'One to one: calls, messages, mobile money, staying safe.', [TEA, SPK], [TEC, DIS]),
   L('Teach spreadsheets to market traders', 'Two sessions on recording stock and takings.', [TEA, DAT], [TEC, ENP]),
   L('Build a one-page site for a cooperative', 'Simple, mobile-first, with their contact details and products.', [WEB, MOB], [TEC, ENP], V),
@@ -155,7 +155,7 @@ const LISTINGS: Listing[] = [
   L('Teach typing to S1 students', 'Weekly half hour sessions in the computer room.', [TEA], [TEC, EDU]),
   L('Set up a shared calendar for the sector office', 'Configure it, then show three staff how to use it.', [DAT, TEA], [TEC, INF]),
 
-  /* ---------------- Community infrastructure ---------------- */
+  // Community infrastructure
   L('Repair the footbridge handrail', 'Measure, cut and fit. Materials on site.', [CON], [INF]),
   L('Paint the sector office meeting room', 'Two coats, one day, brushes provided.', [CON], [INF]),
   L('Dig drainage channels before the rains', 'Hard work, early start, water provided.', [CON], [INF, ENV]),
@@ -165,7 +165,7 @@ const LISTINGS: Listing[] = [
   L('Clear and level the community pitch', 'Remove stones, fill holes, mark the lines.', [CON, GAR], [INF, SPO]),
   L('Photograph completed sector projects', 'Before and after pictures for the annual report.', [PHO, EDT], [INF, ART]),
 
-  /* ---------------- Food security and agriculture ---------------- */
+  // Food security and agriculture
   L('Kitchen garden training for households', 'Show families how to start a sack garden. Seeds provided.', [GAR, TEA], [FOO, ENV]),
   L('Harvest day at the cooperative plot', 'Pick, sort and weigh. Bring a hat.', [GAR], [FOO]),
   L('Cook and serve at the school feeding programme', 'Early start, two hundred portions, kitchen team of six.', [COO], [FOO, EDU]),
@@ -175,7 +175,7 @@ const LISTINGS: Listing[] = [
   L('Build a rainwater tank stand', 'Block and mortar base for a 5,000 litre tank.', [CON], [FOO, INF]),
   L('Write up the cooperative harvest figures', 'Three seasons of records into one summary table.', [DAT, ACC], [FOO, ENP], V),
 
-  /* ---------------- Women's empowerment ---------------- */
+  // Women's empowerment
   L('Bookkeeping clinic for market traders', 'Sit with traders and set up a simple cash book each.', [ACC, DAT, TEA], [ENP, WOM]),
   L('Tailoring cooperative, photograph the product line', 'Clean product shots for an online catalogue.', [PHO, EDT], [WOM, ENP]),
   L('Facilitate a savings group meeting', 'Keep the agenda moving and record the decisions.', [SPK, ACC], [WOM, ENP]),
@@ -185,7 +185,7 @@ const LISTINGS: Listing[] = [
   L('Transport goods to the Saturday market', 'One van, two trips, early morning.', [DRV], [WOM, ENP]),
   L('Digital literacy for women traders', 'Mobile money, WhatsApp Business, and keeping a phone secure.', [TEA, SPK, SOC], [WOM, TEC]),
 
-  /* ---------------- Entrepreneurship ---------------- */
+  // Entrepreneurship
   L('Business plan review clinic', 'Read five short plans in advance and give feedback in person.', [ACC, WRI], [ENP]),
   L('Pitch practice for young entrepreneurs', 'Listen to eight pitches and give honest, specific feedback.', [SPK], [ENP, YOU]),
   L('Set up mobile money for small traders', 'Registration, basic security, and what the fees actually are.', [TEA], [ENP, TEC]),
@@ -194,7 +194,7 @@ const LISTINGS: Listing[] = [
   L('Cooperative accounts tidy-up', 'Reconcile a year of receipts against the cash book.', [ACC, DAT], [ENP], V),
   L('Run a market stall display workshop', 'Practical session on laying out goods so people stop.', [SPK, EVT], [ENP, WOM]),
 
-  /* ---------------- Arts and culture ---------------- */
+  // Arts and culture
   L('Imigongo painting workshop for children', 'Materials provided. No experience needed, just patience.', [EVT, TEA], [ART, YOU]),
   L('Record the sector choir rehearsal', 'Audio and a few stills for their first release.', [VID, EDT], [ART]),
   L('Design the programme for the cultural evening', 'One A5 folded programme, print-ready.', [GFX], [ART]),
@@ -204,7 +204,7 @@ const LISTINGS: Listing[] = [
   L('Subtitle a short documentary', 'Twelve minutes, Kinyarwanda to English.', [WRI, EDT], [ART, TEC], V),
   L('Photograph the traditional dance festival', 'Full day, images for the organisers and the press pack.', [PHO, EDT], [ART, SPO]),
 
-  /* ---------------- Sports and recreation ---------------- */
+  // Sports and recreation
   L('Referee the youth league on Saturdays', 'Two matches a morning. Kit provided.', [SPK], [SPO, YOU]),
   L('Basketball coaching at the secondary school', 'Twice weekly sessions with S1 to S3.', [TEA, SPK], [SPO, YOU]),
   L('Organise the sector fun run', 'Route, registration, marshals and water points.', [EVT, PRJ], [SPO, INF]),
@@ -213,7 +213,7 @@ const LISTINGS: Listing[] = [
   L('Film highlights from the league final', 'Short highlights package for the youth centre page.', [VID, EDT], [SPO, ART]),
   L('Cycling club route marshal', 'Stand at a junction and keep riders safe. Four hours.', [AID], [SPO, HEA]),
 
-  /* ---------------- Disability inclusion ---------------- */
+  // Disability inclusion
   L('Accessibility audit of the sector office', 'Walk through with a checklist and photograph the barriers.', [DAT, PHO], [DIS, INF]),
   L('Sign language practice group', 'Weekly practice with deaf residents. Beginners welcome.', [SPK], [DIS]),
   L('Read aloud for blind residents', 'Letters, official forms and the newspaper. One hour a week.', [SPK, WRI], [DIS]),
@@ -223,13 +223,11 @@ const LISTINGS: Listing[] = [
   L('Adapt training materials into large print', 'Reformat six handouts. Templates provided.', [GFX, WRI], [DIS, EDU], V),
   L('Companionship visits for isolated residents', 'An hour a week, conversation and a cup of tea.', [SPK], [DIS, HEA]),
 
-  /* ---------------- three more, to round out the feed ---------------- */
+  // three more, to round out the feed
   L('Fundraising letters for the school lab appeal', 'Six letters to local businesses, drafted from a brief.', [FUN, WRI], [EDU, ENP], V),
   L('Coordinate the Umuganda volunteer rota', 'Keep the sign-up sheet current and remind people the day before.', [PRJ, DAT], [INF, ENV], V),
   L('Weekend cookery class for teenagers', 'Four sessions on cheap, quick meals. Ingredients provided.', [COO, TEA], [FOO, YOU]),
 ]
-
-/* ------------------------------------------------------------------ */
 
 function mulberry32(a: number) {
   return () => {
@@ -332,8 +330,7 @@ async function seedDemoAccounts(hash: (plain: string) => Promise<string>) {
   const applied = (volunteerId: string, status: ApplicationStatus, statement: string) =>
     ({ volunteerId, status, motivationStatement: statement })
 
-  /* --- the demo organiser's own opportunities, with queues to work through --- */
-
+  // the demo organiser's own opportunities, with queues to work through
   await prisma.opportunity.create({
     data: {
       creatorId: organisation.id,
@@ -446,7 +443,7 @@ async function seedDemoAccounts(hash: (plain: string) => Promise<string>) {
     },
   })
 
-  /* --- a session running now, so check-in can be opened on camera or live --- */
+  // a session running now, so check-in can be opened on camera or live
   await prisma.opportunity.create({
     data: {
       creatorId: organisation.id,
@@ -472,7 +469,7 @@ async function seedDemoAccounts(hash: (plain: string) => Promise<string>) {
     },
   })
 
-  /* --- a finished event, so the register, the CSV and the portfolio have content --- */
+  // a finished event, so the register, the CSV and the portfolio have content
   const past = kigali(-12, 8)
   const pastEnd = kigali(-12, 11)
 
@@ -558,7 +555,7 @@ async function seedDemoAccounts(hash: (plain: string) => Promise<string>) {
     },
   })
 
-  /* --- one initiative waiting for the district, so the admin queue is not empty --- */
+  // one initiative waiting for the district, so the admin queue is not empty
   await prisma.opportunity.create({
     data: {
       creatorId: fillers[4].id,

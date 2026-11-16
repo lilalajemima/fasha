@@ -1,6 +1,6 @@
 import type { TourStep } from '../../lib/tour'
 
-/** What the community admin sees the first time they sign in. */
+// What the community admin sees the first time they sign in.
 export const ADMIN_TOUR: TourStep[] = [
   {
     route: '/admin',

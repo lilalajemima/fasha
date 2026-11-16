@@ -1,6 +1,6 @@
 import type { ActivityRow, OpportunityView } from '../../lib/types'
 
-/** Inclusive calendar days, as the date inputs give them: YYYY-MM-DD. */
+// Inclusive calendar days, as the date inputs give them: YYYY-MM-DD.
 export type Span = { from: string; to: string }
 
 export type Decision = 'waiting' | 'approved' | 'rejected'
@@ -34,7 +34,7 @@ export function stamp(): { day: string; label: string } {
   return { day: dayOf(now), label: `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}` }
 }
 
-/** The days a preset covers, ending today. "all" and "custom" leave both open. */
+// The days a preset covers, ending today. "all" and "custom" leave both open.
 export function rangeFor(preset: string): Span {
   const today = new Date()
 
@@ -101,7 +101,7 @@ export function previousSpan(span: Span, preset: string): Span | null {
   return { from: dayOf(first), to: dayOf(before) }
 }
 
-/** "1–14 Oct", "18 Sep – 16 Oct", or with years when they differ. */
+// "1–14 Oct", "18 Sep – 16 Oct", or with years when they differ.
 export function spanLabel(span: Span): string {
   const a = dateOf(span.from)
   const b = dateOf(span.to)
@@ -137,12 +137,12 @@ export function topInterests(lists: string[][], limit = 3): { top: InterestCount
   return { top: ranked.slice(0, limit), others: Math.max(0, ranked.length - limit) }
 }
 
-/** "In 1–14 Nov" or, with nothing chosen, the twelve months the server sends. */
+// "In 1–14 Nov" or, with nothing chosen, the twelve months the server sends.
 export function periodPhrase(span: Span): string {
   return span.from === '' || span.to === '' ? 'Over the last 12 months' : `In ${spanLabel(span)}`
 }
 
-/** ", 12 more than 1–14 Oct", or nothing when there is no earlier period. */
+// ", 12 more than 1–14 Oct", or nothing when there is no earlier period.
 export function comparePhrase(now: number, before: number | null, against: string | null): string {
   if (before === null || against === null) return ''
 
@@ -153,7 +153,7 @@ export function comparePhrase(now: number, before: number | null, against: strin
   return `, ${Math.abs(difference)} ${difference > 0 ? 'more' : 'fewer'} than ${against}`
 }
 
-/** " Healthcare was the most common interest, followed by Education and Sport." */
+// " Healthcare was the most common interest, followed by Education and Sport."
 export function interestPhrase(top: InterestCount[]): string {
   if (top.length === 0) return ''
 
@@ -171,7 +171,7 @@ export type ActivityTally = {
   turnout: number | null
 }
 
-/** Turning up counts for events and an accepted piece of work for virtual ones. */
+// Turning up counts for events and an accepted piece of work for virtual ones.
 export function tallyActivity(rows: ActivityRow[]): ActivityTally {
   const applied = rows.reduce((sum, row) => sum + row.applications, 0)
   const accepted = rows.reduce((sum, row) => sum + row.accepted, 0)

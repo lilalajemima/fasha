@@ -96,7 +96,7 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
 .data__go { width: 18px; text-align: right; color: var(--charcoal-muted); opacity: 0; }
 .data tbody tr:hover .data__go { opacity: 1; color: var(--primary); }
 
-/* Row actions. Red text links, laid out inline — a table cell has to stay a
+/* Row actions. Red text links, laid out inline, because a table cell has to stay a
    table cell, or its borders stop tracking the row. */
 .data__actions { text-align: right; white-space: nowrap; }
 .data__actions > * + * { margin-left: 14px; }

@@ -1,6 +1,6 @@
 import type { TourStep } from '../../lib/tour'
 
-/** What a new volunteer sees the first time they sign in, in the order they need it. */
+// What a new volunteer sees the first time they sign in, in the order they need it.
 export const VOLUNTEER_TOUR: TourStep[] = [
   {
     route: '/profile',

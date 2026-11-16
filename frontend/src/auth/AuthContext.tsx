@@ -14,7 +14,7 @@ export type User = {
   role: Role
   mustChangePassword: boolean
   avatar: string | null
-  /** False for somebody who has only ever signed in with Google. */
+  // False for somebody who has only ever signed in with Google.
   hasPassword: boolean
 }
 
@@ -30,7 +30,7 @@ type ServerUser = {
 }
 type AuthResponse = { token: string; user: ServerUser }
 
-/** Google knows who this is, but Fasha needs to know how they'll take part. */
+// Google knows who this is, but Fasha needs to know how they'll take part.
 export type NewToFasha = { chooseRole: { name: string; email: string } }
 type GoogleResponse = AuthResponse | NewToFasha
 
@@ -41,12 +41,12 @@ type AuthValue = {
   ready: boolean
   signUp: (input: SignUpInput) => Promise<User>
   signIn: (email: string, password: string) => Promise<User>
-  /** Signs in, or joins when a role is given. Without one, a newcomer gets asked. */
+  // Signs in, or joins when a role is given. Without one, a newcomer gets asked.
   signInWithGoogle: (credential: string, role?: SignUpRole) => Promise<User | NewToFasha>
   signOut: () => void
-  /** Keeps the session alive after a password change, which issues a new token. */
+  // Keeps the session alive after a password change, which issues a new token.
   replaceToken: (token: string) => void
-  /** Re-reads the account, so a new name or picture reaches the top bar. */
+  // Re-reads the account, so a new name or picture reaches the top bar.
   refresh: () => void
 }
 

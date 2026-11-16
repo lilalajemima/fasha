@@ -1,14 +1,14 @@
 import { createPublicKey, verify, type webcrypto } from 'node:crypto'
 import { ForbiddenError, UnauthorisedError, UnavailableError } from '../errors/HttpErrors'
 
-/** Who Google says this is. The id is Google's ("sub"), stable for life. */
+// Who Google says this is. The id is Google's ("sub"), stable for life.
 export type GoogleIdentity = {
   googleId: string
   email: string
   name: string
 }
 
-/** What the services depend on, so a test can stand in for Google. */
+// What the services depend on, so a test can stand in for Google.
 export interface GoogleCheck {
   verify(credential: string): Promise<GoogleIdentity>
 }
