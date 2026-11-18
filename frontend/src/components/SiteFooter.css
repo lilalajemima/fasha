@@ -1,0 +1,7 @@
+.sitefoot { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--neutral-border);
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+            gap: 8px 24px; font-size: 13px; color: var(--charcoal-muted); }
+.sitefoot p { margin: 0; }
+.sitefoot a { color: var(--charcoal-muted); text-decoration: underline; text-underline-offset: 2px; }
+.sitefoot a:hover { color: var(--primary); }
+.sitefoot__meta { display: flex; align-items: baseline; gap: 8px; }

@@ -27,6 +27,7 @@ import {
 } from './navItems'
 import '../styles/workspace.css'
 import './Shell.css'
+import SiteFooter from '../components/SiteFooter'
 
 export { MANAGE_NAV, OVERSIGHT_NAV, PARTICIPATE_NAV }
 export type { NavItem }
@@ -133,6 +134,7 @@ export default function Shell() {
             working. */}
         <main className="content">
           <PageBoundary resetOn={pathname}><Outlet /></PageBoundary>
+          <SiteFooter />
         </main>
 
         <HelpButton

@@ -61,10 +61,6 @@ function Picture({ name, avatar, onPick, onRemove, noun }: {
           accept="image/png,image/jpeg,image/webp"
           onChange={choose}
         />
-        <p className="hint" style={{ marginTop: 8 }}>
-          Square works best. It is cropped and resized to 256px in your browser before it is
-          saved, so it stays small on a slow connection.
-        </p>
       </div>
     </div>
   )
