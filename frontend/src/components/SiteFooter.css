@@ -1,24 +1,33 @@
+:root { --sitefoot-h: 64px; }
+
 .sitefoot { position: fixed; left: var(--sidebar-w); right: 0; bottom: 0; z-index: 30;
-            height: var(--sitefoot-h); padding: 0 32px;
-            display: flex; align-items: center; gap: 24px;
-            background: var(--primary-deep); color: #fff; font-size: 13px; white-space: nowrap; }
+            min-height: var(--sitefoot-h); box-sizing: border-box; padding: 12px 32px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px 32px;
+            background: var(--primary-deep); color: #fff; font-size: 15px; line-height: 1.4;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, .12); }
 .sitefoot a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 .sitefoot a:hover { color: #FECACA; }
-.sitefoot__brand { display: inline-flex; align-items: center; font-weight: 700; font-size: 17px;
-                   letter-spacing: -0.01em; line-height: 1; }
-.sitefoot__dot { width: 5px; height: 5px; margin-left: 4px; border-radius: 50%; background: #FCA5A5; }
-.sitefoot__note { color: rgba(255, 255, 255, .88); }
-.sitefoot__meta { margin-left: auto; display: flex; gap: 6px; }
 
-@media (max-width: 1100px) {
-  .sitefoot { left: 0; padding: 0 20px; }
-  .sitefoot__brand, .sitefoot__year { display: none; }
+.sitefoot__notice { display: flex; align-items: center; gap: 12px; margin: 0; font-weight: 600; }
+.sitefoot__badge { padding: 3px 10px; border: 1px solid rgba(255, 255, 255, .55);
+                   border-radius: var(--radius-chip); font-size: 11px; font-weight: 700;
+                   letter-spacing: .08em; text-transform: uppercase; }
+
+.sitefoot__links { display: flex; align-items: center; gap: 24px; white-space: nowrap; }
+.sitefoot__contact { display: inline-flex; align-items: center; gap: 8px; }
+.sitefoot__year { color: rgba(255, 255, 255, .8); }
+
+@media (max-width: 1280px) {
+  .sitefoot__lead, .sitefoot__year { display: none; }
 }
 
-@media (max-width: 700px) {
-  .sitefoot { display: grid; grid-template-columns: 1fr auto; align-content: center;
-              gap: 4px 16px; padding: 0 16px; font-size: 12px; }
-  .sitefoot__note { grid-column: 1 / -1; }
-  .sitefoot__lead { display: none; }
-  .sitefoot__meta { margin-left: 0; }
+@media (max-width: 1100px) {
+  .sitefoot { left: 0; padding: 12px 20px; }
+}
+
+@media (max-width: 760px) {
+  :root { --sitefoot-h: 88px; }
+  .sitefoot { flex-direction: column; align-items: stretch; justify-content: center;
+              gap: 8px; padding: 12px 16px; font-size: 14px; }
+  .sitefoot__links { justify-content: space-between; gap: 16px; }
 }

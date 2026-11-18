@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Icon from './Icon'
 import './SiteFooter.css'
 
 const CONTACT = 'l.runiga@alustudent.com'
@@ -7,18 +8,21 @@ const CONTACT = 'l.runiga@alustudent.com'
 export default function SiteFooter() {
   return (
     <footer className="sitefoot">
-      <span className="sitefoot__brand" aria-hidden="true">
-        fasha<span className="sitefoot__dot" />
-      </span>
-      <span className="sitefoot__note">Fasha is currently a student-run demo.</span>
-      <span className="sitefoot__contact">
-        <span className="sitefoot__lead">Reach out at </span>
-        <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
-      </span>
-      <span className="sitefoot__meta">
-        <Link to="/privacy">Privacy</Link>
-        <span className="sitefoot__year">· © {new Date().getFullYear()} Fasha</span>
-      </span>
+      <p className="sitefoot__notice">
+        <span className="sitefoot__badge">Demo</span>
+        Fasha is currently a student-run demo.
+      </p>
+      <div className="sitefoot__links">
+        <span className="sitefoot__contact">
+          <Icon name="review" size={18} />
+          <span>
+            <span className="sitefoot__lead">Reach out at </span>
+            <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
+          </span>
+        </span>
+        <Link to="/privacy">Privacy policy</Link>
+        <span className="sitefoot__year">© {new Date().getFullYear()} Fasha</span>
+      </div>
     </footer>
   )
 }
