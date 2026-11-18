@@ -132,10 +132,11 @@ export default function Shell() {
         {/* Around the page only, so the sidebar and top bar stay put while a
             page's code arrives, and a page that fails to load leaves them
             working. */}
-        <main className="content">
+                <main className="content">
           <PageBoundary resetOn={pathname}><Outlet /></PageBoundary>
-          <SiteFooter />
         </main>
+
+        <SiteFooter />
 
         <HelpButton
           title={guide.title}

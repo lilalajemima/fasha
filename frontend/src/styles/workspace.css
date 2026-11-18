@@ -183,8 +183,7 @@ a.data__title:hover { color: var(--primary); text-decoration: none; }
 .btn--small { padding: 7px 13px; font-size: 13px; border-width: 1px; }
 
 /* ---------- help ---------- */
-.help { position: fixed; right: 22px; bottom: 22px; z-index: 40;
-        display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.help { position: fixed; right: 22px; bottom: calc(var(--sitefoot-h, 0px) + 22px); z-index: 40; }
 .help__toggle { width: 48px; height: 48px; border: 0; border-radius: 50%; cursor: pointer;
                 background: var(--imigongo-black); color: #fff; font-family: var(--font-display);
                 font-size: 19px; line-height: 1; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }

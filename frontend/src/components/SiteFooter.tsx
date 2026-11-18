@@ -3,18 +3,22 @@ import './SiteFooter.css'
 
 const CONTACT = 'l.runiga@alustudent.com'
 
+// Fixed to the bottom of every signed-in page, so it is always in view.
 export default function SiteFooter() {
   return (
     <footer className="sitefoot">
-      <p>
-        Fasha is currently a student-run demo. Reach out at{' '}
-        <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.
-      </p>
-      <div className="sitefoot__meta">
+      <span className="sitefoot__brand" aria-hidden="true">
+        fasha<span className="sitefoot__dot" />
+      </span>
+      <span className="sitefoot__note">Fasha is currently a student-run demo.</span>
+      <span className="sitefoot__contact">
+        <span className="sitefoot__lead">Reach out at </span>
+        <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
+      </span>
+      <span className="sitefoot__meta">
         <Link to="/privacy">Privacy</Link>
-        <span aria-hidden="true">·</span>
-        <span>© {new Date().getFullYear()} Fasha</span>
-      </div>
+        <span className="sitefoot__year">· © {new Date().getFullYear()} Fasha</span>
+      </span>
     </footer>
   )
 }
