@@ -9,7 +9,6 @@ export default function SiteFooter() {
   return (
     <footer className="sitefoot">
       <p className="sitefoot__notice">
-        <span className="sitefoot__badge">Demo</span>
         Fasha is currently a student-run demo.
       </p>
       <div className="sitefoot__links">
